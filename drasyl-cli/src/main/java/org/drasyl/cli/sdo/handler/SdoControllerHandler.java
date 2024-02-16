@@ -97,9 +97,11 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
                         final DrasylChannel channel = channels.get(node.name());
                         if (node.state().isOnline()) {
                             final Set<Policy> policies = node.policies();
+                            //LOG.error("Policies {} {}", node.name(), policies.hashCode());
 
-                            if (!Objects.equals(network.nodePolicies.put(node.name(), policies.hashCode()), policies.hashCode())) {
-                                LOG.debug("Policies for node `{}` have changed.", node.name());
+                            if (!Objects.equals(network.nodePolicies.get(node.name()), policies)) {
+                                network.nodePolicies.put(node.name(), policies);
+                                //LOG.error("Policies for node `{}` have changed.", node.name());
                                 final ControllerHello controllerHello = new ControllerHello(policies);
                                 LOG.debug("Send {} to {}.", controllerHello, node.name());
                                 channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);

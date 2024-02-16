@@ -88,7 +88,7 @@ public class LuaNetworkTable extends LuaTable {
     LuaNumber proactiveLatencyMeasurementsInterval;
     LuaTable proactiveLatencyMeasurementsCandidates;
     final CsvWriter writer;
-    public final Map<DrasylAddress, Integer> nodePolicies = new HashMap<>();
+    public final Map<DrasylAddress, Set<Policy>> nodePolicies = new HashMap<>();
 
     {
         try {
