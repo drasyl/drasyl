@@ -30,7 +30,6 @@ import java.util.List;
 /**
  * Encodes {@link ByteBuf}s to {@link StopAndWaitArqData}s and vice versa.
  */
-@Deprecated
 public class ByteToStopAndWaitArqDataCodec extends MessageToMessageCodec<StopAndWaitArqData, ByteBuf> {
     private boolean sequenceNo;
 

@@ -30,7 +30,6 @@ import static java.util.Objects.requireNonNull;
 /**
  * Ack message of the Go-Back-N ARQ protocol.
  */
-@Deprecated
 public class GoBackNArqAck implements GoBackNArqMessage {
     private final UnsignedInteger sequenceNo;
 

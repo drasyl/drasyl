@@ -31,7 +31,6 @@ import io.netty.handler.codec.MessageToByteEncoder;
  *
  * @see ChunkedMessageInput
  */
-@Deprecated
 @Sharable
 public class MessageChunkEncoder extends MessageToByteEncoder<MessageChunk> {
     public static final int MAGIC_NUMBER_CONTENT = -143_591_473;

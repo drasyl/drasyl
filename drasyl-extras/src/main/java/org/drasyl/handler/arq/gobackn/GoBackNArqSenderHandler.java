@@ -70,7 +70,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *  </pre>
  * </blockquote>
  */
-@Deprecated
 public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqSenderHandler.class);
     private final int windowSize;

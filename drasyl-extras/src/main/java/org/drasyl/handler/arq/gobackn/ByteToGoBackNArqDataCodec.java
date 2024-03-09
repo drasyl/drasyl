@@ -30,7 +30,6 @@ import java.util.List;
 /**
  * Encodes {@link ByteBuf}s to {@link GoBackNArqData}s and vice versa.
  */
-@Deprecated
 public class ByteToGoBackNArqDataCodec extends MessageToMessageCodec<GoBackNArqData, ByteBuf> {
     @Override
     protected void encode(final ChannelHandlerContext ctx,

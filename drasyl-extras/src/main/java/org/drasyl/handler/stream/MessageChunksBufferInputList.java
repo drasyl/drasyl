@@ -36,7 +36,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * Beware: Only {@link #size()}, {@link #isEmpty()}, {@link #iterator()}, {@link #toArray()}, {@link
  * #clear()}, {@link #get(int)}, and {@link #set(int, Object)} are implemented.
  */
-@Deprecated
 public class MessageChunksBufferInputList implements List<MessageChunk> {
     private MessageChunk[] array;
     private int size;

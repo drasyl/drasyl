@@ -29,7 +29,6 @@ import io.netty.buffer.DefaultByteBufHolder;
  *
  * @see ChunkedMessageInput
  */
-@Deprecated
 public class ReassembledMessage extends DefaultByteBufHolder {
     public ReassembledMessage(final ByteBuf data) {
         super(data);

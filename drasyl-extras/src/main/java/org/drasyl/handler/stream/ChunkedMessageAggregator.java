@@ -31,7 +31,6 @@ import io.netty.handler.codec.MessageAggregator;
  *
  * @see ChunkedMessageInput
  */
-@Deprecated
 public class ChunkedMessageAggregator extends MessageAggregator<MessageChunk, MessageChunk, MessageChunk, ReassembledMessage> {
     /**
      * Creates a new instance.

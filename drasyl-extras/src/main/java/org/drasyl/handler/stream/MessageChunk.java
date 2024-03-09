@@ -32,7 +32,6 @@ import java.util.Objects;
  * @see LastMessageChunk
  * @see ChunkedMessageInput
  */
-@Deprecated
 public class MessageChunk extends DefaultByteBufHolder {
     private final byte msgId;
     private final int chunkNo;
