@@ -103,9 +103,6 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         final ConnectionConfig overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
         p.addLast(new ConnectionHandler(localPort, remotePort, overriddenConfig));
 
-        // FIXME: remove when debugging is done
-        //p.addLast(new ConnectionAnalyzeHandler());
-
         p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
         p.addLast(new LengthFieldPrepender(4));
 
