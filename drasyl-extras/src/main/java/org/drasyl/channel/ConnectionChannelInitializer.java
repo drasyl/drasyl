@@ -39,6 +39,7 @@ import org.drasyl.util.internal.UnstableApi;
 import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.Objects.requireNonNullElseGet;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.util.Preconditions.requireInRange;
 
@@ -58,6 +59,17 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
     private final int port;
     protected final ConnectionConfig config;
 
+    /**
+     * @param doServer Determines the server behavior:<br>
+     *                 <ul>
+     *                 <li>{@code true} sets this channel to server mode, listening on the specified {@code port}.</li>
+     *                 <li>{@code false} sets this channel to client mode, listening on a random port while assuming the peer listens on {@code port}.</li>
+     *                 <li>{@code null} decides the server/client role based on comparing local and remote public keys, with the "higher" key indicating a server.</li>
+     *                 </ul>
+     * @param port     Specifies the port number. In server mode, the channel listens on this port.
+     *                 In client mode, the channel assumes the peer listens on this port.
+     * @param config   Configuration settings for connections.
+     */
     protected ConnectionChannelInitializer(final Boolean doServer,
                                            final int port,
                                            final ConnectionConfig config) {
@@ -67,8 +79,17 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         this.config = requireNonNull(config);
     }
 
-    protected ConnectionChannelInitializer(final Boolean doServer,
-                                           final int port) {
+    /**
+     * @param doServer Determines the server behavior:<br>
+     *                 <ul>
+     *                 <li>{@code true} sets this channel to server mode, listening on the specified {@code port}.</li>
+     *                 <li>{@code false} sets this channel to client mode, listening on a random port while assuming the peer listens on {@code port}.</li>
+     *                 <li>{@code null} decides the server/client role based on comparing local and remote public keys, with the "higher" key indicating a server.</li>
+     *                 </ul>
+     * @param port     Specifies the port number. In server mode, the channel listens on this port.
+     *                 In client mode, the channel assumes the peer listens on this port.
+     */
+    protected ConnectionChannelInitializer(final Boolean doServer, final int port) {
         this(doServer, port, ConnectionConfig.newBuilder().build());
     }
 
@@ -80,12 +101,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         p.addLast(new SegmentCodec());
 
         final boolean iAmServer;
-        if (doServer != null) {
-            iAmServer = doServer.booleanValue();
-        }
-        else {
-            iAmServer = iAmServer(ch);
-        }
+        iAmServer = requireNonNullElseGet(doServer, () -> iAmServer(ch));
 
         final int localPort;
         final int remotePort;
