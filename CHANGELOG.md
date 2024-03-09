@@ -5,25 +5,29 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [0.11.0] - 2023-XX-XX
+## [0.11.0] - 2024-XX-XX
 
 ### Added
 
 - CLI: Option `--rc-start-node` to sub-command `node` added.
 - CLI: Sub-command `node-rc peers` added.
+- [`EventTypeDrasylNode`](drasyl-examples/src/main/java/org/drasyl/example/EventTypeDrasylNodeExample.java) added.
+- `DrasylNode` will now check local time is correct on start as this is mandatory for drasyl protocol to work.
+- [`InboundExceptionEvent`](drasyl-node/src/main/java/org/drasyl/node/event/InboundExceptionEvent.java) now contains exception in string presentation.
 - 
 
 ### Changed
 
--
+- Dependencies have been updated.
 -
 -
 
 ### Fixed
 
--
--
--
+- CLI: ensure wormhole sender/receiver handlers gracefully stop when connection is lost.
+- CLI: fix `tunnel` sub-command.
+- Receiving multiple `UNITE` messages will now trigger new `HELLO` messages only if new endpoints have been reported.
+- 
 
 ## [0.10.0] - 2023-01-31
 
