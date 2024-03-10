@@ -98,6 +98,7 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
     private final ConnectionConfig config;
+    private State state;
     private int localPort;
     private int remotePort;
     // RFC 9293: Send Sequence Variables
@@ -176,6 +177,7 @@ public class TransmissionControlBlock {
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
                              final int localPort,
                              final int remotePort,
                              final long sndUna,
@@ -201,6 +203,7 @@ public class TransmissionControlBlock {
                              final float sRtt,
                              final int rto) {
         this.config = requireNonNull(config);
+        this.state = state;
         this.localPort = requireInRange(localPort, 0, MAX_PORT);
         this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -229,6 +232,7 @@ public class TransmissionControlBlock {
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
                              final int localPort,
                              final int remotePort,
                              final long sndUna,
@@ -243,11 +247,31 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final int localPort,
+                             final int remotePort,
+                             final long sndUna,
+                             final long sndNxt,
+                             final int sndWnd,
+                             final long iss,
+                             final long rcvNxt,
+                             final long irs,
+                             final SendBuffer sendBuffer,
+                             final RetransmissionQueue retransmissionQueue,
+                             final ReceiveBuffer receiveBuffer,
+                             final long tsRecent,
+                             final long lastAckSent,
+                             final boolean sndTsOk) {
+        this(config, null, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, irs, sendBuffer, retransmissionQueue, receiveBuffer, tsRecent, lastAckSent, sndTsOk);
+    }
+
+    @SuppressWarnings("java:S107")
+    TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
                              final int localPort,
                              final int remotePort,
                              final Channel channel,
@@ -256,7 +280,16 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+    }
+
+    TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
+                             final int localPort,
+                             final int remotePort,
+                             final Channel channel,
+                             final long irs) {
+        this(config, state, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -264,13 +297,21 @@ public class TransmissionControlBlock {
                              final int remotePort,
                              final Channel channel,
                              final long irs) {
-        this(config, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, null, localPort, remotePort, channel, irs);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
                              final Channel channel,
                              final long irs) {
         this(config, 0, 0, channel, irs);
+    }
+
+    public State state() {
+        return state;
+    }
+
+    public void state(final State state) {
+        this.state = requireNonNull(state);
     }
 
     // RFC 1122, Section 4.2.2.6
@@ -378,7 +419,8 @@ public class TransmissionControlBlock {
     @Override
     public String toString() {
         return "TransmissionControlBlock{" +
-                "L=" + localPort +
+                "STATE=" + state +
+                ", L=" + localPort +
                 ", R=" + remotePort +
                 ", SND.UNA=" + sndUna +
                 ", SND.NXT=" + sndNxt +

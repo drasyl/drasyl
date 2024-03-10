@@ -122,10 +122,9 @@ import static org.drasyl.util.Preconditions.requireInRange;
 })
 public class ConnectionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandler.class);
-    private int requestedLocalPort;
-    private int remotePort;
+    private final int requestedLocalPort;
+    private final int remotePort;
     private final ConnectionConfig config;
-    State state; // FIXME: move to tcb?
     TransmissionControlBlock tcb;
     ScheduledFuture<?> userTimer;
     ScheduledFuture<?> retransmissionTimer;
@@ -144,7 +143,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     ConnectionHandler(final int requestedLocalPort,
                       final int remotePort,
                       final ConnectionConfig config,
-                      final State state,
                       final TransmissionControlBlock tcb,
                       final ScheduledFuture<?> userTimer,
                       final ScheduledFuture<?> retransmissionTimer,
@@ -157,7 +155,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this.requestedLocalPort = requireInRange(requestedLocalPort, 0, MAX_PORT);
         this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.config = requireNonNull(config);
-        this.state = state;
         this.tcb = tcb;
         this.userTimer = userTimer;
         this.retransmissionTimer = retransmissionTimer;
@@ -172,12 +169,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     public ConnectionHandler(final int requestedLocalPort,
                              final int remotePort,
                              final ConnectionConfig config) {
-        this(requestedLocalPort, remotePort, config, null, null, null, null, null, null, false, false, null, null);
+        this(requestedLocalPort, remotePort, config, null, null, null, null, null, false, false, null, null);
     }
 
     public ConnectionHandler(final int remotePort,
                              final ConnectionConfig config) {
-        this(0, remotePort, config, null, null, null, null, null, null, false, false, null, null);
+        this(0, remotePort, config, null, null, null, null, null, false, false, null, null);
     }
 
     public ConnectionHandler() {
@@ -187,7 +184,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @Override
     public String toString() {
         return "ConnectionHandler{" +
-                "state=" + state +
                 ", tcb=" + tcb +
                 '}';
     }
@@ -208,9 +204,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         // release all resources/timers
         deleteTcb();
-        cancelUserTimer(ctx);
-        cancelRetransmissionTimer(ctx);
-        cancelTimeWaitTimer(ctx);
         establishedPromise.tryFailure(new ConnectionClosingException());
         ctx.channel().closeFuture().addListener(new PromiseNotifier<>(false, closedPromise));
     }
@@ -307,7 +300,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         assert ctx.executor().inEventLoop();
         LOG.trace("{} OPEN call received.", ctx.channel());
 
-        switch (state) {
+        switch (state()) {
             case CLOSED:
                 // RFC 9293: Create a new transmission control block (TCB) to hold connection state
                 // RFC 9293: information.
@@ -421,7 +414,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                               final ChannelPromise promise) {
         LOG.trace("{} SEND call received.", ctx.channel());
 
-        switch (state) {
+        switch (state()) {
             case CLOSED:
                 // RFC 9293: If the user does not have access to such a connection, then return
                 // RFC 9293: "error: connection illegal for this process".
@@ -516,7 +509,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
         try {
-            switch (state) {
+            switch (state()) {
                 case CLOSED:
                     assert tcb == null;
                     // RFC 9293: If the user does not have access to such a connection, return
@@ -613,9 +606,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S128")
     private void userCallClose(final ChannelHandlerContext ctx,
                                final ChannelPromise promise) {
-        LOG.trace("{} CLOSE call received.", ctx.channel(), state);
+        LOG.trace("{} CLOSE call received.", ctx.channel(), state());
 
-        switch (state) {
+        switch (state()) {
             case CLOSED:
                 // RFC 9293: If the user does not have access to such a connection, return
                 // RFC 9293: "error: connection illegal for this process".
@@ -635,8 +628,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
                 closedPromise.addListener(new PromiseNotifier<>(promise));
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -652,8 +647,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // enter CLOSED state
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
                 closedPromise.addListener(new PromiseNotifier<>(promise));
+                ctx.close(closedPromise);
 
                 break;
 
@@ -756,9 +753,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S128")
     public void userCallAbort() {
         assert ctx == null || ctx.executor().inEventLoop();
-        LOG.trace("{} ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
+        LOG.trace("{} ABORT call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state());
 
-        switch (state) {
+        switch (state()) {
             case CLOSED:
                 // RFC 9293: If the user should not have access to such a connection, return "error:
                 // RFC 9293: connection illegal for this process".
@@ -776,7 +773,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -791,7 +790,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -820,7 +821,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -832,7 +835,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 deleteTcb();
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
+
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -844,9 +849,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      * 9293, Section 3.10.6</a>.
      */
     public ConnectionHandshakeStatus userCallStatus() {
-        LOG.trace("{} STATUS call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state);
+        LOG.trace("{} STATUS call received.", ctx != null ? ctx.channel() : "[NOCHANNEL]", state());
 
-        switch (state) {
+        switch (state()) {
             case CLOSED:
                 // RFC 9293: If the user should not have access to such a connection, return
                 // RFC 9293: "error: connection illegal for this process".
@@ -866,7 +871,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Return state and the TCB pointer.
-                return new ConnectionHandshakeStatus(state, tcb);
+                return new ConnectionHandshakeStatus(state(), tcb);
         }
 
         // unreachable statement
@@ -889,12 +894,15 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             tcb.delete();
             tcb = null;
         }
+
+        cancelUserTimer(ctx);
+        cancelRetransmissionTimer(ctx);
+        cancelTimeWaitTimer(ctx);
     }
 
     void changeState(final ChannelHandlerContext ctx, final State newState) {
         LOG.trace("{} Change to {} state.", ctx.channel(), newState);
-        assert state != newState : "Illegal state change from " + state + " to " + newState;
-        state = newState;
+        state(newState);
 
         switch (newState) {
             case SYN_SENT:
@@ -918,20 +926,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case CLOSE_WAIT:
                 cancelTimeWaitTimer(ctx);
                 break;
-
-            case CLOSED:
-                cancelUserTimer(ctx);
-                cancelRetransmissionTimer(ctx);
-                cancelTimeWaitTimer(ctx);
-                ctx.close(closedPromise);
-                break;
         }
     }
 
     private void initHandler(final ChannelHandlerContext ctx) {
-        if (state == null) {
-            assert tcb == null;
-            state = CLOSED;
+        if (tcb == null) {
             establishedPromise = ctx.newPromise();
             closedPromise = ctx.newPromise();
             userCallOpen(ctx);
@@ -948,7 +947,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         LOG.trace("{} Read `{}`.", ctx.channel(), seg);
 
         try {
-            switch (state) {
+            switch (state()) {
                 case CLOSED:
                     // RFC 9293: If the state is CLOSED (i.e., TCB does not exist), then
                     assert tcb == null;
@@ -1139,7 +1138,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: bit is set, if so drop the segment and return)
                 LOG.trace("{} We got an ACK `{}` for an SEG we never sent. Seems like remote peer is synchronized to another connection.", ctx.channel(), seg);
                 if (seg.isRst()) {
-                    LOG.trace("{} As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state);
+                    LOG.trace("{} As the RST bit is set. It doesn't matter as we will reset or connection now.", ctx.channel(), state());
                 }
                 else {
                     final Segment response = formSegment(ctx, seg.ack(), RST);
@@ -1180,10 +1179,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (this is handled by handler's auto release of all arrived segments)
 
                 // RFC 9293: enter CLOSED state,
-                changeState(ctx, CLOSED);
+                // (this happens implicitly when TCB is deleted)
 
                 // RFC 9293: delete TCB,
                 deleteTcb();
+
+                ctx.close(closedPromise);
 
                 // RFC 9293: and return.
                 return;
@@ -1387,7 +1388,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         // RFC 9293: First, check sequence number:
 
-        switch (state) {
+        switch (state()) {
             case SYN_RECEIVED:
             case ESTABLISHED:
             case FIN_WAIT_1:
@@ -1548,7 +1549,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             return;
         }
 
-        switch (state) {
+        switch (state()) {
             case SYN_RECEIVED:
                 if (seg.isRst()) {
                     // RFC 9293: If the RST bit is set,
@@ -1577,10 +1578,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                     if (config.activeOpen()) {
                         // RFC 9293: And in the active OPEN case, enter the CLOSED state
-                        changeState(ctx, CLOSED);
+                        // (this happens implicitly when TCB is deleted)
 
                         // RFC 9293: and delete the TCB,
                         deleteTcb();
+
+                        ctx.close(closedPromise);
 
                         // RFC 9293: and return.
                         return;
@@ -1608,10 +1611,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     ctx.fireExceptionCaught(new ConnectionResetException());
 
                     // RFC 9293: Enter the CLOSED state, delete the TCB
-                    changeState(ctx, CLOSED);
+                    // (this happens implicitly when TCB is deleted)
 
                     // RFC 9293: delete the TCB,
                     deleteTcb();
+
+                    ctx.close(closedPromise);
 
                     // RFC 9293: and return.
                     return;
@@ -1623,12 +1628,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case TIME_WAIT:
                 if (seg.isRst()) {
                     // RFC 9293: If the RST bit is set, then enter the CLOSED state,
-                    changeState(ctx, CLOSED);
+                    // (this happens implicitly when TCB is deleted)
 
                     LOG.trace("{} We got `{}`. Close channel.", ctx.channel(), seg);
 
                     // RFC 9293: delete the TCB,
                     deleteTcb();
+
+                    ctx.close(closedPromise);
 
                     // RFC 9293: and return.
                     return;
@@ -1640,7 +1647,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         // RFC 9293: Fourth, check the SYN bit:
         if (seg.isSyn()) {
-            switch (state) {
+            switch (state()) {
                 case SYN_RECEIVED:
                     if (!config.activeOpen()) {
                         // RFC 9293: If the connection was initiated with a passive OPEN, then
@@ -1659,7 +1666,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case CLOSING:
                 case LAST_ACK:
                 case TIME_WAIT:
-                    if (state.synchronizedConnection()) {
+                    if (state().synchronizedConnection()) {
                         // RFC 9293: If the SYN bit is set in these synchronized states, it may be
                         // RFC 9293: either a legitimate new connection attempt (e.g., in the case
                         // RFC 9293: of TIME-WAIT), an error where the connection should be reset,
@@ -1739,7 +1746,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             final boolean acceptableAck = lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt());
             // RFC 9293: When the ACK value is acceptable, the per-state processing below applies:
 
-            switch (state) {
+            switch (state()) {
                 case SYN_RECEIVED:
                     if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
                         LOG.trace("{} Remote peer ACKnowledge `{}` receivable of our SYN. As we've already received his SYN the handshake is now completed on both sides.", ctx.channel(), seg);
@@ -1838,8 +1845,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: delete the TCB,
                     deleteTcb();
 
+                    ctx.close(closedPromise);
+
                     // RFC 9293: enter the CLOSED state,
-                    changeState(ctx, CLOSED);
+                    // (this happens implicitly when TCB is deleted)
 
                     // RFC 9293: and return.
                     return;
@@ -1863,7 +1872,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         try {
             // RFC 9293: Seventh, process the segment text:
             if (seg.content().readableBytes() > 0) {
-                switch (state) {
+                switch (state()) {
                     case ESTABLISHED:
                     case FIN_WAIT_1:
                     case FIN_WAIT_2:
@@ -1947,7 +1956,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: If the FIN bit is set, signal the user "connection closing"
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state)));
+                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state())));
 
                 // RFC 9293: and return any pending RECEIVEs with same message,
                 // (not applicable to us)
@@ -1963,7 +1972,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: Note that FIN implies PUSH for any segment text not yet delivered to the user.
                 doFireRead = true;
 
-                switch (state) {
+                switch (state()) {
                     case SYN_RECEIVED:
                     case ESTABLISHED:
                         // RFC 9293: Enter the CLOSE-WAIT state.
@@ -2264,7 +2273,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 if (ackedBytes > 0) {
                     // RFC 5681: the "fast recovery" algorithm governs the transmission of new data
                     // RFC 5681: until a non-duplicate ACK arrives.
-                    LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
+                    LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state());
 
                     // exit fast recovery procedure
                     tcb.resetDuplicateAcks();
@@ -2303,11 +2312,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 6582:     new congestion window allows. A simple mechanism is to limit the
                         // RFC 6582:     number of data packets that can be sent in response to a single
                         // RFC 6582:     acknowledgment.
-                        LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state);
+                        LOG.trace("{} Congestion Control: Fast Recovery: Got non-duplicate ACK. Exit Fast Recovery.", ctx.channel(), state());
                         tcb.cwnd(ctx, tcb.ssthresh());
 
                         // RFC 6582:     Exit the fast recovery procedure.
-                        LOG.trace("{} Congestion Control: Fast Recovery: Got full ACK. Exit Fast Recovery.", ctx.channel(), state);
+                        LOG.trace("{} Congestion Control: Fast Recovery: Got full ACK. Exit Fast Recovery.", ctx.channel(), state());
                         tcb.resetDuplicateAcks();
                     }
                     else {
@@ -2611,9 +2620,11 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         LOG.trace("{} USER timer timeout after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
         final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(config.userTimeout());
-        tcb.sendBuffer().fail(e);
-        tcb.retransmissionQueue().release();
-        tcb.receiveBuffer().release();
+        if (tcb != null) {
+            tcb.sendBuffer().fail(e);
+            tcb.retransmissionQueue().release();
+            tcb.receiveBuffer().release();
+        }
 
         // RFC 9293: signal the user "error: connection aborted due to user timeout" in
         // RFC 9293: general and for any outstanding calls,
@@ -2622,10 +2633,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: delete the TCB,
         deleteTcb();
 
-        if (state != CLOSED) {
-            // RFC 9293: enter the CLOSED state,
-            changeState(ctx, CLOSED);
-        }
+        // RFC 9293: enter the CLOSED state,
+        // (this happens implicitly when TCB is deleted)
+
+        ctx.close(closedPromise);
 
         // RFC 9293: and return.
         return;
@@ -2635,7 +2646,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (userTimer != null) {
             userTimer.cancel(false);
             userTimer = null;
-            LOG.trace("{} USER timer cancelled.", ctx.channel(), state);
+            LOG.trace("{} USER timer cancelled.", ctx.channel(), state());
         }
     }
 
@@ -2772,10 +2783,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: delete the TCB,
         deleteTcb();
 
-        if (state != CLOSED) {
-            // RFC 9293: enter the CLOSED state,
-            changeState(ctx, CLOSED);
-        }
+        // RFC 9293: enter the CLOSED state,
+        // (this happens implicitly when TCB is deleted)
+
+        ctx.close(closedPromise);
 
         // RFC 9293: and return.
         return;
@@ -2785,7 +2796,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (timeWaitTimer != null) {
             timeWaitTimer.cancel(false);
             timeWaitTimer = null;
-            LOG.trace("{} TIME-WAIT timer cancelled.", ctx.channel(), state);
+            LOG.trace("{} TIME-WAIT timer cancelled.", ctx.channel(), state());
         }
     }
 
@@ -2812,7 +2823,23 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (zeroWindowProber != null) {
             zeroWindowProber.cancel(false);
             zeroWindowProber = null;
-            LOG.trace("{} Zero-window probing timer cancelled.", ctx.channel(), state);
+            LOG.trace("{} Zero-window probing timer cancelled.", ctx.channel(), state());
+        }
+    }
+
+    private State state() {
+        if (tcb == null) {
+            return CLOSED;
+        }
+        else {
+            return tcb.state();
+        }
+    }
+
+    private void state(final State newState) {
+        if (tcb != null) {
+            assert state() != newState : "Illegal state change from " + state() + " to " + newState;
+            tcb.state(newState);
         }
     }
 }
