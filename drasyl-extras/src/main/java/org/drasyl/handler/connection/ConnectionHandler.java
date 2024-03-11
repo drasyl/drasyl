@@ -1816,7 +1816,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         changeState(ctx, TIME_WAIT);
 
                         // RFC 9293: start the time-wait timer
-                        startTimeWaitTimer(ctx);
+                        restartTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers
                         cancelUserTimer(ctx);
@@ -1853,7 +1853,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     tcb.send(ctx, response);
 
                     // RFC 9293: and restart the 2 MSL timeout.
-                    startTimeWaitTimer(ctx);
+                    restartTimeWaitTimer(ctx);
             }
         }
 
@@ -1980,7 +1980,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                             changeState(ctx, TIME_WAIT);
 
                             // RFC 9293: start the time-wait timer,
-                            startTimeWaitTimer(ctx);
+                            restartTimeWaitTimer(ctx);
 
                             // RFC 9293: turn off the other timers;
                             cancelUserTimer(ctx);
@@ -1997,7 +1997,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         changeState(ctx, TIME_WAIT);
 
                         // RFC 9293: Start the time-wait timer,
-                        startTimeWaitTimer(ctx);
+                        restartTimeWaitTimer(ctx);
 
                         // RFC 9293: turn off the other timers;
                         cancelUserTimer(ctx);
@@ -2019,7 +2019,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     case TIME_WAIT:
                         // RFC 9293: Remain in the TIME-WAIT state.
                         // RFC 9293: Restart the 2 MSL time-wait timeout.
-                        startTimeWaitTimer(ctx);
+                        restartTimeWaitTimer(ctx);
                         break;
                 }
             }
@@ -2573,13 +2573,18 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         retransmissionTimer = ctx.executor().schedule(() -> retransmissionTimeout(ctx, tcb, rto), rto, MILLISECONDS);
     }
 
-    private void startTimeWaitTimer(final ChannelHandlerContext ctx) {
-        cancelTimeWaitTimer(ctx);
-
+    private void restartTimeWaitTimer(final ChannelHandlerContext ctx) {
         // RFC 9293: When a connection is closed actively, it MUST linger in the TIME-WAIT state for
         // RFC 9293: a time 2xMSL (Maximum Segment Lifetime) (MUST-13)
         final long timeWaitTimeout = config.msl().multipliedBy(2).toMillis();
-        LOG.trace("{} TIME-WAIT timer created: Timeout {}ms.", ctx.channel(), timeWaitTimeout);
+        if (timeWaitTimer != null) {
+            timeWaitTimer.cancel(false);
+            LOG.trace("{} USER timer restarted: Timeout {}ms.", ctx.channel(), timeWaitTimeout);
+        }
+        else {
+            LOG.trace("{} USER timer created: Timeout {}ms.", ctx.channel(), timeWaitTimeout);
+        }
+
         timeWaitTimer = ctx.executor().schedule(() -> timeWaitTimeout(ctx), timeWaitTimeout, MILLISECONDS);
     }
 
