@@ -897,16 +897,8 @@ public class TransmissionControlBlock {
         this.sndWl2 = sndWl2;
     }
 
-    public void recover(final long recover) {
-        this.recover = recover;
-    }
-
     public int duplicateAcks() {
         return duplicateAcks;
-    }
-
-    public long recover() {
-        return recover;
     }
 
     public void lastAdvertisedWindow(long lastAdvertisedWindow) {

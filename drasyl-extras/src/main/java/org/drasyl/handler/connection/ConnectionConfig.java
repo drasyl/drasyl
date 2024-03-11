@@ -104,11 +104,8 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false) // not implemented yet
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
-            .newReno(false) // New Reno is buggy?
-            .limitedTransmit(false)
             .build();
 
     public static Builder newBuilder() {
@@ -151,10 +148,6 @@ public abstract class ConnectionConfig {
 
     public abstract Duration uBound();
 
-    public boolean sack() {
-        return false;
-    }
-
     public abstract Duration overrideTimeout();
 
     public abstract Duration rto();
@@ -162,10 +155,6 @@ public abstract class ConnectionConfig {
     public abstract int mmsS();
 
     public abstract int mmsR();
-
-    public abstract boolean newReno();
-
-    public abstract boolean limitedTransmit();
 
     public abstract double fs();
 
@@ -371,22 +360,6 @@ public abstract class ConnectionConfig {
         public abstract Builder clock(final Clock clock);
 
         /**
-         * Enables the Selective Acknowledgment options that improves the performance when multiple
-         * packets are lost from one window of data.
-         * <p>
-         * Currently not fully implemented. Can not be enabled.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018</a>
-         */
-        public Builder sack(final boolean sack) {
-            if (sack) {
-                throw new UnsupportedOperationException();
-            }
-
-            return this;
-        }
-
-        /**
          * The maximum segment size for a drasyl-layer message that a connection may send. This
          * value is the IP layer MTU (drasyl assumes a MTU of 1460) minus the drasyl header size. So
          * this value specifies the segment size sent to the wire (including header).
@@ -405,22 +378,6 @@ public abstract class ConnectionConfig {
          * Section 3.7.1.</a>
          */
         public abstract Builder mmsR(final int mmsR);
-
-        /**
-         * NewReno is an improvement of the fast recovery algorithm. Enabled by default.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582</a>
-         */
-        public abstract Builder newReno(final boolean newReno);
-
-        /**
-         * Enables limited transmit which allows more effectively recovery lost segments when a
-         * connection's congestion window is small, or when a large number of segments are lost in a
-         * single transmission window. Enabled by default.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042</a>
-         */
-        public abstract Builder limitedTransmit(final boolean limitedTransmit);
 
         abstract ConnectionConfig autoBuild();
 
