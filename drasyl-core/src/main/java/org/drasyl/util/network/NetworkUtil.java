@@ -25,6 +25,7 @@ import org.drasyl.util.InetAddressUtil;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.ThrowingFunction;
 import org.drasyl.util.ThrowingSupplier;
+import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -312,6 +313,7 @@ public final class NetworkUtil {
         return mask;
     }
 
+    @Nullable
     public static InetAddress getDefaultGateway() {
         return impl.getDefaultGateway();
     }
