@@ -67,7 +67,12 @@ public abstract class ConnectionConfig {
             ))
             .activeOpen(true)
             .rmem(65_535 * 10)
-            // FIXME: change back to 2 minutes?
+            // RFC 9293 suggests a 2-minute MSL, leading to a 4-minute wait for "late" segments to
+            // prevent accidentally using a recently released port associated with a previous
+            // connection. However, our implementation restricts to one connection per peer. A
+            // 4-minute MSL would delay channel close completion by 4 minutes and also prevent any
+            // new connection for this time period.
+            // Thus, we set MSL to 2 seconds for efficiency.
             .msl(ofSeconds(2))
             .noDelay(false)
             .overrideTimeout(ofMillis(100))
