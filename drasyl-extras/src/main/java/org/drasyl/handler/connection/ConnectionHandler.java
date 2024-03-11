@@ -1848,12 +1848,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 case TIME_WAIT:
                     // RFC 9293: The only thing that can arrive in this state is a retransmission
                     // RFC 9293: of the remote FIN. Acknowledge it,
-                    final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-                    LOG.trace("{} Write `{}`.", ctx.channel(), response);
-                    tcb.send(ctx, response);
+                    if (seg.isFin()) {
+                        final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
+                        LOG.trace("{} Write `{}`.", ctx.channel(), response);
+                        tcb.send(ctx, response);
 
-                    // RFC 9293: and restart the 2 MSL timeout.
-                    restartTimeWaitTimer(ctx);
+                        // RFC 9293: and restart the 2 MSL timeout.
+                        restartTimeWaitTimer(ctx);
+                    }
             }
         }
 
