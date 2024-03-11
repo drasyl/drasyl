@@ -33,6 +33,7 @@ import java.nio.channels.ClosedChannelException;
  * has been signaled by receiving a {@link ConnectionHandshakeCompleted} event. Once the handshake
  * is completed, this handler will remove itself from the channel pipeline.
  */
+@Deprecated
 public class ConnectionHandshakePendWritesHandler extends ChannelDuplexHandler {
     private PendingWriteQueue pendingWrites;
     private boolean doFlush;

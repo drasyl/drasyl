@@ -24,13 +24,12 @@ package org.drasyl.handler.connection;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
+ * This exception is thrown when a connection is closing. All outstanding data will be transmitted.
+ * No more data can be written to the connection.
  */
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
-    @Override
-    public String toString() {
-        return "ConnectionHandshakeIssued{}";
+public class ConnectionClosingException extends ConnectionException {
+    public ConnectionClosingException() {
+        super("connection closing");
     }
 }

@@ -23,14 +23,51 @@ package org.drasyl.handler.connection;
 
 import org.drasyl.util.internal.UnstableApi;
 
-/**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
- */
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
+
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
+public class ConnectionHandshakeStatus implements ConnectionEvent {
+    private final State state;
+    private final TransmissionControlBlock tcb;
+
+    ConnectionHandshakeStatus(final State state, final TransmissionControlBlock tcb) {
+        this.state = requireNonNull(state);
+        this.tcb = tcb;
+    }
+
+    public State state() {
+        return state;
+    }
+
+    @SuppressWarnings("unused")
+    public TransmissionControlBlock tcb() {
+        return tcb;
+    }
+
     @Override
     public String toString() {
-        return "ConnectionHandshakeIssued{}";
+        return "ConnectionHandshakeStatus{" +
+                "state=" + state +
+                ", tcb=" + tcb +
+                '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final ConnectionHandshakeStatus that = (ConnectionHandshakeStatus) o;
+        return state == that.state && Objects.equals(tcb, that.tcb);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(state, tcb);
     }
 }

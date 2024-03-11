@@ -24,13 +24,11 @@ package org.drasyl.handler.connection;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
+ * Exceptions thrown by {@link ConnectionHandler}.
  */
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
-    @Override
-    public String toString() {
-        return "ConnectionHandshakeIssued{}";
+public abstract class ConnectionException extends RuntimeException {
+    protected ConnectionException(final String message) {
+        super(message);
     }
 }

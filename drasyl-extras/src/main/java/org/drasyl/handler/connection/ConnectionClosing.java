@@ -21,16 +21,33 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
+import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.State.CLOSE_WAIT;
+
 /**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
+ * Signals that the connection is closing. The closing have been either initiated locally (by a
+ * preceding {@link Channel#close()} call) or by the remote peer. In the latter case, the close
+ * request must be "confirmed" by calling {@link Channel#close()}.
  */
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
+public class ConnectionClosing implements ConnectionEvent {
+    private final State state;
+
+    ConnectionClosing(final State state) {
+        this.state = requireNonNull(state);
+    }
+
+    public boolean initatedByRemotePeer() {
+        return state == CLOSE_WAIT;
+    }
+
     @Override
     public String toString() {
-        return "ConnectionHandshakeIssued{}";
+        return "ConnectionClosing{" +
+                "initatedByRemotePeer=" + initatedByRemotePeer() +
+                '}';
     }
 }

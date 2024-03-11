@@ -33,6 +33,7 @@ import org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler;
 
 import java.time.Duration;
 
+@Deprecated
 public abstract class ConnectionHandshakeChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final Duration DEFAULT_HANDSHAKE_TIMEOUT = Duration.ofSeconds(10);
     protected final Duration handshakeTimeout;

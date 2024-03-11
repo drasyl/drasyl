@@ -21,16 +21,22 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
+ * This exception is thrown when a
+ * {@link io.netty.channel.ChannelOutboundHandler#write(ChannelHandlerContext, Object,
+ * ChannelPromise)} call,
+ * {@link io.netty.channel.ChannelOutboundHandler#read(ChannelHandlerContext)} call,
+ * {@link ConnectionHandler#userCallStatus()} call,
+ * {@link io.netty.channel.ChannelOutboundHandler#close(ChannelHandlerContext, ChannelPromise)} call
+ * is performed on a closed connection.
  */
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
-    @Override
-    public String toString() {
-        return "ConnectionHandshakeIssued{}";
+public class ConnectionDoesNotExistException extends ConnectionException {
+    public ConnectionDoesNotExistException() {
+        super("connection does not exist");
     }
 }

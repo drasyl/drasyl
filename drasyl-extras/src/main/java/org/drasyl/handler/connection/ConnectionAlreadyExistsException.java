@@ -21,16 +21,17 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * Signals that the handshake has been issued but the remote peer did not response yet to the
- * request.
+ * This exception is thrown when a OPEN call on an already opened connection is called. This can
+ * only happen, when {@link ConnectionHandler#userCallOpen(ChannelHandlerContext)} is called
+ * incorrectly.
  */
 @UnstableApi
-public class ConnectionHandshakeIssued implements ConnectionEvent {
-    @Override
-    public String toString() {
-        return "ConnectionHandshakeIssued{}";
+public class ConnectionAlreadyExistsException extends ConnectionException {
+    public ConnectionAlreadyExistsException() {
+        super("connection already exists");
     }
 }
