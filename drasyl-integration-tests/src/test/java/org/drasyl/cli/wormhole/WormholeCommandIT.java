@@ -169,8 +169,7 @@ class WormholeCommandIT {
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
-                code,
-                10
+                code
         ).call());
         receiverThread.start();
 
@@ -243,8 +242,7 @@ class WormholeCommandIT {
                     10_000,
                     0,
                     Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
-                    code,
-                    10
+                    code
             ).call());
             receiverThread.start();
 

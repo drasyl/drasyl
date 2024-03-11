@@ -58,10 +58,10 @@ class WormholeSendChildChannelInitializerTest {
             when(ctx.channel()).thenReturn(channel);
             when(channel.remoteAddress()).thenReturn(sender);
 
-            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, ID_1, "abc", payload, 150, 150);
+            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, ID_1, "abc", payload);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(6)).addLast(any());
+            verify(channel.pipeline(), times(7)).addLast(any());
         }
     }
 }

@@ -61,18 +61,6 @@ public class WormholeSendCommand extends ChannelOptions {
             interactive = true
     )
     private String password;
-    @Option(
-            names = { "--window-size" },
-            description = "Go-Back-N ARQ window size. Increasing this value could increase the throughput.",
-            defaultValue = "150"
-    )
-    private int windowSize;
-    @Option(
-            names = { "--window-timeout"},
-            description = "Go-Back-N ARQ window timeout. Should be at least two times the size of the RTT.",
-            defaultValue = "150"
-    )
-    private long windowTimeout;
     @ArgGroup(multiplicity = "1")
     private Payload payload;
 
@@ -95,8 +83,7 @@ public class WormholeSendCommand extends ChannelOptions {
         super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
-        this.windowSize = requirePositive(windowSize);
-        this.windowTimeout = requirePositive(windowTimeout);
+        requirePositive(windowTimeout);
     }
 
     @SuppressWarnings("unused")
@@ -122,7 +109,7 @@ public class WormholeSendCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload, windowSize, windowTimeout);
+        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload);
     }
 
     @Override

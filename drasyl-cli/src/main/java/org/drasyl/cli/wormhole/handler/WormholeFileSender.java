@@ -25,7 +25,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.cli.handler.ChunkedInputProgressBarHandler;
 import org.drasyl.cli.wormhole.message.FileMessage;
 import org.drasyl.util.logging.Logger;
@@ -61,7 +60,6 @@ public class WormholeFileSender extends AbstractWormholeSender {
     protected void transferPayload(final ChannelHandlerContext ctx) {
         out.println("Sending file (" + numberToHumanData(file.length()) + "): " + file.getName());
 
-        ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
 

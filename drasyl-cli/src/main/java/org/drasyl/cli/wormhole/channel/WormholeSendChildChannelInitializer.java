@@ -23,17 +23,13 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
 import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -46,9 +42,8 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
-import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class WormholeSendChildChannelInitializer extends ConnectionChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 150;
     public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
@@ -58,8 +53,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
     private final Identity identity;
     private final String password;
     private final Payload payload;
-    private final int windowSize;
-    private final Duration windowTimeout;
 
     @SuppressWarnings("java:S107")
     public WormholeSendChildChannelInitializer(final PrintStream out,
@@ -67,18 +60,14 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
                                                final Worm<Integer> exitCode,
                                                final Identity identity,
                                                final String password,
-                                               final Payload payload,
-                                               final int windowSize,
-                                               final long windowTimeout) {
-        super(false);
+                                               final Payload payload) {
+        super(true, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
-        this.windowSize = requirePositive(windowSize);
-        this.windowTimeout = Duration.ofMillis(requirePositive(windowTimeout));
     }
 
     @Override
@@ -94,17 +83,11 @@ public class WormholeSendChildChannelInitializer extends ConnectionHandshakeChan
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-
-        // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqSenderHandler(windowSize, windowTimeout));
-        ch.pipeline().addLast(new GoBackNArqReceiverHandler(windowTimeout.dividedBy(5)));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
 
         // (de)serializer for WormholeMessages
-        ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
+        ctx.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
         if (payload.getText() != null) {
             p.addLast(new WormholeTextSender(out, password, payload.getText()));

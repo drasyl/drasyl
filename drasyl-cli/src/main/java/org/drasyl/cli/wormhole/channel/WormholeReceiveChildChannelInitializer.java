@@ -23,15 +23,11 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.wormhole.handler.WormholeReceiver;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -42,16 +38,12 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARM_SESSION_TIME;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_RETRY_TIMEOUT;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
-import static org.drasyl.util.Preconditions.requirePositive;
 
-public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class WormholeReceiveChildChannelInitializer extends ConnectionChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeReceiveChildChannelInitializer.class);
     private final PrintStream out;
     private final PrintStream err;
@@ -59,23 +51,20 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
     private final Identity identity;
     private final IdentityPublicKey sender;
     private final String password;
-    private final Duration ackInterval;
 
     public WormholeReceiveChildChannelInitializer(final PrintStream out,
                                                   final PrintStream err,
                                                   final Worm<Integer> exitCode,
                                                   final Identity identity,
                                                   final IdentityPublicKey sender,
-                                                  final String password,
-                                                  final long ackInterval) {
-        super(true);
+                                                  final String password) {
+        super(false, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
         this.sender = requireNonNull(sender);
         this.password = requireNonNull(password);
-        this.ackInterval = Duration.ofMillis(requirePositive(ackInterval));
     }
 
     @Override
@@ -97,17 +86,11 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-
-        // add ARQ to make sure messages arrive
-        ch.pipeline().addLast(new GoBackNArqCodec());
-        ch.pipeline().addLast(new GoBackNArqSenderHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        ch.pipeline().addLast(new GoBackNArqReceiverHandler(ackInterval));
-        ch.pipeline().addLast(new ByteToGoBackNArqDataCodec());
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
 
         // (de)serializer for WormholeMessages
-        ch.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
+        ctx.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
 
         p.addLast(new WormholeReceiver(out, password));
 
@@ -116,7 +99,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionHandshakeC
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The sender did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The sender did not respond within " + config.userTimeout().toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }
