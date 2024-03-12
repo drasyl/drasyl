@@ -2809,6 +2809,7 @@ class ConnectionHandlerTest {
                                 when(tcb.localPort()).thenReturn(PEER_A_PORT);
                                 when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                                 when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.isFin()).thenReturn(true);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
