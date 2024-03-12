@@ -79,8 +79,10 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionChannelIni
         ch.closeFuture().addListener(f -> ch.parent().close());
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        if (false) {
+            p.addLast(new ArmHeaderCodec());
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        }
 
         super.initChannel(ch);
     }

@@ -41,7 +41,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
-    static final int IP_MTU = 1460;
+    public static final int IP_MTU = 1460;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)

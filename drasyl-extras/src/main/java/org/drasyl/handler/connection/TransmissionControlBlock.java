@@ -80,7 +80,7 @@ public class TransmissionControlBlock {
     // IPv4/IPv6: 20/40 bytes -> 40 bytes
     // UDP: 8 bytes
     // drasyl: 176 bytes
-    static final int DRASYL_HDR_SIZE = 40 + 8 + 176;
+    public static final int DRASYL_HDR_SIZE = 40 + 8 + 176;
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     //

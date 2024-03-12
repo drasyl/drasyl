@@ -61,7 +61,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
                                                final Identity identity,
                                                final String password,
                                                final Payload payload) {
-        super(true, DEFAULT_SERVER_PORT);
+        super(true, DEFAULT_SERVER_PORT);//, ConnectionConfig.newBuilder().mmsS(IP_MTU - DRASYL_HDR_SIZE).mmsR(IP_MTU - DRASYL_HDR_SIZE).build());
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -76,8 +76,10 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
         ch.closeFuture().addListener(f -> ch.parent().close());
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        if (false) {
+            p.addLast(new ArmHeaderCodec());
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        }
 
         super.initChannel(ch);
     }
