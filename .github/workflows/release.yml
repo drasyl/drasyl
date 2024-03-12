@@ -185,7 +185,7 @@ jobs:
       - uses: actions/checkout@v4.1.1
 
       - name: Download shared library artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: shared-library-${{ matrix.job_name }}
 
@@ -243,7 +243,7 @@ jobs:
 
     steps:
       - name: Download wheel artifacts
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
 
       - name: Consolidate wheel artifacts
         run: |
