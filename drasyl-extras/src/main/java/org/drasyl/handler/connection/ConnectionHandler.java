@@ -130,6 +130,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     private ChannelHandlerContext ctx;
     private ChannelPromise segmentizedFuture;
     private long segmentizedRemainingBytes;
+    private long count;
 
     @SuppressWarnings("java:S107")
     ConnectionHandler(final int requestedLocalPort,
@@ -263,6 +264,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         ReferenceCountUtil.touch(msg, "channelRead");
+        count++;
         if (msg instanceof Segment) {
             segmentArrives(ctx, (Segment) msg);
         }
@@ -273,6 +275,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
+        LOG.trace("{} Read complete after {} segment(s).", ctx.channel(), count);
+        count = 0;
         if (tcb != null) {
             tcb.flush(ctx);
         }
