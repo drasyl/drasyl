@@ -37,6 +37,7 @@ import static java.util.Objects.requireNonNull;
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final ChannelHandlerContext drasylCtx;
+    private long count = 0;
 
     public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
         this.drasylCtx = requireNonNull(drasylCtx);
@@ -44,12 +45,15 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        LOG.trace("Read Datagram {}", msg);
+        LOG.trace("Read Datagram {}.", msg);
+        count++;
         drasylCtx.fireChannelRead(msg);
     }
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
+        LOG.trace("Read complete after {} datagram(s).", count);
+        count = 0;
         drasylCtx.fireChannelReadComplete();
         ctx.fireChannelReadComplete();
     }
