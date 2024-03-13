@@ -75,6 +75,10 @@ public class SendBuffer {
         pushMark = length();
     }
 
+    public boolean doPush() {
+        return pushMark > 0;
+    }
+
     /**
      * Attempts to retrieve a maximum of {@code bytes} from this buffer. However, there are two
      * scenarios where fewer bytes than requested may be returned:

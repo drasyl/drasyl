@@ -543,13 +543,15 @@ public class TransmissionControlBlock {
                     if (min(d, u) >= effSndMss()) {
                         // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
                         // RFC 9293:     min(D,U) >= Eff.snd.MSS;
+                        LOG.trace("{} Sender's SWS avoidance: A maximum-sized segment can be sent.", ctx.channel());
                         sendData = true;
                     }
-                    else if (sndNxt == sndUna && d <= u) {
+                    else if (sndNxt == sndUna && sendBuffer.doPush() && d <= u) {
                         // RFC 9293: (2) or if the data is pushed and all queued data can be sent
                         // RFC 9293:     now, i.e., if:
                         // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
                         // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
+                        LOG.trace("{} Sender's SWS avoidance: Data is pushed and all queued data can be sent.", ctx.channel());
                         sendData = true;
                     }
                     else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
@@ -557,10 +559,12 @@ public class TransmissionControlBlock {
                         // RFC 9293:     sent, i.e., if:
                         // RFC 9293:     [SND.NXT = SND.UNA and]
                         // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
+                        LOG.trace("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
                         sendData = true;
                     }
                     else if (overrideTimeoutOccurred) {
                         // (4) or if the override timeout occurs.
+                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
                         sendData = true;
                     }
                     else {
