@@ -974,6 +974,7 @@ class ConnectionHandlerTest {
                         final ByteBuf data = unpooledRandomBuffer(100);
 
                         handler.write(ctx, data, promise);
+                        handler.flush(ctx);
 
                         // RFC 9293: Segmentize the buffer and send it with a piggybacked acknowledgment
                         // RFC 9293: (acknowledgment value = RCV.NXT).
@@ -981,7 +982,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(201), ack(456), ctl(ACK), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(201), ack(456), ctl(PSH, ACK), tsOpt(currentTime)));
                     }
                 }
 
@@ -3414,9 +3415,9 @@ class ConnectionHandlerTest {
                 assertEquals(3 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 channel.writeOutbound(byteBuf);
                 final Segment seg1 = channel.readOutbound();
-                assertThat(seg1, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 0 * (mms - SEG_HDR_SIZE))));
+                assertThat(seg1, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss)));
                 final Segment seg2 = channel.readOutbound();
-                assertThat(seg2, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 1 * (mms - SEG_HDR_SIZE))));
+                assertThat(seg2, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + (mms - SEG_HDR_SIZE))));
                 final Segment seg3 = channel.readOutbound();
                 assertThat(seg3, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 2 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
@@ -3425,7 +3426,7 @@ class ConnectionHandlerTest {
                 // 4 in-flight messages are allowed now
                 // 1 message left the network (2 still in-flight), 2 new messages are allowed
                 assertTrue(tcb.doSlowStart());
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
                 assertEquals(4 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 3 * (mms - SEG_HDR_SIZE))));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 4 * (mms - SEG_HDR_SIZE))));
@@ -3478,7 +3479,7 @@ class ConnectionHandlerTest {
                 int expectedCwnd = 5_000;
 
                 // ACK 1st SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
                 expectedCwnd += 296;
                 assertEquals(expectedCwnd, tcb.cwnd());
 

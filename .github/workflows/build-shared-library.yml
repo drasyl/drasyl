@@ -40,7 +40,7 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
@@ -115,14 +115,14 @@ jobs:
 
       # publish artifact
       - name: Publish artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: shared-library-${{ matrix.job_name }}
           path: libdrasyl-*-${{ matrix.job_name }}.zip
 
       # publish artifact hash
       - name: Publish artifact hash
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: shared-library-${{ matrix.job_name }}-Hash
           path: libdrasyl-*-${{ matrix.job_name }}.zip.sha256
@@ -156,10 +156,10 @@ jobs:
     needs: native-image
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.2
 
       - name: Download shared library artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: shared-library-${{ matrix.job_name }}
 
@@ -204,7 +204,7 @@ jobs:
           # under many linux distributions. So we just deactivate it.
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
-      - uses: actions/upload-artifact@v3
+      - uses: actions/upload-artifact@v4
         with:
           name: wheel-${{ matrix.job_name }}
           path: ./wheelhouse/*.whl

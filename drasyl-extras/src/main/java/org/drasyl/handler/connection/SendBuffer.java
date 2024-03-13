@@ -29,6 +29,7 @@ import io.netty.channel.CoalescingBufferQueue;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
  * Represents the send buffer that holds outgoing segments waiting to be sent over a connection.
@@ -47,13 +48,20 @@ public class SendBuffer {
     private long pushMark;
 
     SendBuffer(final Channel channel,
-               final CoalescingBufferQueue queue) {
+               final CoalescingBufferQueue queue,
+               final long pushMark) {
         this.channel = requireNonNull(channel);
         this.queue = requireNonNull(queue);
+        this.pushMark = requireNonNegative(pushMark);
+    }
+
+    SendBuffer(final Channel channel,
+               final long pushMark) {
+        this(channel, new CoalescingBufferQueue(channel, 4, true), pushMark);
     }
 
     SendBuffer(final Channel channel) {
-        this(channel, new CoalescingBufferQueue(channel, 4, true));
+        this(channel, 0);
     }
 
     /**

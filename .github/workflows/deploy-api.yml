@@ -11,7 +11,7 @@ jobs:
     name: Build
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.2
       - name: Set up JDK
         uses: actions/setup-java@v4.1.0
         with:
@@ -23,7 +23,7 @@ jobs:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles api -Dcheckstyle.skip -Drevapi.skip -DskipTests -Djacoco.skip package javadoc:aggregate
       - name: Publish artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Java API
           path: target/site/apidocs/*
@@ -34,7 +34,7 @@ jobs:
     needs: build
     steps:
       - name: Checkout https://github.com/drasyl/api.drasyl.org
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
         with:
           token: ${{ secrets.GH_TOKEN }}
           repository: drasyl/api.drasyl.org
@@ -44,7 +44,7 @@ jobs:
       - name: Delete old Java API
         run: rm -rf ${{ steps.vars.outputs.short_ref }}
       - name: Download artifact
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: Java API
           path: ${{ steps.vars.outputs.short_ref }}

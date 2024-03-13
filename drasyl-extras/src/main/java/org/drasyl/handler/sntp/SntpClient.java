@@ -33,6 +33,7 @@ import io.netty.channel.socket.DatagramPacket;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.network.NetworkUtil;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.ArrayList;
@@ -43,13 +44,20 @@ import java.util.concurrent.atomic.AtomicLong;
 
 public class SntpClient {
     public static final int NTP_PORT = 123;
-    public static final List<SocketAddress> NTP_SERVERS = List.of(
-            InetSocketAddress.createUnresolved(NetworkUtil.getDefaultGateway().getHostAddress(), 123),
-            InetSocketAddress.createUnresolved("pool.ntp.org", NTP_PORT),
-            InetSocketAddress.createUnresolved("time.apple.com", NTP_PORT),
-            InetSocketAddress.createUnresolved("time.google.com", NTP_PORT),
-            InetSocketAddress.createUnresolved("time.cloudflare.com", NTP_PORT)
-    );
+    public static final List<SocketAddress> NTP_SERVERS;
+
+    static {
+        final List<SocketAddress> ntpServers = new ArrayList<>();
+        final InetAddress defaultGateway = NetworkUtil.getDefaultGateway();
+        if (defaultGateway != null) {
+            ntpServers.add(InetSocketAddress.createUnresolved(defaultGateway.getHostAddress(), NTP_PORT));
+        }
+        ntpServers.add(InetSocketAddress.createUnresolved("pool.ntp.org", NTP_PORT));
+        ntpServers.add(InetSocketAddress.createUnresolved("time.apple.com", NTP_PORT));
+        ntpServers.add(InetSocketAddress.createUnresolved("time.google.com", NTP_PORT));
+        ntpServers.add(InetSocketAddress.createUnresolved("time.cloudflare.com", NTP_PORT));
+        NTP_SERVERS = List.copyOf(ntpServers);
+    }
 
     public static void main(final String[] args) {
         SntpClient.getOffset(NTP_SERVERS)
@@ -100,6 +108,7 @@ public class SntpClient {
                         channel.pipeline().addLast(new SntpCodec());
                         channel.pipeline().addLast(new SntpHandler(result, responseTime));
                         channel.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
                                                         final Throwable cause) {
                                 result.complete(null);

@@ -122,19 +122,19 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.4.14</logback.version>
+        <logback.version>1.5.3</logback.version>
         <junit.version>5.10.2</junit.version>
         <mockito.version>5.11.0</mockito.version>
-        <jackson.version>2.16.1</jackson.version>
+        <jackson.version>2.17.0</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.0</awaitility.version>
-        <netty.version>4.1.106.Final</netty.version>
+        <netty.version>4.1.107.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>2.0.12</slf4j.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.38.0</json-unit-assertj.version>
-        <protobuf.version>3.25.2</protobuf.version>
+        <protobuf.version>3.25.3</protobuf.version>
         <auto-value.version>1.10.4</auto-value.version>
         <jna.version>5.14.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -295,7 +295,7 @@
             <dependency>
                 <groupId>io.github.classgraph</groupId>
                 <artifactId>classgraph</artifactId>
-                <version>4.8.165</version>
+                <version>4.8.168</version>
             </dependency>
 
             <!-- Crypto -->
@@ -348,7 +348,7 @@
             <plugins>
                 <plugin>
                     <artifactId>maven-failsafe-plugin</artifactId>
-                    <version>3.2.3</version>
+                    <version>3.2.5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -368,12 +368,12 @@
                 <plugin>
                     <groupId>io.github.git-commit-id</groupId>
                     <artifactId>git-commit-id-maven-plugin</artifactId>
-                    <version>7.0.0</version>
+                    <version>8.0.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
                     <artifactId>sonar-maven-plugin</artifactId>
-                    <version>3.10.0.2594</version>
+                    <version>3.11.0.3922</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -388,7 +388,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.8.2.0</version>
+                    <version>4.8.3.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -627,7 +627,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.2.0</version>
+                <version>4.8.3.1</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
