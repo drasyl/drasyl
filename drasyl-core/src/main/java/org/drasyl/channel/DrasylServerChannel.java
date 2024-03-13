@@ -54,7 +54,9 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
@@ -198,10 +200,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
      */
     private static class ChildChannelRouter extends ChannelDuplexHandler {
         private final SetMultimap<DrasylAddress, Object> paths;
+        private final Set<DrasylChannel> fireReadCompleteChannels;
 
         @SuppressWarnings("java:S2384")
-        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
+        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths,
+                           final Set<DrasylChannel> fireReadCompleteChannels) {
             this.paths = requireNonNull(paths);
+            this.fireReadCompleteChannels = requireNonNull(fireReadCompleteChannels);
+        }
+
+        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
+            this(paths, new HashSet<>());
         }
 
         @Override
@@ -248,10 +257,27 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
         }
 
-        private static void passMessageToChannel(final ChannelHandlerContext ctx,
-                                                 final Object o,
-                                                 final IdentityPublicKey peer,
-                                                 final boolean recreateClosedChannel) {
+        @Override
+        public void channelReadComplete(final ChannelHandlerContext ctx) {
+            // pass channelReadComplete to all channels that have read something
+            for (final DrasylChannel channel : fireReadCompleteChannels) {
+                if (channel.isRegistered()) {
+                    channel.eventLoop().execute(() -> {
+                        if (channel.isActive()) {
+                            channel.pipeline().fireChannelReadComplete();
+                        }
+                    });
+                }
+            }
+            fireReadCompleteChannels.clear();
+
+            ctx.fireChannelReadComplete();
+        }
+
+        private void passMessageToChannel(final ChannelHandlerContext ctx,
+                                          final Object o,
+                                          final IdentityPublicKey peer,
+                                          final boolean recreateClosedChannel) {
             ((DrasylServerChannel) ctx.channel()).serve(peer).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 if (future.isSuccess()) {
                     final DrasylChannel channel = future.getNow();
@@ -260,7 +286,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     channel.eventLoop().execute(() -> {
                         if (channel.isActive()) {
                             channel.pipeline().fireChannelRead(o);
-                            channel.pipeline().fireChannelReadComplete();
+                            fireReadCompleteChannels.add(channel);
                         }
                         else if (ctx.channel().isOpen() && recreateClosedChannel) {
                             // channel to which the message is to be passed to has been closed in the
