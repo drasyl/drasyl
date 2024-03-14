@@ -60,8 +60,32 @@ class OutgoingSegmentQueueTest {
             when(seg1.len()).thenReturn(0);
             when(seg2.seq()).thenReturn(2L);
             when(seg2.ack()).thenReturn(3002L);
-            when(seg2.len()).thenReturn(0);
-            when(seg2.isOnlyAck()).thenReturn(true);
+            when(seg2.isAck()).thenReturn(true);
+            when(channel.eventLoop().inEventLoop()).thenReturn(true);
+            final DefaultChannelPromise promise1 = new DefaultChannelPromise(channel);
+            final DefaultChannelPromise promise2 = new DefaultChannelPromise(channel);
+
+            final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(arrayDeque);
+
+            queue.add(ctx, seg1, promise1);
+            queue.add(ctx, seg2, promise2);
+
+            // promise1 should listen on promise2
+            promise2.setSuccess();
+            assertTrue(promise1.isSuccess());
+        }
+
+        @Test
+        void smallerSegmentsShouldReplaced2(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg1,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg2,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            when(seg1.seq()).thenReturn(2L);
+            when(seg1.ack()).thenReturn(2470L);
+            when(seg1.isOnlyAck()).thenReturn(true);
+            when(seg1.len()).thenReturn(0);
+            when(seg2.seq()).thenReturn(2L);
+            when(seg2.ack()).thenReturn(2470L);
+            when(seg2.isPsh()).thenReturn(true);
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
             final DefaultChannelPromise promise1 = new DefaultChannelPromise(channel);
             final DefaultChannelPromise promise2 = new DefaultChannelPromise(channel);

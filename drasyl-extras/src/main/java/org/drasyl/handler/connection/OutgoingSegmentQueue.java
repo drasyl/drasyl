@@ -30,7 +30,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.ArrayDeque;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.connection.Segment.greaterThan;
+import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 
 /**
  * Represents the outgoing segment queue that holds segments to be sent over a connection.
@@ -58,14 +58,13 @@ public class OutgoingSegmentQueue {
         LOG.trace("{} Add SEG `{}` to the outgoing segment queue.", ctx.channel(), seg);
 
         // check if we can replace head
-        if (seg.isOnlyAck()) {
+        if (seg.isAck() || seg.isPsh()) {
             final Segment head = (Segment) queue.peek();
-            if (head != null) {
-                if (head.isOnlyAck() && head.seq() == seg.seq() && greaterThan(seg.ack(), head.ack()) && head.len() == 0 && seg.len() == 0) {
+            if (head != null && head.isOnlyAck() && head.seq() == seg.seq() && greaterThanOrEqualTo(seg.ack(), head.ack()) && head.len() == 0) {
                     LOG.trace("{} Replace SEG `{}` in queue with SEG `{}`.", ctx.channel(), head, seg);
                     ((Segment) queue.remove()).release();
                     promise.addListener(new PromiseNotifier<>((ChannelPromise) queue.remove()));
-                }
+
             }
         }
 
