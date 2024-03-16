@@ -894,24 +894,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     void changeState(final ChannelHandlerContext ctx, final State newState) {
         LOG.trace("{} Change to {} state.", ctx.channel(), newState);
-        state(newState);
-
-        switch (newState) {
-            case ESTABLISHED:
-                ctx.executor().execute(() -> {
-                    // do not execute any queued operations immediately, ensure that current execution is completed first
-                    establishedPromise.setSuccess();
-
-                    tcb.writeEnqueuedData(ctx);
-
-                    // do not inform user immediately, ensure that current execution is completed first
-                    ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
-                });
-                break;
-
-            case CLOSE_WAIT:
-                cancelTimeWaitTimer(ctx);
-                break;
+        if (tcb != null) {
+            assert state() != newState : "Illegal state change from " + state() + " to " + newState;
+            tcb.state(newState);
         }
     }
 
@@ -1296,6 +1281,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us, as we do not implement T/TCP or TCP Fast Open)
                 final boolean anyOtherControlOrText = seg.content().isReadable();
                 assert !anyOtherControlOrText : "not supported (yet)";
+
+                tcb.writeEnqueuedData(ctx);
+
+                // inform user
+                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+
+                // process queued operations
+                establishedPromise.setSuccess();
 
                 // RFC 9293: otherwise, return.
                 return;
@@ -1695,6 +1688,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         }
 
         // RFC 9293: Fifth, check the ACK field:
+        boolean becameEstablished = false;
         if (!seg.isAck()) {
             // RFC 9293: if the ACK bit is off,
             // RFC 9293: drop the segment
@@ -1739,6 +1733,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                         // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
                         changeState(ctx, ESTABLISHED);
+                        becameEstablished = true;
 
                         // RFC 9293: and continue processing with the variables below set to:
                         // RFC 9293: SND.WND <- SEG.WND
@@ -1857,6 +1852,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // (URG not supported! It is only kept by TCP for legacy reasons, see SHLD-13)
 
         boolean doFireRead = false;
+        boolean doEmitClosing = false;
         try {
             // RFC 9293: Seventh, process the segment text:
             if (seg.content().readableBytes() > 0) {
@@ -1965,6 +1961,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     case ESTABLISHED:
                         // RFC 9293: Enter the CLOSE-WAIT state.
                         changeState(ctx, CLOSE_WAIT);
+
+                        cancelTimeWaitTimer(ctx);
                         break;
 
                     case FIN_WAIT_1:
@@ -2021,9 +2019,24 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             }
         }
         finally {
+            // tasks to do at the end to ensure that current execution is already completed
+            if (becameEstablished) {
+                tcb.writeEnqueuedData(ctx);
+
+                // inform user
+                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+
+                // process queued operations
+                ctx.executor().execute(() -> establishedPromise.setSuccess());
+            }
+
             // read at the end to ensure that current execution is already completed
             if (doFireRead) {
                 tcb.receiveBuffer().fireRead(ctx, tcb);
+            }
+
+            if (doEmitClosing) {
+                ctx.fireUserEventTriggered(new ConnectionClosing(state()));
             }
         }
 
@@ -2649,13 +2662,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         }
         else {
             return tcb.state();
-        }
-    }
-
-    private void state(final State newState) {
-        if (tcb != null) {
-            assert state() != newState : "Illegal state change from " + state() + " to " + newState;
-            tcb.state(newState);
         }
     }
 }
