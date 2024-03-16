@@ -484,6 +484,7 @@ public class ReceiveBuffer {
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
             ctx.fireChannelRead(headBuf1);
             ctx.fireChannelReadComplete();
+            ctx.read();
         }
     }
 

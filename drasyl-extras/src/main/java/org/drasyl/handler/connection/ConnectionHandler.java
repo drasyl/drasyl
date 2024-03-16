@@ -498,94 +498,90 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
-        try {
-            switch (state()) {
-                case CLOSED:
-                    assert tcb == null;
-                    // RFC 9293: If the user does not have access to such a connection, return
-                    // RFC 9293: "error: connection illegal for this process".
-                    // RFC 9293: Otherwise, return "error: connection does not exist".
-                    // (not applicable to us)
+        switch (state()) {
+            case CLOSED:
+                assert tcb == null;
+                // RFC 9293: If the user does not have access to such a connection, return
+                // RFC 9293: "error: connection illegal for this process".
+                // RFC 9293: Otherwise, return "error: connection does not exist".
+                // (not applicable to us)
+                break;
+
+            case LISTEN:
+            case SYN_SENT:
+            case SYN_RECEIVED:
+                // RFC 9293: Queue for processing after entering ESTABLISHED state.
+                if (!userCallReceiveAlreadyEnqueued) {
+                    userCallReceiveAlreadyEnqueued = true;
+                    establishedPromise.addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            userCallReceive(ctx);
+                        }
+                    });
+                    ctx.read();
+                }
+
+                // RFC 9293: If there is no room to queue this request, respond with "error:
+                // RFC 9293: insufficient resources".
+                // (not applicable to us)
+                break;
+
+            case ESTABLISHED:
+            case FIN_WAIT_1:
+            case FIN_WAIT_2:
+                // RFC 9293: If insufficient incoming segments are queued to satisfy the
+                // RFC 9293: request, queue the request.
+                if (!tcb.receiveBuffer().isReadable()) {
+                    readPending = true;
+                    ctx.read();
                     break;
+                }
+                readPending = false;
 
-                case LISTEN:
-                case SYN_SENT:
-                case SYN_RECEIVED:
-                    // RFC 9293: Queue for processing after entering ESTABLISHED state.
-                    if (!userCallReceiveAlreadyEnqueued) {
-                        userCallReceiveAlreadyEnqueued = true;
-                        establishedPromise.addListener((ChannelFutureListener) future -> {
-                            if (future.isSuccess()) {
-                                userCallReceive(ctx);
-                            }
-                        });
-                    }
+                // RFC 9293: If there is no queue space to remember the RECEIVE, respond with
+                // RFC 9293: "error: insufficient resources".
+                // (not applicable to us)
 
-                    // RFC 9293: If there is no room to queue this request, respond with "error:
-                    // RFC 9293: insufficient resources".
+                // RFC 9293: Reassemble queued incoming segments into receive buffer and return
+                // RFC 9293: to user.
+                tcb.receiveBuffer().fireRead(ctx, tcb);
+
+                // RFC 9293: Mark "push seen" (PUSH) if this is the case.
+                // (not applicable to us)
+
+                // RFC 9293: If RCV.UP is in advance of the data currently being passed to the
+                // RFC 9293: user, notify the user of the presence of urgent data.
+                // (URG not supported! It is only kept by TCP for legacy reasons, see SHLD-13)
+
+                // RFC 9293: When the TCP endpoint takes responsibility for delivering data to
+                // RFC 9293: the user, that fact must be communicated to the sender via an
+                // RFC 9293: acknowledgment. The formation of such an acknowledgment is
+                // RFC 9293: described below in the discussion of processing an incoming
+                // RFC 9293: segment.
+                // (ACK is generated on channelReadComplete)
+                break;
+
+            case CLOSE_WAIT:
+                // RFC 9293: Since the remote side has already sent FIN, RECEIVEs must be
+                // RFC 9293: satisfied by data already on hand, but not yet delivered to the
+                // RFC 9293: user.
+                if (!tcb.receiveBuffer().isReadable()) {
+                    // RFC 9293: If no text is awaiting delivery, the RECEIVE will get an
+                    // RFC 9293: "error: connection closing" response.
                     // (not applicable to us)
-                    break;
-
-                case ESTABLISHED:
-                case FIN_WAIT_1:
-                case FIN_WAIT_2:
-                    // RFC 9293: If insufficient incoming segments are queued to satisfy the
-                    // RFC 9293: request, queue the request.
-                    if (!tcb.receiveBuffer().isReadable()) {
-                        readPending = true;
-                        break;
-                    }
-                    readPending = false;
-
-                    // RFC 9293: If there is no queue space to remember the RECEIVE, respond with
-                    // RFC 9293: "error: insufficient resources".
-                    // (not applicable to us)
-
-                    // RFC 9293: Reassemble queued incoming segments into receive buffer and return
-                    // RFC 9293: to user.
+                }
+                else {
+                    // RFC 9293: Otherwise, any remaining data can be used to satisfy the
+                    // RFC 9293: RECEIVE.
                     tcb.receiveBuffer().fireRead(ctx, tcb);
+                }
+                break;
 
-                    // RFC 9293: Mark "push seen" (PUSH) if this is the case.
-                    // (not applicable to us)
-
-                    // RFC 9293: If RCV.UP is in advance of the data currently being passed to the
-                    // RFC 9293: user, notify the user of the presence of urgent data.
-                    // (URG not supported! It is only kept by TCP for legacy reasons, see SHLD-13)
-
-                    // RFC 9293: When the TCP endpoint takes responsibility for delivering data to
-                    // RFC 9293: the user, that fact must be communicated to the sender via an
-                    // RFC 9293: acknowledgment. The formation of such an acknowledgment is
-                    // RFC 9293: described below in the discussion of processing an incoming
-                    // RFC 9293: segment.
-                    // (ACK is generated on channelReadComplete)
-                    break;
-
-                case CLOSE_WAIT:
-                    // RFC 9293: Since the remote side has already sent FIN, RECEIVEs must be
-                    // RFC 9293: satisfied by data already on hand, but not yet delivered to the
-                    // RFC 9293: user.
-                    if (!tcb.receiveBuffer().isReadable()) {
-                        // RFC 9293: If no text is awaiting delivery, the RECEIVE will get an
-                        // RFC 9293: "error: connection closing" response.
-                        // (not applicable to us)
-                    }
-                    else {
-                        // RFC 9293: Otherwise, any remaining data can be used to satisfy the
-                        // RFC 9293: RECEIVE.
-                        tcb.receiveBuffer().fireRead(ctx, tcb);
-                    }
-                    break;
-
-                case CLOSING:
-                case LAST_ACK:
-                case TIME_WAIT:
-                    // RFC 9293: Return "error: connection closing".
-                    // (not applicable to us)
-            }
-        }
-        finally {
-            // pass read further down the channel
-            ctx.read();
+            case CLOSING:
+            case LAST_ACK:
+            case TIME_WAIT:
+                // RFC 9293: Return "error: connection closing".
+                // (not applicable to us)
         }
     }
 
@@ -941,6 +937,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         finally {
             ReferenceCountUtil.touch(seg, "ReliableConnectionHandler release " + seg.toString());
             seg.release();
+            ctx.read();
         }
     }
 
