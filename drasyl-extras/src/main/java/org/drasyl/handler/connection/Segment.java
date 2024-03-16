@@ -316,13 +316,17 @@ public class Segment extends DefaultByteBufHolder {
      * @return the length (in segments) of this segment
      */
     public int len() {
+        return content().readableBytes();
+    }
+
+    public long nxtSeq() {
         if (isSyn() || isFin()) {
             // the SYN and FIN flags each count as one segment (SYN and FIN are never set at the
             // same time)
-            return 1 + content().readableBytes();
+            return add(seq(), 1 + len());
         }
         else {
-            return content().readableBytes();
+            return add(seq(), len());
         }
     }
 

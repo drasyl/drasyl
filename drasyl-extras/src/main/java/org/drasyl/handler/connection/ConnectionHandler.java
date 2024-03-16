@@ -1058,7 +1058,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             }
 
             // RFC 9293: Set RCV.NXT to SEG.SEQ+1, IRS is set to SEG.SEQ,
-            tcb.rcvNxt(advanceSeq(seg.seq(), seg.len()));
+            tcb.rcvNxt(advanceSeq(seg.seq(), 1));
             tcb.irs(seg.seq());
 
             // RFC 9293: and any other control or text should be queued for processing later.
@@ -1210,7 +1210,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (seg.isSyn()) {
             // RFC 9293: If the SYN bit is on and the security/compartment is acceptable,
             // RFC 9293: then RCV.NXT is set to SEG.SEQ+1, IRS is set to SEG.SEQ.
-            tcb.rcvNxt(advanceSeq(seg.seq(), seg.len()));
+            tcb.rcvNxt(advanceSeq(seg.seq(), 1));
             tcb.irs(seg.seq());
 
             if (seg.isAck()) {
@@ -2060,7 +2060,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: given connection (TCP.UNA from [RFC793]) and (e) the advertised window in the
         // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
         final boolean isRfc5681Duplicate = !tcb.retransmissionQueue().isEmpty() &&
-                seg.len() == 0 && // SYN and FIN have length >0 by definition
+                seg.len() == 0 &&
+                !seg.isAck() && !seg.isFin() &&
                 seg.ack() == tcb.sndUna() &&
                 seg.wnd() == tcb.lastAdvertisedWindow();
 

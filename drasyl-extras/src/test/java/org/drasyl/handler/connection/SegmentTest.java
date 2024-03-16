@@ -52,17 +52,56 @@ class SegmentTest {
         }
 
         @Test
-        void shouldCountSyn() {
-            final Segment seg = new Segment(1234, 5678, 100, SYN);
+        void shouldNotCountSyn() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, SYN, data);
 
-            assertEquals(1, seg.len());
+            assertEquals(10, seg.len());
+
+            seg.release();
+        }
+
+        @Test
+        void shouldNotCountFin() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, FIN, data);
+
+            assertEquals(10, seg.len());
+
+            seg.release();
+        }
+    }
+
+    @Nested
+    class NxtSeq {
+        @Test
+        void shouldReturnNextSegment() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK, data);
+
+            assertEquals(110, seg.nxtSeq());
+
+            seg.release();
+        }
+
+        @Test
+        void shouldCountSyn() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, SYN, data);
+
+            assertEquals(111, seg.nxtSeq());
+
+            seg.release();
         }
 
         @Test
         void shouldCountFin() {
-            final Segment seg = new Segment(1234, 5678, 100, FIN);
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, FIN, data);
 
-            assertEquals(1, seg.len());
+            assertEquals(111, seg.nxtSeq());
+
+            seg.release();
         }
     }
 
