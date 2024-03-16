@@ -76,8 +76,9 @@ public class OutgoingSegmentQueue {
         add(ctx, seg, ctx.newPromise());
     }
 
-    public void flush(final ChannelHandlerContext ctx, final TransmissionControlBlock tcb) {
-        LOG.trace("{} Flush outgoing segment queue ({} elements).", ctx.channel(), size());
+    public void flush(final ChannelHandlerContext ctx,
+                      final TransmissionControlBlock tcb) {
+        LOG.trace("{} Flush outgoing segment queue ({} segments).", ctx.channel(), size());
         final boolean doFlush = !queue.isEmpty();
         Segment seg;
         while ((seg = (Segment) queue.poll()) != null) {
