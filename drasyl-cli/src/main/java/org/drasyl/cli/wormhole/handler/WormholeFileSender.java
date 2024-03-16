@@ -41,11 +41,7 @@ import static org.drasyl.util.NumberUtil.numberToHumanData;
 
 public class WormholeFileSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeFileSender.class);
-    public static final int IDLE_TIMEOUT = 10;
     public static final int PROGRESS_BAR_INTERVAL = 250;
-    // mtu: 1432
-    // protocol overhead: 185 bytes
-    private static final int CHUNK_SIZE = 1432 - 185;
     private final File file;
 
     public WormholeFileSender(final PrintStream out,
@@ -65,7 +61,7 @@ public class WormholeFileSender extends AbstractWormholeSender {
 
         ctx.writeAndFlush(new FileMessage(file.getName(), file.length())).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
-                final ChunkedFile chunkedFile = new ChunkedFile(file, CHUNK_SIZE);
+                final ChunkedFile chunkedFile = new ChunkedFile(file);
 
                 ctx.writeAndFlush(chunkedFile).addListener((ChannelFutureListener) f2 -> {
                     if (f2.isSuccess()) {
