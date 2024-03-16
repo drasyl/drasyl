@@ -252,7 +252,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     passMessageToChannel(ctx, o, peer, true);
                 }
                 catch (final ClassCastException e) {
-                    LOG.debug("Can't cast address of message `{}`: ", msg, e);
+                    LOG.error("Can't cast message or sender of message `{}`: ", msg, e);
                 }
             }
         }
