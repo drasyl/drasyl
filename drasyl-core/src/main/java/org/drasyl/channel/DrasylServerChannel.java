@@ -299,7 +299,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
         private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
                                                   final IdentityPublicKey peer) {
-            DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
+            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
 
             if (channel != null) {
                 // pass event to channel
