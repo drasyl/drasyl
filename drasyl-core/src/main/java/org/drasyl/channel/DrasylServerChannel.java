@@ -280,7 +280,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     // pass event to channel
                     channel.eventLoop().execute(() -> {
                         if (channel.isActive()) {
-                            LOG.trace("XXX channelRead {} {}", peer, o);
                             channel.pipeline().fireChannelRead(o);
                         }
                         else if (ctx.channel().isOpen() && recreateClosedChannel) {
