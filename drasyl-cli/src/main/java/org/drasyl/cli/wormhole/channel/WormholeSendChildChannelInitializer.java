@@ -44,8 +44,6 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 
 public class WormholeSendChildChannelInitializer extends ConnectionChannelInitializer {
-    public static final int ARQ_RETRY_TIMEOUT = 150;
-    public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream out;
     private final PrintStream err;
