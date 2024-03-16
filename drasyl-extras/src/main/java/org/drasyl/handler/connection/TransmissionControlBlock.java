@@ -454,7 +454,7 @@ public class TransmissionControlBlock {
     void send(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
         if (sndNxt == seg.seq()) {
             final long newSndNxt = seg.nxtSeq();
-            if (LOG.isTraceEnabled()) {
+            if (LOG.isTraceEnabled() && newSndNxt != sndNxt) {
                 LOG.trace("{} Send data [{},{}]. Advance SND.NXT from {} to {} (+{}).", ctx.channel(), seg.seq(), seg.lastSeq(), sndNxt, newSndNxt, Segment.sub(newSndNxt, sndNxt));
             }
             sndNxt = newSndNxt;
