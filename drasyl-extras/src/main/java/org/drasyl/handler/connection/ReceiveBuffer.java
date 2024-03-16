@@ -131,6 +131,9 @@ public class ReceiveBuffer {
         ReferenceCountUtil.touch(seg, "ReceiveBuffer receive " + seg.toString());
         final ByteBuf content = seg.content();
         if (content.isReadable()) {
+            // (T/TCP or TCP Fast Open not implemented; SYN/FIN flag might require special attention)
+            assert !seg.isSyn() && !seg.isFin() : "not supported (yet)";
+
             if (head == null) {
                 // first SEG to be added to RCV.WND?
                 // SEG is located at the left edge of our RCV.WND?
@@ -197,15 +200,15 @@ public class ReceiveBuffer {
                         head::len,
                         () -> head.next
                 );
-                tcb.advanceRcvNxt(ctx, head.len());
+                tcb.rcvNxt(ctx, add(tcb.rcvNxt(), head.len()));
                 addToHeadBuf(ctx, head.content());
                 head = head.next;
                 size--;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq()) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
         }
-        else if (seg.len() > 0) {
-            tcb.advanceRcvNxt(ctx, seg.len());
+        else {
+            tcb.rcvNxt(ctx, seg.nxtSeq());
         }
     }
 

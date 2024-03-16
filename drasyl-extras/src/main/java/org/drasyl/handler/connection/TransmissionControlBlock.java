@@ -38,7 +38,6 @@ import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.add;
-import static org.drasyl.handler.connection.Segment.advanceSeq;
 import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
@@ -453,8 +452,8 @@ public class TransmissionControlBlock {
      * Advances SND.NXT and places the {@code seg} on the outgoing segment queue.
      */
     void send(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
-        if (sndNxt == seg.seq() && seg.len() > 0) {
-            final long newSndNxt = add(seg.lastSeq(), 1);
+        if (sndNxt == seg.seq()) {
+            final long newSndNxt = seg.nxtSeq();
             if (LOG.isTraceEnabled()) {
                 LOG.trace("{} Send data [{},{}]. Advance SND.NXT from {} to {} (+{}).", ctx.channel(), seg.seq(), seg.lastSeq(), sndNxt, newSndNxt, Segment.sub(newSndNxt, sndNxt));
             }
@@ -692,9 +691,8 @@ public class TransmissionControlBlock {
         return ssthresh;
     }
 
-    public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
-        final long newRcvNxt = advanceSeq(rcvNxt, advancement);
-        if (LOG.isTraceEnabled()) {
+    public void rcvNxt(final ChannelHandlerContext ctx, final long newRcvNxt) {
+        if (LOG.isTraceEnabled() && newRcvNxt != rcvNxt) {
             LOG.trace("{} Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), rcvNxt, newRcvNxt, Segment.sub(newRcvNxt, rcvNxt));
         }
         rcvNxt = newRcvNxt;
