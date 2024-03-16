@@ -897,12 +897,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         state(newState);
 
         switch (newState) {
-            case SYN_SENT:
-            case SYN_RECEIVED:
-                // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionHandshakeIssued()));
-                break;
-
             case ESTABLISHED:
                 ctx.executor().execute(() -> {
                     // do not execute any queued operations immediately, ensure that current execution is completed first
