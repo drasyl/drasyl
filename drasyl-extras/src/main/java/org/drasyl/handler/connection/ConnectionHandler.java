@@ -1938,7 +1938,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: If the FIN bit is set, signal the user "connection closing"
                 // do not inform user immediately, ensure that current execution is completed first
-                ctx.executor().execute(() -> ctx.fireUserEventTriggered(new ConnectionClosing(state())));
+                doEmitClosing = true;
 
                 // RFC 9293: and return any pending RECEIVEs with same message,
                 // (not applicable to us)
