@@ -276,8 +276,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (tcb != null) {
             tcb.flush(ctx);
         }
-
-        ctx.fireChannelReadComplete();
     }
 
     /*
