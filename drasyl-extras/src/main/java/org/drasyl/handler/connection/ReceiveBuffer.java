@@ -38,7 +38,6 @@ import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
-import static org.drasyl.util.NumberUtil.min;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -242,7 +241,6 @@ public class ReceiveBuffer {
             );
         }
         head = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -277,7 +275,6 @@ public class ReceiveBuffer {
             );
         }
         head = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -315,7 +312,6 @@ public class ReceiveBuffer {
             );
         }
         head = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -354,7 +350,6 @@ public class ReceiveBuffer {
             );
         }
         head = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -398,7 +393,6 @@ public class ReceiveBuffer {
             );
         }
         current.next = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -443,7 +437,6 @@ public class ReceiveBuffer {
             );
         }
         current.next = block;
-        tcb.updateRcvWnd(ctx);
         size++;
         bytes += length;
     }
@@ -485,15 +478,7 @@ public class ReceiveBuffer {
             // RFC 9293, Section 3.8.6.2.2
             // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
 
-            // total receive buffer space is RCV.BUFF
-            // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
-            final long rcvUser = tcb.rcvUser();
-            final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
-
-            if ((tcb.rcvBuff() - rcvUser - tcb.rcvWnd()) >= min(fr * tcb.rcvBuff(), tcb.effSndMss())) {
-                LOG.trace("{} Receiver's SWS avoidance: Update RCV.WND.", ctx.channel());
-                tcb.updateRcvWnd(ctx);
-            }
+            // TODO: SWS avoidance algorithm in the receiver (MUST-39)
 
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
             ctx.fireChannelRead(headBuf1);

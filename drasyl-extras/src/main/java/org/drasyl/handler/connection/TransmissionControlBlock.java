@@ -118,8 +118,6 @@ public class TransmissionControlBlock {
     // RFC 9293: RCV.NXT = next sequence number expected on an incoming segment, and is the left or
     // RFC 9293: lower edge of the receive window
     private long rcvNxt;
-    // RFC 9293: receive window
-    private long rcvWnd;
     // RFC 9293: IRS = initial receive sequence number
     private long irs;
 
@@ -184,7 +182,6 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long rcvNxt,
-                             final int rcvWnd,
                              final int rcvBuff,
                              final long irs,
                              final SendBuffer sendBuffer,
@@ -210,7 +207,6 @@ public class TransmissionControlBlock {
         this.sndWnd = requireNonNegative(sndWnd);
         this.iss = requireInRange(iss, MIN_SEQ_NO, MAX_SEQ_NO);
         this.rcvNxt = requireInRange(rcvNxt, MIN_SEQ_NO, MAX_SEQ_NO);
-        this.rcvWnd = requireNonNegative(rcvWnd);
         this.rcvBuff = requirePositive(rcvBuff);
         this.irs = requireInRange(irs, MIN_SEQ_NO, MAX_SEQ_NO);
         this.sendBuffer = requireNonNull(sendBuffer);
@@ -246,7 +242,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
@@ -407,12 +403,12 @@ public class TransmissionControlBlock {
             return false;
         }
         final TransmissionControlBlock that = (TransmissionControlBlock) o;
-        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
+        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
+        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
     }
 
     @Override
@@ -426,7 +422,7 @@ public class TransmissionControlBlock {
                 ", SND.WND=" + sndWnd +
                 ", ISS=" + iss +
                 ", RCV.NXT=" + rcvNxt +
-                ", RCV.WND=" + rcvWnd +
+                ", RCV.WND=" + rcvWnd() +
                 ", IRS=" + irs +
                 ", " + sendBuffer +
                 ", OG.SEG.Q=" + outgoingSegmentQueue +
@@ -698,14 +694,6 @@ public class TransmissionControlBlock {
             LOG.trace("{} Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), rcvNxt, newRcvNxt, Segment.sub(newRcvNxt, rcvNxt));
         }
         rcvNxt = newRcvNxt;
-    }
-
-    public void updateRcvWnd(final ChannelHandlerContext ctx) {
-        final long newRcvWnd = rcvBuff() - rcvUser();
-        if (LOG.isTraceEnabled() && newRcvWnd != rcvWnd) {
-            LOG.trace("{} {} RCV.WND from {} to {} ({}{}).", ctx.channel(), (newRcvWnd > rcvWnd ? "Increase" : "Decrease"), rcvWnd, newRcvWnd, (newRcvWnd > rcvWnd ? "+" : ""), newRcvWnd - rcvWnd);
-        }
-        rcvWnd = newRcvWnd;
     }
 
     /**
