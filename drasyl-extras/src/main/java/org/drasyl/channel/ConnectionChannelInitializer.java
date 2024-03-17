@@ -25,8 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
-import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionConfig;
 import org.drasyl.handler.connection.ConnectionException;
@@ -118,9 +116,6 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
 
         final ConnectionConfig overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
         p.addLast(new ConnectionHandler(localPort, remotePort, overriddenConfig));
-
-        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
-        p.addLast(new LengthFieldPrepender(4));
 
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
