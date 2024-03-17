@@ -76,6 +76,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
         ch.closeFuture().addListener(f -> ch.parent().close());
 
         final ChannelPipeline p = ch.pipeline();
+        // FIXME: disabled for debugging during development
         if (false) {
             p.addLast(new ArmHeaderCodec());
             p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
