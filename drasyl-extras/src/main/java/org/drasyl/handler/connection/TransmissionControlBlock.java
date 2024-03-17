@@ -505,8 +505,8 @@ public class TransmissionControlBlock {
 
     private long segmentizeAndSendData(final ChannelHandlerContext ctx,
                                        final boolean overrideTimeoutOccurred) {
+        long totalSentData = 0;
         try {
-            long totalSentData = 0;
             long readableBytes = sendBuffer.length();
 
             while (readableBytes > 0) {
@@ -621,7 +621,9 @@ public class TransmissionControlBlock {
             return totalSentData;
         }
         finally {
-            outgoingSegmentQueue.flush(ctx, this);
+            if (totalSentData > 0) {
+                outgoingSegmentQueue.flush(ctx, this);
+            }
         }
     }
 
