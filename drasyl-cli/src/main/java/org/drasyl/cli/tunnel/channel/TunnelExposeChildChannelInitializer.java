@@ -52,8 +52,8 @@ import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_P
 
 public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
-    public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     public static final int ARQ_WINDOW_SIZE = 50;
+    public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final Identity identity;
