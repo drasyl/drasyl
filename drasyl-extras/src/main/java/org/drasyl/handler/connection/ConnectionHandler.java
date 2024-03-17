@@ -1446,7 +1446,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
                     if (!seg.isRst()) {
                         final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-                        LOG.trace("{} We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), seg, response);
+                        LOG.trace("{} We got an not acceptable SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), seg, response);
 
                         // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
                         // (is automatically done by formSegment)
