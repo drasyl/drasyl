@@ -597,16 +597,16 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Path capped.", ctx.channel());
+                        LOG.trace("{} Path capped (CWND={}).", ctx.channel(), cwnd());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Receiver capped.", ctx.channel());
+                        LOG.trace("{} Receiver capped (SND.WND={}).", ctx.channel(), sndWnd());
                     }
                 }
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
+                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), usableWindow, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
                     final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
