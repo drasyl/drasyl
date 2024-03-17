@@ -191,15 +191,17 @@ public class ReceiveBuffer {
             LOG.trace("head = {}; RCV.NXT = {}", () -> head, tcb::rcvNxt);
             while (head != null && head.seq() == tcb.rcvNxt()) {
                 // consume head
-                LOG.trace(
-                        "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it, advance RCV.NXT by {}, and set head to {}.",
-                        () -> channel,
-                        () -> head,
-                        tcb::rcvNxt,
-                        () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                        head::len,
-                        () -> head.next
-                );
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace(
+                            "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it, advance RCV.NXT by {}, and set head to {}.",
+                            () -> channel,
+                            () -> head,
+                            tcb::rcvNxt,
+                            () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                            head::len,
+                            () -> head.next
+                    );
+                }
                 tcb.rcvNxt(ctx, add(tcb.rcvNxt(), head.len()));
                 addToHeadBuf(ctx, head.content());
                 head = head.next;
@@ -225,18 +227,20 @@ public class ReceiveBuffer {
         // ensure that we do not exceed RCV.WND
         length = NumberUtil.min(unallocatedBytes(tcb), seg.len()) - index;
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                () -> seq,
-                () -> add(seq, length - 1),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    () -> seq,
+                    () -> add(seq, length - 1),
+                    () -> block
+            );
+        }
         head = block;
         tcb.updateRcvWnd(ctx);
         size++;
@@ -257,19 +261,21 @@ public class ReceiveBuffer {
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
         length = NumberUtil.min((int) (unallocatedBytes(tcb) - offsetRcvNxtToSeq), seg.len());
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                tcb::rcvNxt,
-                () -> sub(add(tcb.rcvNxt(), tcb.rcvWnd()), 1),
-                () -> sub(seg.seq(), tcb.rcvNxt()),
-                () -> seq,
-                () -> add(seq, length - 1),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    () -> sub(seg.seq(), tcb.rcvNxt()),
+                    () -> seq,
+                    () -> add(seq, length - 1),
+                    () -> block
+            );
+        }
         head = block;
         tcb.updateRcvWnd(ctx);
         size++;
@@ -292,20 +298,22 @@ public class ReceiveBuffer {
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                head::seq,
-                head::lastSeq,
-                () -> add(seq, index),
-                () -> add(seq, add(index, length - 1)),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    head::seq,
+                    head::lastSeq,
+                    () -> add(seq, index),
+                    () -> add(seq, add(index, length - 1)),
+                    () -> block
+            );
+        }
         head = block;
         tcb.updateRcvWnd(ctx);
         size++;
@@ -329,20 +337,22 @@ public class ReceiveBuffer {
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                head::seq,
-                head::lastSeq,
-                () -> add(seq, index),
-                () -> add(seq, add(index, length - 1)),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    head::seq,
+                    head::lastSeq,
+                    () -> add(seq, index),
+                    () -> add(seq, add(index, length - 1)),
+                    () -> block
+            );
+        }
         head = block;
         tcb.updateRcvWnd(ctx);
         size++;
@@ -369,22 +379,24 @@ public class ReceiveBuffer {
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         block.next = current.next;
         final ReceiveBufferBlock currentCopy = current;
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                current::seq,
-                current::lastSeq,
-                () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
-                () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
-                tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                () -> seq,
-                () -> add(seq, length - 1),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    current::seq,
+                    current::lastSeq,
+                    () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
+                    () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    () -> seq,
+                    () -> add(seq, length - 1),
+                    () -> block
+            );
+        }
         current.next = block;
         tcb.updateRcvWnd(ctx);
         size++;
@@ -412,22 +424,24 @@ public class ReceiveBuffer {
         assert current.next == null || lessThan(block.seq(), current.next.seq());
         block.next = current.next;
         final ReceiveBufferBlock currentCopy = current;
-        LOG.trace(
-                "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed directly after current fragment [{},{}] and before next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                () -> channel,
-                () -> seg,
-                seg::seq,
-                seg::lastSeq,
-                current::seq,
-                current::lastSeq,
-                () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
-                () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
-                tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
-                () -> seq,
-                () -> add(seq, length - 1),
-                () -> block
-        );
+        if (LOG.isTraceEnabled()) {
+            LOG.trace(
+                    "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed directly after current fragment [{},{}] and before next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
+                    () -> channel,
+                    () -> seg,
+                    seg::seq,
+                    seg::lastSeq,
+                    current::seq,
+                    current::lastSeq,
+                    () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
+                    () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
+                    tcb::rcvNxt,
+                    () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
+                    () -> seq,
+                    () -> add(seq, length - 1),
+                    () -> block
+            );
+        }
         current.next = block;
         tcb.updateRcvWnd(ctx);
         size++;
