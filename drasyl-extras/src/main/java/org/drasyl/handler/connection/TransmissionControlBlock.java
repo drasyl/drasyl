@@ -381,7 +381,7 @@ public class TransmissionControlBlock {
      * @return the receive window
      */
     public long rcvWnd() {
-        return rcvBuff() - rcvUser();
+        return rcvWnd;
     }
 
     /**

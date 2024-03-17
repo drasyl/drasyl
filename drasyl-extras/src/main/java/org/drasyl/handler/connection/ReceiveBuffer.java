@@ -27,7 +27,6 @@ import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.util.NumberUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -207,6 +206,7 @@ public class ReceiveBuffer {
                 size--;
                 assert head == null || lessThanOrEqualTo(tcb.rcvNxt(), head.seq()) : tcb.rcvNxt() + " must be less than or equal to " + head;
             }
+            tcb.updateRcvWnd(ctx);
         }
         else {
             tcb.rcvNxt(ctx, seg.nxtSeq());
@@ -224,7 +224,7 @@ public class ReceiveBuffer {
         seq = tcb.rcvNxt();
         index = sub(tcb.rcvNxt(), seg.seq());
         // ensure that we do not exceed RCV.WND
-        length = NumberUtil.min(unallocatedBytes(tcb), seg.len()) - index;
+        length = min(unallocatedBytes(tcb), seg.len()) - index;
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         if (LOG.isTraceEnabled()) {
             LOG.trace(
@@ -257,7 +257,7 @@ public class ReceiveBuffer {
         index = 0;
         // ensure that we do not exceed RCV.WND
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
-        length = NumberUtil.min((int) (unallocatedBytes(tcb) - offsetRcvNxtToSeq), seg.len());
+        length = min((int) (unallocatedBytes(tcb) - offsetRcvNxtToSeq), seg.len());
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         if (LOG.isTraceEnabled()) {
             LOG.trace(
@@ -291,7 +291,7 @@ public class ReceiveBuffer {
         index = sub(tcb.rcvNxt(), seg.seq());
         // ensure that we do not exceed RCV.WND or read data already contained in head
         final long offsetSegToHead = sub(head.seq(), seg.seq());
-        length = NumberUtil.min(unallocatedBytes(tcb), offsetSegToHead, seg.len()) - index;
+        length = min(unallocatedBytes(tcb), offsetSegToHead, seg.len()) - index;
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
@@ -329,7 +329,7 @@ public class ReceiveBuffer {
         // ensure that we do not exceed RCV.WND or read data already contained in head
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
         final long offsetSeqHead = sub(head.seq(), seg.seq());
-        length = NumberUtil.min(unallocatedBytes(tcb) - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
+        length = min(unallocatedBytes(tcb) - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
@@ -366,10 +366,10 @@ public class ReceiveBuffer {
         seq = seg.seq();
         index = sub(seq, seg.seq());
         if (current.next != null) {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
+            length = min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
         }
         else {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len() - index);
+            length = min(unallocatedBytes(tcb), seg.len() - index);
         }
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         block.next = current.next;
@@ -409,10 +409,10 @@ public class ReceiveBuffer {
         seq = add(current.lastSeq(), 1);
         index = sub(seq, seg.seq());
         if (current.next != null) {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
+            length = min(unallocatedBytes(tcb), seg.len(), sub(current.next.seq(), seg.seq())) - index;
         }
         else {
-            length = NumberUtil.min(unallocatedBytes(tcb), seg.len() - index);
+            length = min(unallocatedBytes(tcb), seg.len() - index);
         }
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert current.next == null || lessThan(block.seq(), current.next.seq());
@@ -478,7 +478,16 @@ public class ReceiveBuffer {
             // RFC 9293, Section 3.8.6.2.2
             // https://www.rfc-editor.org/rfc/rfc9293.html#section-3.8.6.2.2
 
-            // TODO: SWS avoidance algorithm in the receiver (MUST-39)
+            // total receive buffer space is RCV.BUFF
+            // RCV.USER octets of this total may be tied up with data that has been received and acknowledged but that the user process has not yet consumed
+            final double fr = 0.5; // Fr is a fraction whose recommended value is 1/2
+            final long availableSpace = tcb.rcvBuff() - tcb.rcvUser() - tcb.rcvWnd();
+            if (availableSpace >= min((long) (fr * tcb.rcvBuff()), tcb.effSndMss())) {
+                tcb.updateRcvWnd(ctx);
+            }
+            else if (LOG.isTraceEnabled()) {
+                LOG.trace("{} Receiver's SWS avoidance: Keep RCV.WND fixed to {} and do not advertise space available of {} bytes.", ctx.channel(), tcb.rcvWnd(), availableSpace);
+            }
 
             LOG.trace("{} Pass RCV.BUF ({} bytes) inbound to channel. {} bytes remain in RCV.WND. Increase RCV.WND to {} bytes.", ctx::channel, () -> readableBytes, () -> bytes, tcb::rcvWnd);
             ctx.fireChannelRead(headBuf1);
