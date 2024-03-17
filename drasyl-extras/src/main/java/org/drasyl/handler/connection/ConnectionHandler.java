@@ -276,6 +276,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (tcb != null) {
             tcb.flush(ctx);
         }
+
+        ctx.read();
     }
 
     /*
@@ -533,7 +535,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: request, queue the request.
                 if (!tcb.receiveBuffer().isReadable()) {
                     readPending = true;
-                    ctx.read();
                     break;
                 }
                 readPending = false;
@@ -937,7 +938,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         finally {
             ReferenceCountUtil.touch(seg, "ReliableConnectionHandler release " + seg.toString());
             seg.release();
-            ctx.read();
         }
     }
 
@@ -1446,7 +1446,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: <SEQ=SND.NXT><ACK=RCV.NXT><CTL=ACK>
                     if (!seg.isRst()) {
                         final Segment response = formSegment(ctx, tcb.sndNxt(), tcb.rcvNxt(), ACK);
-                        LOG.trace("{} We got an unexpected SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), seg, response);
+                        LOG.trace("{} We got an not acceptable SEG `{}`. Send an ACK `{}` for the SEG we actually expect.", ctx.channel(), seg, response);
 
                         // RFC 7323: Last.ACK.sent is set to SEG.ACK of the acknowledgment.
                         // (is automatically done by formSegment)
@@ -1864,7 +1864,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
                         // RFC 9293: informed, when the buffer is returned, that a PUSH has been
                         // RFC 9293: received.
-                        if (seg.isPsh()) {
+                        if (seg.isPsh() && ctx.channel().config().isAutoRead()) {
                             LOG.trace("{} Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), seg);
                             doFireRead = true;
                         }

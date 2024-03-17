@@ -23,6 +23,8 @@ package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
@@ -90,6 +92,9 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionChannelIni
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
         final ChannelPipeline p = ctx.pipeline();
+
+        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        p.addLast(new LengthFieldPrepender(4));
 
         // (de)serializer for WormholeMessages
         ctx.pipeline().addLast(new JacksonCodec<>(WormholeMessage.class));
