@@ -196,7 +196,7 @@ public class ReceiveBuffer {
                         () -> channel,
                         () -> head,
                         tcb::rcvNxt,
-                        () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                        () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                         head::len,
                         () -> head.next
                 );
@@ -232,7 +232,7 @@ public class ReceiveBuffer {
                 seg::seq,
                 seg::lastSeq,
                 tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 () -> seq,
                 () -> add(seq, length - 1),
                 () -> block
@@ -264,7 +264,7 @@ public class ReceiveBuffer {
                 seg::seq,
                 seg::lastSeq,
                 tcb::rcvNxt,
-                () -> sub(add(tcb.rcvNxt(), tcb.rcvWnd()), 1),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 () -> sub(seg.seq(), tcb.rcvNxt()),
                 () -> seq,
                 () -> add(seq, length - 1),
@@ -299,7 +299,7 @@ public class ReceiveBuffer {
                 seg::seq,
                 seg::lastSeq,
                 tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 head::seq,
                 head::lastSeq,
                 () -> add(seq, index),
@@ -336,7 +336,7 @@ public class ReceiveBuffer {
                 seg::seq,
                 seg::lastSeq,
                 tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 head::seq,
                 head::lastSeq,
                 () -> add(seq, index),
@@ -380,7 +380,7 @@ public class ReceiveBuffer {
                 () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
                 () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
                 tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 () -> seq,
                 () -> add(seq, length - 1),
                 () -> block
@@ -423,7 +423,7 @@ public class ReceiveBuffer {
                 () -> currentCopy.next != null ? currentCopy.next.seq() : "null",
                 () -> currentCopy.next != null ? currentCopy.next.lastSeq() : "null",
                 tcb::rcvNxt,
-                () -> add(tcb.rcvNxt(), tcb.rcvWnd()),
+                () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
                 () -> seq,
                 () -> add(seq, length - 1),
                 () -> block
