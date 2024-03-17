@@ -37,6 +37,7 @@ import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.lessThan;
 import static org.drasyl.handler.connection.Segment.lessThanOrEqualTo;
 import static org.drasyl.handler.connection.Segment.sub;
+import static org.drasyl.util.NumberUtil.min;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
