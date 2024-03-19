@@ -315,6 +315,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     tcb.ensureLocalPortIsSelected(requestedLocalPort);
 
                     // RFC 9293: and return.
+                    ctx.read();
+
                     return;
                 }
                 else {
@@ -346,6 +348,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     changeState(ctx, SYN_SENT);
 
                     // RFC 9293: and return.
+                    ctx.read();
+
                     return;
 
                     // RFC 9293: If the caller does not have access to the local socket specified,
@@ -381,6 +385,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: respond with "error: insufficient resources". If the remote socket was
                 // RFC 9293: not specified, then return "error: remote socket unspecified".
                 // (not applicable to us)
+
+                ctx.read();
+
                 return;
 
             case SYN_SENT:
@@ -453,6 +460,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: insufficient resources". If the remote socket was not specified, then
                 // RFC 9293: return "error: remote socket unspecified".
                 // (not applicable to us)
+
+                ctx.read();
+
                 break;
 
             case SYN_SENT:
@@ -500,6 +510,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
+        LOG.trace("{} RECEIVE call received.", ctx.channel(), state());
         switch (state()) {
             case CLOSED:
                 assert tcb == null;
@@ -520,7 +531,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                             userCallReceive(ctx);
                         }
                     });
-                    ctx.read();
                 }
 
                 // RFC 9293: If there is no room to queue this request, respond with "error:
@@ -1864,7 +1874,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: If the segment empties and carries a PUSH flag, then the user is
                         // RFC 9293: informed, when the buffer is returned, that a PUSH has been
                         // RFC 9293: received.
-                        if (seg.isPsh() && ctx.channel().config().isAutoRead()) {
+                        if (seg.isPsh()) {
                             LOG.trace("{} Got `{}`. Add to RCV.BUF and trigger channelRead because PUSH flag is set.", ctx.channel(), seg);
                             doFireRead = true;
                         }
