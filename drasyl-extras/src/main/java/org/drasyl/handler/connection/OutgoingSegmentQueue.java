@@ -58,13 +58,15 @@ public class OutgoingSegmentQueue {
         LOG.trace("{} Add SEG `{}` to the outgoing segment queue.", ctx.channel(), seg);
 
         // check if we can replace head
+        // 1. if an ACK with no DATA is followed by a "higher" ACK with no DATA
+        // 2. if an ACK with no DATA is followed by a PSH,ACK
         if (seg.isAck() || seg.isPsh()) {
             final Segment head = (Segment) queue.peek();
             if (head != null && head.isOnlyAck() && head.seq() == seg.seq() && greaterThanOrEqualTo(seg.ack(), head.ack()) && head.len() == 0) {
                     LOG.trace("{} Replace SEG `{}` in queue with SEG `{}`.", ctx.channel(), head, seg);
                     ((Segment) queue.remove()).release();
+                    // let promise of replaced segment listen on new promise
                     promise.addListener(new PromiseNotifier<>((ChannelPromise) queue.remove()));
-
             }
         }
 

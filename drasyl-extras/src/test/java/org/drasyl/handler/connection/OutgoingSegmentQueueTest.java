@@ -51,22 +51,23 @@ class OutgoingSegmentQueueTest {
         }
 
         @Test
-        void smallerSegmentsShouldReplaced(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg1,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg2,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+        void higherAcknowledgementsShouldReplaceSmallerOnes(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg1,
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg2,
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+            // <SEQ=2><ACK=2470><CTL=ACK><LEN=0>
             when(seg1.seq()).thenReturn(2L);
             when(seg1.ack()).thenReturn(2470L);
             when(seg1.isOnlyAck()).thenReturn(true);
             when(seg1.len()).thenReturn(0);
+            final DefaultChannelPromise promise1 = new DefaultChannelPromise(channel);
+            // <SEQ=2><ACK=3002><CTL=ACK>
             when(seg2.seq()).thenReturn(2L);
             when(seg2.ack()).thenReturn(3002L);
             when(seg2.isAck()).thenReturn(true);
             when(channel.eventLoop().inEventLoop()).thenReturn(true);
-            final DefaultChannelPromise promise1 = new DefaultChannelPromise(channel);
             final DefaultChannelPromise promise2 = new DefaultChannelPromise(channel);
 
             final OutgoingSegmentQueue queue = new OutgoingSegmentQueue(arrayDeque);
-
             queue.add(ctx, seg1, promise1);
             queue.add(ctx, seg2, promise2);
 
@@ -76,9 +77,9 @@ class OutgoingSegmentQueueTest {
         }
 
         @Test
-        void smallerSegmentsShouldReplaced2(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg1,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg2,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
+        void pushesShouldReplaceAcknowledgements(@Mock(answer = RETURNS_DEEP_STUBS) final Segment seg1,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Segment seg2,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Channel channel) {
             when(seg1.seq()).thenReturn(2L);
             when(seg1.ack()).thenReturn(2470L);
             when(seg1.isOnlyAck()).thenReturn(true);
