@@ -23,12 +23,14 @@ package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.ArrayDeque;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
 
 /**
  * Represents the outgoing segment queue that holds segments to be sent over a connection.
@@ -54,6 +56,20 @@ public class OutgoingSegmentQueue {
 
     void add(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
         LOG.trace("{} Add SEG `{}` to the outgoing segment queue.", ctx.channel(), seg);
+
+        // check if we can replace head
+        // 1. if an ACK with no DATA is followed by a "higher" ACK with no DATA
+        // 2. if an ACK with no DATA is followed by a PSH,ACK
+        if (seg.isAck() || seg.isPsh()) {
+            final Segment head = (Segment) queue.peek();
+            if (head != null && head.isOnlyAck() && head.seq() == seg.seq() && greaterThanOrEqualTo(seg.ack(), head.ack()) && head.len() == 0) {
+                    LOG.trace("{} Replace SEG `{}` in queue with SEG `{}`.", ctx.channel(), head, seg);
+                    ((Segment) queue.remove()).release();
+                    // let promise of replaced segment listen on new promise
+                    promise.addListener(new PromiseNotifier<>((ChannelPromise) queue.remove()));
+            }
+        }
+
         queue.add(seg);
         queue.add(promise);
     }
