@@ -236,8 +236,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (tcb != null) {
             tcb.pushAndSegmentizeData(ctx);
         }
-
-        ctx.flush();
     }
 
     /*
