@@ -564,7 +564,7 @@ public class TransmissionControlBlock {
                     }
                     else if (overrideTimeoutOccurred) {
                         // (4) or if the override timeout occurs.
-                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
+                        LOG.trace("{} Sender's SWS avoidance: Override timeout occurred.", ctx.channel(), readableBytes);
                         sendData = true;
                     }
                     else {
@@ -598,11 +598,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Path capped (CWND={}).", ctx.channel(), cwnd());
+                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network.", ctx.channel(), cwnd(), remainingBytes);
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Receiver capped (SND.WND={}).", ctx.channel(), sndWnd());
+                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network.", ctx.channel(), sndWnd(), remainingBytes);
                     }
                 }
 
@@ -629,6 +629,7 @@ public class TransmissionControlBlock {
     }
 
     void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
+        LOG.trace("{} PUSH received.", ctx.channel());
         sendBuffer.push();
         segmentizeAndSendData(ctx, false);
     }
