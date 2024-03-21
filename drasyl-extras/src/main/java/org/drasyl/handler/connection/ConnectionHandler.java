@@ -236,8 +236,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (tcb != null) {
             tcb.pushAndSegmentizeData(ctx);
         }
-
-        ctx.flush();
     }
 
     /*
@@ -482,9 +480,8 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: If the Snd.TS.OK flag is set, then include the TCP Timestamps option
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                 // (timestamps option is automatically added by formSegment)
-                LOG.trace("{} Connection is established. Enqueue {} byte(s) for transmission and then try to write.", ctx.channel(), data.readableBytes());
+                LOG.trace("{} Connection is established. Enqueue {} byte(s) for transmission.", ctx.channel(), data.readableBytes());
                 tcb.enqueueData(data, promise);
-                tcb.writeEnqueuedData(ctx);
 
                 // RFC 9293: If there is insufficient space to remember this buffer, simply return
                 // RFC 9293: "error: insufficient resources".
