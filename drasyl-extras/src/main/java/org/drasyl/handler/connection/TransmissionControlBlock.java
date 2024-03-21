@@ -505,6 +505,7 @@ public class TransmissionControlBlock {
 
     private long segmentizeAndSendData(final ChannelHandlerContext ctx,
                                        final boolean overrideTimeoutOccurred) {
+        LOG.trace("[{}] Try to segmentize and send data in `{}`.", ctx.channel(), sendBuffer);
         long totalSentData = 0;
         try {
             long readableBytes = sendBuffer.length();
@@ -542,7 +543,7 @@ public class TransmissionControlBlock {
                     if (min(d, u) >= effSndMss()) {
                         // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
                         // RFC 9293:     min(D,U) >= Eff.snd.MSS;
-                        LOG.trace("{} Sender's SWS avoidance: A maximum-sized segment can be sent.", ctx.channel());
+                        LOG.trace("{} Sender's SWS avoidance: At least one maximum-sized segment of {} bytes can be sent.", ctx.channel(), effSndMss());
                         sendData = true;
                     }
                     else if (sndNxt == sndUna && sendBuffer.doPush() && d <= u) {

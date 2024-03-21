@@ -468,7 +468,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
             case SYN_RECEIVED:
                 // RFC 9293: Queue the data for transmission after entering ESTABLISHED state.
-                LOG.trace("{} Queue data `{}` for transmission after entering ESTABLISHED state.", ctx.channel(), data);
+                LOG.trace("{} Queue {} byte(s) for transmission after entering ESTABLISHED state.", ctx.channel(), data.readableBytes());
                 tcb.enqueueData(data, promise);
 
                 // RFC 9293: If no space to queue, respond with "error: insufficient resources".
@@ -482,7 +482,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 7323: If the Snd.TS.OK flag is set, then include the TCP Timestamps option
                 // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                 // (timestamps option is automatically added by formSegment)
-                LOG.trace("{} Connection is established. Enqueue data `{}` for transmission.", ctx.channel(), data);
+                LOG.trace("{} Connection is established. Enqueue {} byte(s) for transmission and then try to write.", ctx.channel(), data.readableBytes());
                 tcb.enqueueData(data, promise);
                 tcb.writeEnqueuedData(ctx);
 
