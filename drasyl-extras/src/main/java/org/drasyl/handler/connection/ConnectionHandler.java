@@ -2069,7 +2069,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 5681: incoming acknowledgment equals the advertised window in the last incoming acknowledgment.
         final boolean isRfc5681Duplicate = !tcb.retransmissionQueue().isEmpty() &&
                 seg.len() == 0 &&
-                !seg.isAck() && !seg.isFin() &&
+                !seg.isSyn() && !seg.isFin() &&
                 seg.ack() == tcb.sndUna() &&
                 seg.wnd() == tcb.lastAdvertisedWindow();
 
