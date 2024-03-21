@@ -169,11 +169,6 @@ public class TransmissionControlBlock {
     // RFC 5681:
     private int duplicateAcks;
 
-    // RFC 6582: Fast Recovery Algorithm Modification (NewReno)
-    // RFC 6582: When in fast recovery, this variable records the send sequence number that must be
-    // RFC 6582: acknowledged before the fast recovery procedure is declared to be over.
-    private long recover;
-
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
                              final State state,
@@ -194,7 +189,6 @@ public class TransmissionControlBlock {
                              final long cwnd,
                              final long ssthresh,
                              final long maxSndWnd,
-                             final long recover,
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk,
@@ -220,7 +214,6 @@ public class TransmissionControlBlock {
         this.cwnd = requireNonNegative(cwnd);
         this.ssthresh = requireNonNegative(ssthresh);
         this.maxSndWnd = requireNonNegative(maxSndWnd);
-        this.recover = requireInRange(recover, MIN_SEQ_NO, MAX_SEQ_NO);
         this.tsRecent = requireNonNegative(tsRecent);
         this.lastAckSent = requireNonNegative(lastAckSent);
         this.sndTsOk = sndTsOk;
@@ -246,7 +239,7 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
@@ -407,12 +400,12 @@ public class TransmissionControlBlock {
             return false;
         }
         final TransmissionControlBlock that = (TransmissionControlBlock) o;
-        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
+        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
+        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks);
     }
 
     @Override
@@ -511,6 +504,7 @@ public class TransmissionControlBlock {
             long readableBytes = sendBuffer.length();
 
             while (readableBytes > 0) {
+                LOG.trace("[{}] {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
                 if (!config().noDelay()) {
                     // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
                     // RFC 9293: sender (MUST-38).
@@ -568,6 +562,7 @@ public class TransmissionControlBlock {
                         sendData = true;
                     }
                     else {
+                        LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), u);
                         createOverrideTimer(ctx);
                         sendData = false;
                     }
