@@ -50,7 +50,6 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
 @SuppressWarnings("java:S4274")
 public class ReceiveBuffer {
     private static final Logger LOG = LoggerFactory.getLogger(ReceiveBuffer.class);
-    private final Channel channel;
     // linked list of bufs we are unable to read as preceding bytes are missing
     ReceiveBufferBlock head;
     // cumulated buf of bytes we can read
@@ -65,7 +64,6 @@ public class ReceiveBuffer {
                   final ByteBuf headBuf,
                   final int size,
                   final int bytes) {
-        this.channel = requireNonNull(channel);
         this.headBuf = headBuf;
         this.head = head;
         this.size = requireNonNegative(size);
@@ -193,7 +191,7 @@ public class ReceiveBuffer {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace(
                             "{} Head fragment `{}` is located at left edge of RCV.WND [{},{}]. Consume it, advance RCV.NXT by {}, and set head to {}.",
-                            () -> channel,
+                            ctx::channel,
                             () -> head,
                             tcb::rcvNxt,
                             () -> add(tcb.rcvNxt(), tcb.rcvWnd() - 1),
@@ -230,7 +228,7 @@ public class ReceiveBuffer {
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
@@ -263,7 +261,7 @@ public class ReceiveBuffer {
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] is within RCV.WND [{},{}] but creates a hole of {} bytes. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
@@ -299,7 +297,7 @@ public class ReceiveBuffer {
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] and is located at left edge of RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
@@ -331,13 +329,16 @@ public class ReceiveBuffer {
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
         final long offsetSeqHead = sub(head.seq(), seg.seq());
         length = min(unallocatedBytes(tcb) - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
+        if (length < 0) {
+            LOG.error("{}", ctx.channel());
+        }
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] and is within RCV.WND [{},{}] and is located before current head fragment [{},{}]. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
@@ -378,7 +379,7 @@ public class ReceiveBuffer {
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed between current fragment [{},{}] and next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
@@ -422,7 +423,7 @@ public class ReceiveBuffer {
         if (LOG.isTraceEnabled()) {
             LOG.trace(
                     "{} Received SEG `{}`. SEG contains data [{},{}] that can be placed directly after current fragment [{},{}] and before next fragment [{},{}]. RCV.WND [{},{}]. Use data [{},{}]: {}.",
-                    () -> channel,
+                    ctx::channel,
                     () -> seg,
                     seg::seq,
                     seg::lastSeq,
