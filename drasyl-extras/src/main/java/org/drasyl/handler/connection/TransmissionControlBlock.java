@@ -553,7 +553,7 @@ public class TransmissionControlBlock {
                         // RFC 9293:     sent, i.e., if:
                         // RFC 9293:     [SND.NXT = SND.UNA and]
                         // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
-                        LOG.trace("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
+                        LOG.debug("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
                         sendData = true;
                     }
                     else if (overrideTimeoutOccurred) {
@@ -576,33 +576,32 @@ public class TransmissionControlBlock {
                     }
                 }
 
-                final long window = min(sndWnd(), cwnd());
-                final long usableWindow = max(0, window - flightSize());
+                final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
                 final long remainingBytes;
-                if (readableBytes <= sendMss() && readableBytes <= usableWindow) {
+                if (readableBytes <= sendMss() && readableBytes <= u) {
                     // we have less than a segment to send
                     remainingBytes = readableBytes;
                 }
-                else if (sendMss() <= readableBytes && sendMss() <= usableWindow) {
+                else if (sendMss() <= readableBytes && sendMss() <= u) {
                     // we have at least one full segment to send
                     remainingBytes = sendMss();
                 }
                 else {
                     // we're path or receiver capped
-                    remainingBytes = usableWindow;
+                    remainingBytes = u;
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network.", ctx.channel(), cwnd(), remainingBytes);
+                        LOG.debug("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network.", ctx.channel(), sndWnd(), remainingBytes);
+                        LOG.debug("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
                     }
                 }
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), usableWindow, readableBytes, remainingBytes);
+                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), u, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
                     final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
