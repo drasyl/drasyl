@@ -120,7 +120,9 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
 
     @Override
     public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        ctx.pipeline().remove(InboundByteBufsProgressBarHandler.class);
+        if (ctx.pipeline().get(InboundByteBufsProgressBarHandler.class) != null) {
+            ctx.pipeline().remove(InboundByteBufsProgressBarHandler.class);
+        }
         out.println("abort");
 
         ctx.close(promise);
