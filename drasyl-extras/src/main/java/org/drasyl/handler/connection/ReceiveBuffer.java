@@ -326,9 +326,7 @@ public class ReceiveBuffer {
         final long offsetRcvNxtToSeq = sub(seg.seq(), tcb.rcvNxt());
         final long offsetSeqHead = sub(head.seq(), seg.seq());
         length = min(unallocatedBytes(tcb) - offsetRcvNxtToSeq, offsetSeqHead, seg.len());
-        if (length < 0) {
-            LOG.error("{}", ctx.channel());
-        }
+        assert length >= 0 : "length must be non-negative but is " + length + "; TCB=" + tcb + "; unallocatedBytes(tcb)=" + unallocatedBytes(tcb) + "; offsetRcvNxtToSeq=" + offsetRcvNxtToSeq + "; offsetSeqHead=" + offsetSeqHead + "; seg.len()=" + seg.len();
         final ReceiveBufferBlock block = new ReceiveBufferBlock(seq, content.retainedSlice((int) (content.readerIndex() + index), (int) length));
         assert lessThan(block.seq(), head.seq());
         block.next = head;
