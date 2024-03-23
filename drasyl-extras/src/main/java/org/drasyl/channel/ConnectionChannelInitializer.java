@@ -36,6 +36,7 @@ import org.drasyl.util.internal.UnstableApi;
 
 import java.util.Arrays;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.Objects.requireNonNullElseGet;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
@@ -126,7 +127,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
                 }
                 else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).initatedByRemotePeer()) {
                     // confirm close request
-                    ctx.pipeline().close();
+                    ctx.pipeline().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
                 }
                 else {
                     ctx.fireUserEventTriggered(evt);
