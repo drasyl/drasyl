@@ -34,6 +34,7 @@ import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.handler.WormholeFileSender.PROGRESS_BAR_INTERVAL;
 import static org.drasyl.util.NumberUtil.numberToHumanData;
@@ -44,6 +45,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
     private final File file;
     private final long length;
     private RandomAccessFile randomAccessFile;
+    private boolean succeeded;
 
     public WormholeFileReceiver(final PrintStream out,
                                 final File file,
@@ -107,8 +109,8 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
 
             if (currentFileLength + readableBytes == length) {
                 out.println("Received file written to " + file.getName());
-                ctx.pipeline().close();
-                ctx.pipeline().remove(ctx.name());
+                succeeded = true;
+                ctx.pipeline().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
 
             ((ByteBuf) msg).release();
@@ -120,10 +122,12 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
 
     @Override
     public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        if (ctx.pipeline().get(InboundByteBufsProgressBarHandler.class) != null) {
-            ctx.pipeline().remove(InboundByteBufsProgressBarHandler.class);
+        if (!succeeded) {
+            if (ctx.pipeline().get(InboundByteBufsProgressBarHandler.class) != null) {
+                ctx.pipeline().remove(InboundByteBufsProgressBarHandler.class);
+            }
+            out.println("abort");
         }
-        out.println("abort");
 
         ctx.close(promise);
     }
