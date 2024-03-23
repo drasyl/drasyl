@@ -576,20 +576,19 @@ public class TransmissionControlBlock {
                     }
                 }
 
-                final long window = min(sndWnd(), cwnd());
-                final long usableWindow = max(0, window - flightSize());
+                final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
                 final long remainingBytes;
-                if (readableBytes <= sendMss() && readableBytes <= usableWindow) {
+                if (readableBytes <= sendMss() && readableBytes <= u) {
                     // we have less than a segment to send
                     remainingBytes = readableBytes;
                 }
-                else if (sendMss() <= readableBytes && sendMss() <= usableWindow) {
+                else if (sendMss() <= readableBytes && sendMss() <= u) {
                     // we have at least one full segment to send
                     remainingBytes = sendMss();
                 }
                 else {
                     // we're path or receiver capped
-                    remainingBytes = usableWindow;
+                    remainingBytes = u;
 
                     if (sndWnd() > cwnd()) {
                         // path capped
@@ -602,7 +601,7 @@ public class TransmissionControlBlock {
                 }
 
                 if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), usableWindow, readableBytes, remainingBytes);
+                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), u, readableBytes, remainingBytes);
                     final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
                     final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
