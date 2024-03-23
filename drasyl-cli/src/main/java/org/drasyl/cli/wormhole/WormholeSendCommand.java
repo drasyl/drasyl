@@ -45,7 +45,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "send",
@@ -77,13 +76,10 @@ public class WormholeSendCommand extends ChannelOptions {
                         final int networkId,
                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                         final String password,
-                        final Payload payload,
-                        final int windowSize,
-                        final int windowTimeout) {
+                        final Payload payload) {
         super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
-        requirePositive(windowTimeout);
     }
 
     @SuppressWarnings("unused")
