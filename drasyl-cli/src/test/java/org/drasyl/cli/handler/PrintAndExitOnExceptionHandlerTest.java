@@ -21,6 +21,8 @@
  */
 package org.drasyl.cli.handler;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
@@ -32,6 +34,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.PrintStream;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -43,8 +46,16 @@ class PrintAndExitOnExceptionHandlerTest {
         void shouldPrintExceptionAndCloseChannel(@Mock final PrintStream printStream,
                                                  @Mock final Worm<Integer> exitCode,
                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                                 @Mock final Throwable cause) {
+                                                 @Mock final Throwable cause,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
             when(ctx.channel().isOpen()).thenReturn(true);
+            when(ctx.channel().close()).thenReturn(channelFuture);
+            when(channelFuture.addListener(any())).then(invocation -> {
+                final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
+                listener.operationComplete(channelFuture);
+                return channelFuture;
+            });
+            when(channelFuture.isSuccess()).thenReturn(true);
 
             final PrintAndExitOnExceptionHandler handler = new PrintAndExitOnExceptionHandler(printStream, exitCode);
             handler.exceptionCaught(ctx, cause);
