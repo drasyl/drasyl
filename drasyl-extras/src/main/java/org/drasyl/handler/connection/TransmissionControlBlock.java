@@ -593,11 +593,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network.", ctx.channel(), cwnd(), remainingBytes);
+                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
                     }
                     else {
                         // receiver capped
-                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network.", ctx.channel(), sndWnd(), remainingBytes);
+                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
                     }
                 }
 
