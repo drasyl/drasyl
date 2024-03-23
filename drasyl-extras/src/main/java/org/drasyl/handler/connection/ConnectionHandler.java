@@ -1287,7 +1287,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 tcb.writeEnqueuedData(ctx);
 
                 // inform user
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted();
+                LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
+                ctx.fireUserEventTriggered(evt);
 
                 // process queued operations
                 establishedPromise.setSuccess();
@@ -1551,7 +1553,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: came from SYN-SENT state), then the connection was refused;
                         // RFC 9293: signal the user "connection refused".
                         LOG.trace("{} We got `{}`. Connection has been refused by remote peer.", ctx.channel(), seg);
-                        ctx.fireExceptionCaught(new ConnectionRefusedException());
+                        final ConnectionRefusedException evt = new ConnectionRefusedException();
+                        LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
+                        ctx.fireExceptionCaught(evt);
                     }
 
                     // RFC 9293: In either case, the retransmission queue should be flushed.
@@ -1589,7 +1593,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                     // RFC 9293: Users should also receive an unsolicited general
                     // RFC 9293: "connection reset" signal.
-                    ctx.fireExceptionCaught(new ConnectionResetException());
+                    final ConnectionResetException evt = new ConnectionResetException();
+                    LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
+                    ctx.fireExceptionCaught(evt);
 
                     // RFC 9293: Enter the CLOSED state, delete the TCB
                     // (this happens implicitly when TCB is deleted)
@@ -2026,7 +2032,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 tcb.writeEnqueuedData(ctx);
 
                 // inform user
-                ctx.fireUserEventTriggered(new ConnectionHandshakeCompleted());
+                final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted();
+                LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
+                ctx.fireUserEventTriggered(evt);
 
                 // process queued operations
                 ctx.executor().execute(() -> establishedPromise.setSuccess());
@@ -2038,7 +2046,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             }
 
             if (doEmitClosing) {
-                ctx.fireUserEventTriggered(new ConnectionClosing(state()));
+                final ConnectionClosing evt = new ConnectionClosing(state());
+                LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
+                ctx.fireUserEventTriggered(evt);
             }
         }
 
