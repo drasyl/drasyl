@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.handler.connection.ReceiveBuffer.ReceiveBufferBlock;
 import org.junit.jupiter.api.Disabled;
@@ -55,8 +54,7 @@ class ReceiveBufferTest {
         @Nested
         class InOrderWithNoOverlappingSegments {
             @Test
-            void receiveSegmentsInOrder(@Mock final Channel channel,
-                                        @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentsInOrder(@Mock final ChannelHandlerContext ctx,
                                         @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
@@ -64,7 +62,7 @@ class ReceiveBufferTest {
                         .rmem(64_000)
                         .mmsS(40)
                         .build();
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(201).writeBytes(randomBytes(201));
@@ -112,13 +110,12 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentsInOrderWithGaps(@Mock final Channel channel,
-                                                 @Mock final ChannelHandlerContext ctx,
-                                                 @Mock final SendBuffer sendBuffer) {
+            void receiveSegmentsInOrderWithGaps(@Mock final ChannelHandlerContext ctx,
+                                                @Mock final SendBuffer sendBuffer) {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -151,13 +148,12 @@ class ReceiveBufferTest {
         @Nested
         class InOrderButOverlappingSegments {
             @Test
-            void receiveOverlappingSegmentsInOrder(@Mock final Channel channel,
-                                                   @Mock final ChannelHandlerContext ctx,
+            void receiveOverlappingSegmentsInOrder(@Mock final ChannelHandlerContext ctx,
                                                    @Mock final SendBuffer sendBuffer) {
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 100, 100, 0, 100, 0, 0, sendBuffer, new RetransmissionQueue(), buffer, 0, 0, false);
 
                 final ByteBuf data = Unpooled.buffer(230).writeBytes(randomBytes(230));
@@ -187,15 +183,14 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentWithTailBeingDuplicate(@Mock final Channel channel,
-                                                      @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentWithTailBeingDuplicate(@Mock final ChannelHandlerContext ctx,
                                                       @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ByteBuf data = Unpooled.buffer(160).writeBytes(randomBytes(160));
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(60, data.copy(60, 100));
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 1, 100);
+                final ReceiveBuffer buffer = new ReceiveBuffer(head, null, 1, 100);
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
@@ -228,12 +223,11 @@ class ReceiveBufferTest {
         @Nested
         class OutOfOrderWithOverlappingSegments {
             @Test
-            void receiveOverlappingSegmentsOutOfOrder(@Mock final Channel channel,
-                                                      @Mock final ChannelHandlerContext ctx,
+            void receiveOverlappingSegmentsOutOfOrder(@Mock final ChannelHandlerContext ctx,
                                                       @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
@@ -306,15 +300,14 @@ class ReceiveBufferTest {
 
             @Disabled("aktuell nicht unterstützt, weil der CompositeByteBuf probleme beim releasen hat, wenn mehrere Komponenten den selben ByteBuf gehören")
             @Test
-            void receiveSegmentWithMiddlePartBeingDuplicate(@Mock final Channel channel,
-                                                            @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentWithMiddlePartBeingDuplicate(@Mock final ChannelHandlerContext ctx,
                                                             @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
                 final ByteBuf data = Unpooled.buffer(200).writeBytes(randomBytes(200));
 
                 final ReceiveBufferBlock head = new ReceiveBufferBlock(70, data.copy(60, 60));
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, head, null, 1, 60);
+                final ReceiveBuffer buffer = new ReceiveBuffer(head, null, 1, 60);
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
@@ -346,12 +339,11 @@ class ReceiveBufferTest {
 
             @SuppressWarnings("java:S5961")
             @Test
-            void receiveDuplicates(@Mock final Channel channel,
-                                   @Mock final ChannelHandlerContext ctx,
+            void receiveDuplicates(@Mock final ChannelHandlerContext ctx,
                                    @Mock final SendBuffer sendBuffer) {
                 when(ctx.alloc()).thenReturn(UnpooledByteBufAllocator.DEFAULT);
 
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
@@ -436,10 +428,9 @@ class ReceiveBufferTest {
         @Nested
         class OutOfWindowSegments {
             @Test
-            void receiveSegmentThatIsPartiallyBeforeTheReceiveWindow(@Mock final Channel channel,
-                                                                     @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentThatIsPartiallyBeforeTheReceiveWindow(@Mock final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel);
+                final ReceiveBuffer buffer = new ReceiveBuffer();
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .mmsS(40)
@@ -469,10 +460,9 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentThatIsFullyBeforeTheReceiveWindow(@Mock final Channel channel,
-                                                                 @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentThatIsFullyBeforeTheReceiveWindow(@Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(null, null, 0, 0);
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();
@@ -494,10 +484,9 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentThatIsPartiallyBehindTheReceiveWindow(@Mock final Channel channel,
-                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+            void receiveSegmentThatIsPartiallyBehindTheReceiveWindow(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(null, null, 0, 0);
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(50)
                         .build();
@@ -519,10 +508,9 @@ class ReceiveBufferTest {
             }
 
             @Test
-            void receiveSegmentThatIsFullyBehindTheReceiveWindow(@Mock final Channel channel,
-                                                                 @Mock final ChannelHandlerContext ctx,
+            void receiveSegmentThatIsFullyBehindTheReceiveWindow(@Mock final ChannelHandlerContext ctx,
                                                                  @Mock final SendBuffer sendBuffer) {
-                final ReceiveBuffer buffer = new ReceiveBuffer(channel, null, null, 0, 0);
+                final ReceiveBuffer buffer = new ReceiveBuffer(null, null, 0, 0);
                 final ConnectionConfig config = ConnectionConfig.newBuilder()
                         .rmem(64_000)
                         .build();

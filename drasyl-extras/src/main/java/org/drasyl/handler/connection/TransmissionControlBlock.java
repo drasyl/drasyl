@@ -272,7 +272,7 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -281,7 +281,7 @@ public class TransmissionControlBlock {
                              final int remotePort,
                              final Channel channel,
                              final long irs) {
-        this(config, state, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, state, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -592,11 +592,11 @@ public class TransmissionControlBlock {
 
                     if (sndWnd() > cwnd()) {
                         // path capped
-                        LOG.debug("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
+                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
                     }
                     else {
                         // receiver capped
-                        LOG.debug("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
+                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
                     }
                 }
 

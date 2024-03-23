@@ -472,7 +472,7 @@ class ConnectionHandlerTest {
                             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_B_PORT, 0, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_B_PORT, 0, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                     final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, 0, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
@@ -526,7 +526,7 @@ class ConnectionHandlerTest {
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
@@ -571,7 +571,7 @@ class ConnectionHandlerTest {
                         .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_B_PORT, PEER_A_PORT, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_B_PORT, PEER_A_PORT, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, PEER_A_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
@@ -634,7 +634,7 @@ class ConnectionHandlerTest {
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
@@ -897,7 +897,7 @@ class ConnectionHandlerTest {
                                 .clock(clock)
                                 .timestamps(true)
                                 .build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                         final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
                         when(ctx.handler()).thenReturn(handler);
 
@@ -934,7 +934,7 @@ class ConnectionHandlerTest {
                     })
                     void shouldQueueData(final State state, @Mock final SendBuffer sendBuffer) {
                         final ConnectionConfig config = ConnectionConfig.newBuilder().build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, 0, 0, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, 0, 0, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
 
                         final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
@@ -966,7 +966,7 @@ class ConnectionHandlerTest {
                                 .clock(clock)
                                 .timestamps(true)
                                 .build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, true);
 
                         final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
@@ -3404,7 +3404,7 @@ class ConnectionHandlerTest {
                         .msl(ofMillis(100))
                         .noDelay(true)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
@@ -3465,7 +3465,7 @@ class ConnectionHandlerTest {
                         .noDelay(true)
                         .rmem(5_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 // set cwnd to ssthresh to enable congestion avoidance
                 tcb.cwnd(ctx, tcb.ssthresh());
                 final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);

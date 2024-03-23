@@ -24,13 +24,11 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.connection.Segment.add;
 import static org.drasyl.handler.connection.Segment.greaterThan;
 import static org.drasyl.handler.connection.Segment.greaterThanOrEqualTo;
@@ -59,8 +57,7 @@ public class ReceiveBuffer {
     // number of bytes in our linked list
     private int bytes;
 
-    ReceiveBuffer(final Channel channel,
-                  final ReceiveBufferBlock head,
+    ReceiveBuffer(final ReceiveBufferBlock head,
                   final ByteBuf headBuf,
                   final int size,
                   final int bytes) {
@@ -70,8 +67,8 @@ public class ReceiveBuffer {
         this.bytes = requireNonNegative(bytes);
     }
 
-    ReceiveBuffer(final Channel channel) {
-        this(channel, null, null, 0, 0);
+    ReceiveBuffer() {
+        this(null, null, 0, 0);
     }
 
     /**

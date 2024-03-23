@@ -30,6 +30,7 @@ import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -60,7 +61,7 @@ public abstract class ConnectionConfig {
                     0,
                     config.sndBufSupplier().apply(channel),
                     config.rtnsQSupplier().apply(channel),
-                    config.rcfBufSupplier().apply(channel),
+                    config.rcfBufSupplier().get(),
                     0,
                     0,
                     false
@@ -120,7 +121,7 @@ public abstract class ConnectionConfig {
 
     public abstract Function<Channel, RetransmissionQueue> rtnsQSupplier();
 
-    public abstract Function<Channel, ReceiveBuffer> rcfBufSupplier();
+    public abstract Supplier<ReceiveBuffer> rcfBufSupplier();
 
     public abstract BiFunction<ConnectionConfig, Channel, TransmissionControlBlock> tcbSupplier();
 
@@ -190,7 +191,7 @@ public abstract class ConnectionConfig {
         /**
          * Used to create the {@link ReceiveBuffer}.
          */
-        public abstract Builder rcfBufSupplier(final Function<Channel, ReceiveBuffer> rcfBufSupplier);
+        public abstract Builder rcfBufSupplier(final Supplier<ReceiveBuffer> rcfBufSupplier);
 
         /**
          * Used to create the {@link TransmissionControlBlock}.
