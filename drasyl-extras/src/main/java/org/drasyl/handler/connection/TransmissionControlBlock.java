@@ -492,132 +492,120 @@ public class TransmissionControlBlock {
     /**
      * Writes data to the network that has been queued for transmission.
      */
-    long writeEnqueuedData(final ChannelHandlerContext ctx) {
-        return segmentizeAndSendData(ctx, false);
+    void trySendingPreviouslyUnsentData(final ChannelHandlerContext ctx) {
+        trySendingPreviouslyUnsentData(ctx, false);
     }
 
-    private long segmentizeAndSendData(final ChannelHandlerContext ctx,
-                                       final boolean overrideTimeoutOccurred) {
-        LOG.trace("[{}] Try to segmentize and send data in `{}`.", ctx.channel(), sendBuffer);
-        long totalSentData = 0;
-        try {
-            long readableBytes = sendBuffer.length();
+    private void trySendingPreviouslyUnsentData(final ChannelHandlerContext ctx,
+                                                final boolean overrideTimeoutOccurred) {
+        LOG.trace("[{}] Try to segmentize and send previously unsent data in `{}`.", ctx.channel(), sendBuffer);
+        long readableBytes = sendBuffer.length();
+        while (readableBytes > 0) {
+            LOG.trace("[{}] {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
+            if (!config().noDelay()) {
+                // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
+                // RFC 9293: sender (MUST-38).
+                // (Nagle algorithm)
 
-            while (readableBytes > 0) {
-                LOG.trace("[{}] {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
-                if (!config().noDelay()) {
-                    // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
-                    // RFC 9293: sender (MUST-38).
-                    // (Nagle algorithm)
+                // RFC 9293: The sender's SWS avoidance algorithm is more difficult than the
+                // RFC 9293: receiver's because the sender does not know (directly) the
+                // RFC 9293: receiver's total buffer space (RCV.BUFF). An approach that has been
+                // RFC 9293: found to work well is for the sender to calculate Max(SND.WND),
+                // RFC 9293: which is the maximum send window it has seen so far on the
+                // RFC 9293: connection, and to use this value as an estimate of RCV.BUFF.
+                // RFC 9293: Unfortunately, this can only be an estimate; the receiver may at
+                // RFC 9293: any time reduce the size of RCV.BUFF. To avoid a resulting
+                // RFC 9293: deadlock, it is necessary to have a timeout to force transmission
+                // RFC 9293: of data, overriding the SWS avoidance algorithm. In practice, this
+                // RFC 9293: timeout should seldom occur.
 
-                    // RFC 9293: The sender's SWS avoidance algorithm is more difficult than the
-                    // RFC 9293: receiver's because the sender does not know (directly) the
-                    // RFC 9293: receiver's total buffer space (RCV.BUFF). An approach that has been
-                    // RFC 9293: found to work well is for the sender to calculate Max(SND.WND),
-                    // RFC 9293: which is the maximum send window it has seen so far on the
-                    // RFC 9293: connection, and to use this value as an estimate of RCV.BUFF.
-                    // RFC 9293: Unfortunately, this can only be an estimate; the receiver may at
-                    // RFC 9293: any time reduce the size of RCV.BUFF. To avoid a resulting
-                    // RFC 9293: deadlock, it is necessary to have a timeout to force transmission
-                    // RFC 9293: of data, overriding the SWS avoidance algorithm. In practice, this
-                    // RFC 9293: timeout should seldom occur.
-
-                    // RFC 9293: The "usable window" is:
-                    // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
-                    // RFC 9293: i.e., the offered window less the amount of data sent but not
-                    // RFC 9293: acknowledged.
-                    final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
-                    // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
-                    // RFC 9293: not yet sent,
-                    final long d = readableBytes;
-                    // RFC 9293: then the following set of rules is recommended.
-
-                    // RFC 9293: Send data...
-                    final boolean sendData;
-                    if (min(d, u) >= effSndMss()) {
-                        // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
-                        // RFC 9293:     min(D,U) >= Eff.snd.MSS;
-                        LOG.trace("{} Sender's SWS avoidance: At least one maximum-sized segment of {} bytes can be sent.", ctx.channel(), effSndMss());
-                        sendData = true;
-                    }
-                    else if (sndNxt == sndUna && sendBuffer.doPush() && d <= u) {
-                        // RFC 9293: (2) or if the data is pushed and all queued data can be sent
-                        // RFC 9293:     now, i.e., if:
-                        // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
-                        // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
-                        LOG.trace("{} Sender's SWS avoidance: Data is pushed and all queued data can be sent.", ctx.channel());
-                        sendData = true;
-                    }
-                    else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
-                        // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
-                        // RFC 9293:     sent, i.e., if:
-                        // RFC 9293:     [SND.NXT = SND.UNA and]
-                        // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
-                        LOG.debug("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
-                        sendData = true;
-                    }
-                    else if (overrideTimeoutOccurred) {
-                        // (4) or if the override timeout occurs.
-                        LOG.trace("{} Sender's SWS avoidance: Override timeout occurred.", ctx.channel(), readableBytes);
-                        sendData = true;
-                    }
-                    else {
-                        LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), u);
-                        createOverrideTimer(ctx);
-                        sendData = false;
-                    }
-
-                    if (sendData) {
-                        cancelOverrideTimer();
-                    }
-                    else {
-                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
-                        return totalSentData;
-                    }
-                }
-
+                // RFC 9293: The "usable window" is:
+                // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
+                // RFC 9293: i.e., the offered window less the amount of data sent but not
+                // RFC 9293: acknowledged.
                 final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
-                final long remainingBytes;
-                if (readableBytes <= sendMss() && readableBytes <= u) {
-                    // we have less than a segment to send
-                    remainingBytes = readableBytes;
+                // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
+                // RFC 9293: not yet sent,
+                @SuppressWarnings("UnnecessaryLocalVariable") final long d = readableBytes;
+                // RFC 9293: then the following set of rules is recommended.
+
+                // RFC 9293: Send data...
+                final boolean sendData;
+                if (min(d, u) >= effSndMss()) {
+                    // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
+                    // RFC 9293:     min(D,U) >= Eff.snd.MSS;
+                    LOG.trace("{} Sender's SWS avoidance: At least one maximum-sized segment of {} bytes can be sent.", ctx.channel(), effSndMss());
+                    sendData = true;
                 }
-                else if (sendMss() <= readableBytes && sendMss() <= u) {
-                    // we have at least one full segment to send
-                    remainingBytes = sendMss();
+                else if (sndNxt == sndUna && sendBuffer.doPush() && d <= u) {
+                    // RFC 9293: (2) or if the data is pushed and all queued data can be sent
+                    // RFC 9293:     now, i.e., if:
+                    // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
+                    // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
+                    LOG.trace("{} Sender's SWS avoidance: Data is pushed and all queued data can be sent.", ctx.channel());
+                    sendData = true;
+                }
+                else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
+                    // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
+                    // RFC 9293:     sent, i.e., if:
+                    // RFC 9293:     [SND.NXT = SND.UNA and]
+                    // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
+                    LOG.trace("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
+                    sendData = true;
+                }
+                else if (overrideTimeoutOccurred) {
+                    // (4) or if the override timeout occurs.
+                    LOG.trace("{} Sender's SWS avoidance: Override timeout occurred.", ctx.channel(), readableBytes);
+                    sendData = true;
                 }
                 else {
-                    // we're path or receiver capped
-                    remainingBytes = u;
-
-                    if (sndWnd() > cwnd()) {
-                        // path capped
-                        LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
-                    }
-                    else {
-                        // receiver capped
-                        LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
-                    }
+                    LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), u);
+                    createOverrideTimer(ctx);
+                    sendData = false;
                 }
 
-                if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), u, readableBytes, remainingBytes);
-                    final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
-
-                    final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
-                    totalSentData += sentData;
-                    readableBytes -= sentData;
+                if (sendData) {
+                    cancelOverrideTimer();
                 }
                 else {
-                    return totalSentData;
+                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
+                    return;
                 }
             }
 
-            return totalSentData;
-        }
-        finally {
-            if (totalSentData > 0) {
-                outgoingSegmentQueue.flush(ctx, this);
+            final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
+            final long remainingBytes;
+            if (readableBytes <= sendMss() && readableBytes <= u) {
+                // we have less than a segment to send
+                remainingBytes = readableBytes;
+            }
+            else if (sendMss() <= readableBytes && sendMss() <= u) {
+                // we have at least one full segment to send
+                remainingBytes = sendMss();
+            }
+            else {
+                // we're path or receiver capped
+                remainingBytes = u;
+
+                if (sndWnd() > cwnd()) {
+                    // path capped
+                    LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
+                }
+                else {
+                    // receiver capped
+                    LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
+                }
+            }
+
+            if (remainingBytes > 0) {
+                LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), u, readableBytes, remainingBytes);
+                final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
+
+                final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                readableBytes -= sentData;
+            }
+            else {
+                return;
             }
         }
     }
@@ -625,7 +613,10 @@ public class TransmissionControlBlock {
     void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
         LOG.trace("{} PUSH received.", ctx.channel());
         sendBuffer.push();
-        segmentizeAndSendData(ctx, false);
+        trySendingPreviouslyUnsentData(ctx, false);
+        if (!outgoingSegmentQueue.isEmpty()) {
+            flush(ctx);
+        }
     }
 
     ConnectionConfig config() {
@@ -637,7 +628,10 @@ public class TransmissionControlBlock {
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
                 LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
-                segmentizeAndSendData(ctx, true);
+                trySendingPreviouslyUnsentData(ctx, true);
+                if (!outgoingSegmentQueue.isEmpty()) {
+                    flush(ctx);
+                }
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
         }
     }
