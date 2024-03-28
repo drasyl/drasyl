@@ -1284,7 +1284,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final boolean anyOtherControlOrText = seg.content().isReadable();
                 assert !anyOtherControlOrText : "not supported (yet)";
 
-                tcb.writeEnqueuedData(ctx);
+                tcb.trySendingPreviouslyUnsentData(ctx);
 
                 // inform user
                 final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted();
@@ -2029,7 +2029,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         finally {
             // tasks to do at the end to ensure that current execution is already completed
             if (becameEstablished) {
-                tcb.writeEnqueuedData(ctx);
+                tcb.trySendingPreviouslyUnsentData(ctx);
 
                 // inform user
                 final ConnectionHandshakeCompleted evt = new ConnectionHandshakeCompleted();
@@ -2207,7 +2207,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
                 // RFC 5681:     cwnd and the receiver's advertised window allow, a TCP SHOULD
                 // RFC 5681:     send 1*SMSS bytes of previously unsent data.
-                tcb.writeEnqueuedData(ctx);
+                tcb.trySendingPreviouslyUnsentData(ctx);
             }
         }
         else if (tcb.duplicateAcks() != 0) {
@@ -2335,7 +2335,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (ackedBytes > 0) {
             // something was ACKed and therefore has left the network. Try to send more.
-            tcb.writeEnqueuedData(ctx);
+            tcb.trySendingPreviouslyUnsentData(ctx);
         }
 
         return false;
