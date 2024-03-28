@@ -52,7 +52,7 @@ import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.MAX_PEE
 import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARQ_RETRY_TIMEOUT;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
+import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARQ_WINDOW_SIZE;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 public class TunnelConsumeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {

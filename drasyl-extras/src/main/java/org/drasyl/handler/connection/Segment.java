@@ -24,7 +24,6 @@ package org.drasyl.handler.connection;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.buffer.Unpooled;
-import org.drasyl.util.SerialNumberArithmetic;
 
 import java.util.ArrayList;
 import java.util.EnumMap;
@@ -47,7 +46,8 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings({ "java:S1845", "java:S3052" })
 public class Segment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
-    public static final long MAX_SEQ_NO = 4_294_967_295L;
+    public static final long MAX_SEQ_NO = (1L << 32) - 1L;
+    public static final long HALF_MAX_SEQ_NO = 1L << 31;
     // Source Port: 2 bytes
     // Destination Port: 2 bytes
     // SEQ: 4 bytes
@@ -437,48 +437,52 @@ public class Segment extends DefaultByteBufHolder {
      * @return resulting sequence number of the addition
      */
     public static long add(final long s, final long n) {
-        return SerialNumberArithmetic.add(s, n, SEQ_NO_SPACE);
+        return (s + n) % (MAX_SEQ_NO + 1);
     }
 
-    public static long sub(final long i1, final long i2) {
-        return SerialNumberArithmetic.sub(i1, i2, SEQ_NO_SPACE);
+    public static long sub(final long s, final long n) {
+        long result = (s - n) % (MAX_SEQ_NO + 1);
+        if (result < 0) {
+            result += (MAX_SEQ_NO + 1);
+        }
+        return result;
     }
 
     /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is less than {@code i2}. Otherwise {@code false}
+     * @param s1 first non-negative number
+     * @param s2 second non-negative number
+     * @return {@code true} if {@code s1} is less than {@code s2}. Otherwise {@code false}
      */
-    public static boolean lessThan(final long i1, final long i2) {
-        return SerialNumberArithmetic.lessThan(i1, i2, SEQ_NO_SPACE);
+    public static boolean lessThan(final long s1, final long s2) {
+        return (s1 < s2 && s2 - s1 < HALF_MAX_SEQ_NO) || (s1 > s2 && s1 - s2 > HALF_MAX_SEQ_NO);
     }
 
     /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is less than or equal to {@code i2}. Otherwise
+     * @param s1 first non-negative number
+     * @param s2 second non-negative number
+     * @return {@code true} if {@code s1} is less than or equal to {@code s2}. Otherwise
      * {@code false}
      */
-    public static boolean lessThanOrEqualTo(final long i1, final long i2) {
-        return SerialNumberArithmetic.lessThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
+    public static boolean lessThanOrEqualTo(final long s1, final long s2) {
+        return s1 == s2 || lessThan(s1, s2);
     }
 
     /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is greater than {@code i2}. Otherwise {@code false}
+     * @param s1 first non-negative number
+     * @param s2 second non-negative number
+     * @return {@code true} if {@code s1} is greater than {@code s2}. Otherwise {@code false}
      */
-    public static boolean greaterThan(final long i1, final long i2) {
-        return SerialNumberArithmetic.greaterThan(i1, i2, SEQ_NO_SPACE);
+    public static boolean greaterThan(final long s1, final long s2) {
+        return (s1 < s2 && s2 - s1 > HALF_MAX_SEQ_NO) || (s1 > s2 && s1 - s2 < HALF_MAX_SEQ_NO);
     }
 
     /**
-     * @param i1 first non-negative number
-     * @param i2 second non-negative number
-     * @return {@code true} if {@code i1} is greater than or equal to {@code i2}. Otherwise
+     * @param s1 first non-negative number
+     * @param s2 second non-negative number
+     * @return {@code true} if {@code s1} is greater than or equal to {@code s2}. Otherwise
      * {@code false}
      */
-    public static boolean greaterThanOrEqualTo(final long i1, final long i2) {
-        return SerialNumberArithmetic.greaterThanOrEqualTo(i1, i2, SEQ_NO_SPACE);
+    public static boolean greaterThanOrEqualTo(final long s1, final long s2) {
+        return s1 == s2 ||greaterThan(s1, s2);
     }
 }

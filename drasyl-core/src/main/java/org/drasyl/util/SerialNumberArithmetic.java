@@ -41,15 +41,10 @@ public final class SerialNumberArithmetic {
      * @return resulting sequence number of the addition
      */
     public static long add(final long s, final long n, final int serialBits) {
-        return (requireNonNegative(s) + requireInRange(n, 0, (long) Math.pow(2, serialBits - 1d) - 1)) % (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS));
-    }
-
-    public static long sub(final long i1, final long i2, final int serialBits) {
-        if (i1 >= i2) {
-            return i1 - i2;
-        }
-        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS));
-        return pow + i1 - i2;
+        requireNonNegative(s);
+        requireInRange(n, 0, (long) Math.pow(2, serialBits - 1d) - 1);
+        requireInRange(serialBits, 0, MAX_SERIAL_BITS);
+        return (s + n) % (long) Math.pow(2, serialBits);
     }
 
     /**
@@ -61,7 +56,8 @@ public final class SerialNumberArithmetic {
     public static boolean lessThan(final long i1, final long i2, final int serialBits) {
         requireNonNegative(i1);
         requireNonNegative(i2);
-        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS) - 1d);
+        requireInRange(serialBits, 0, MAX_SERIAL_BITS);
+        final long pow = (long) Math.pow(2, serialBits - 1d);
         return (i1 < i2 && i2 - i1 < pow) || (i1 > i2 && i1 - i2 > pow);
     }
 
@@ -85,7 +81,8 @@ public final class SerialNumberArithmetic {
     public static boolean greaterThan(final long i1, final long i2, final int serialBits) {
         requireNonNegative(i1);
         requireNonNegative(i2);
-        final long pow = (long) Math.pow(2, requireInRange(serialBits, 0, MAX_SERIAL_BITS) - 1d);
+        requireInRange(serialBits, 0, MAX_SERIAL_BITS);
+        final long pow = (long) Math.pow(2, serialBits - 1d);
         return (i1 < i2 && i2 - i1 > pow) || (i1 > i2 && i1 - i2 < pow);
     }
 

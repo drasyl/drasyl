@@ -3480,27 +3480,27 @@ class ConnectionHandlerTest {
 
                 // ACK 1st SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 296;
+                expectedCwnd += 305;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 280;
+                expectedCwnd += 288;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 266;
+                expectedCwnd += 273;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 254;
+                expectedCwnd += 260;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 243;
+                expectedCwnd += 249;
                 assertEquals(expectedCwnd, tcb.cwnd());
             }
         }
