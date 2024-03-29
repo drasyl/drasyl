@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,6 +33,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
@@ -76,20 +77,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public class TransmissionControlBlock {
     public static final int MIN_PORT = 1;
     public static final int MAX_PORT = 65_535;
-    // IPv4/IPv6: 20/40 bytes -> 40 bytes
-    // UDP: 8 bytes
-    // drasyl: 176 bytes
-    static final int DRASYL_HDR_SIZE = 40 + 8 + 176;
-    // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
-    // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
-    //
-    // 536 is the result of an assumed MTU of 576 - IPv4 header (20) - TCP header (20) = 536
-    // 1220 is the result of an assumed MTU of 1280 - IPv6 header (40) - TCP header (20) = 1220
-    //
-    // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
-    // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
-    // (DRASYL_HDR_SIZE) and our TCP header (SEG_HDR_SIZE)
-    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -126,7 +113,7 @@ public class TransmissionControlBlock {
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     // The size does not include the TCP/IP headers and options.
-    private long sendMss = DEFAULT_SEND_MSS;
+    private int sendMss = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     // RFC 9293: Silly Window Syndrome Avoidance
     // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
     // RFC 9293: as an estimate of RCV.BUFF
@@ -304,13 +291,6 @@ public class TransmissionControlBlock {
 
     public void state(final State state) {
         this.state = requireNonNull(state);
-    }
-
-    // RFC 1122, Section 4.2.2.6
-    // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
-    // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-    static long effSndMss(final long sendMss, final long mmsS) {
-        return min(sendMss + SEG_HDR_SIZE, mmsS) - SEG_HDR_SIZE;
     }
 
     /**
@@ -502,6 +482,9 @@ public class TransmissionControlBlock {
         long readableBytes = sendBuffer.length();
         while (readableBytes > 0) {
             LOG.trace("[{}] {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
+            final long wnd = min(sndWnd(), cwnd());
+            final long flightSize = flightSize();
+            final long usableWindow = max(0, wnd - flightSize);
             if (!config().noDelay()) {
                 // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
                 // RFC 9293: sender (MUST-38).
@@ -523,7 +506,7 @@ public class TransmissionControlBlock {
                 // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
                 // RFC 9293: i.e., the offered window less the amount of data sent but not
                 // RFC 9293: acknowledged.
-                final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
+                final long u = usableWindow;
                 // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
                 // RFC 9293: not yet sent,
                 @SuppressWarnings("UnnecessaryLocalVariable") final long d = readableBytes;
@@ -537,7 +520,7 @@ public class TransmissionControlBlock {
                     LOG.trace("{} Sender's SWS avoidance: At least one maximum-sized segment of {} bytes can be sent.", ctx.channel(), effSndMss());
                     sendData = true;
                 }
-                else if (sndNxt == sndUna && sendBuffer.doPush() && d <= u) {
+                else if (sndNxt == sndUna && sendBuffer.doPush() && d <= usableWindow) {
                     // RFC 9293: (2) or if the data is pushed and all queued data can be sent
                     // RFC 9293:     now, i.e., if:
                     // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
@@ -545,7 +528,7 @@ public class TransmissionControlBlock {
                     LOG.trace("{} Sender's SWS avoidance: Data is pushed and all queued data can be sent.", ctx.channel());
                     sendData = true;
                 }
-                else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
+                else if (sndNxt == sndUna && min(d, usableWindow) >= config.fs() * maxSndWnd()) {
                     // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
                     // RFC 9293:     sent, i.e., if:
                     // RFC 9293:     [SND.NXT = SND.UNA and]
@@ -559,7 +542,7 @@ public class TransmissionControlBlock {
                     sendData = true;
                 }
                 else {
-                    LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), u);
+                    LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), usableWindow);
                     createOverrideTimer(ctx);
                     sendData = false;
                 }
@@ -573,19 +556,18 @@ public class TransmissionControlBlock {
                 }
             }
 
-            final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
             final long remainingBytes;
-            if (readableBytes <= sendMss() && readableBytes <= u) {
+            if (readableBytes <= effSndMss() && readableBytes <= usableWindow) {
                 // we have less than a segment to send
                 remainingBytes = readableBytes;
             }
-            else if (sendMss() <= readableBytes && sendMss() <= u) {
+            else if (effSndMss() <= readableBytes && effSndMss() <= usableWindow) {
                 // we have at least one full segment to send
-                remainingBytes = sendMss();
+                remainingBytes = effSndMss();
             }
             else {
                 // we're path or receiver capped
-                remainingBytes = u;
+                remainingBytes = usableWindow;
 
                 if (sndWnd() > cwnd()) {
                     // path capped
@@ -598,7 +580,7 @@ public class TransmissionControlBlock {
             }
 
             if (remainingBytes > 0) {
-                LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), u, readableBytes, remainingBytes);
+                LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), usableWindow, readableBytes, remainingBytes);
                 final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
 
                 final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
@@ -719,8 +701,13 @@ public class TransmissionControlBlock {
     /**
      * The maximum size of a segment that TCP really sends, the "effective send MSS,"
      */
-    public long effSndMss() {
-        return effSndMss(sendMss, config.mmsS());
+    public int effSndMss() {
+        // RFC 1122, Section 4.2.2.6
+        // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
+        // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
+        // (20 is the IPv4 header size, must be drasyl header size)
+        // (IPoptionsize does not exist here)
+        return min(sendMss, config.mmsS() - SEG_HDR_SIZE);
     }
 
     /**
@@ -729,7 +716,7 @@ public class TransmissionControlBlock {
      * RFC 5681: discovery [RFC1191, RFC4821] algorithm, RMSS (see next item), or other factors. The
      * RFC 5681: size does not include the TCP/IP headers and options.
      */
-    public long smss() {
+    public int smss() {
         return sendMss;
     }
 
