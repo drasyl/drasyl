@@ -41,7 +41,7 @@ import static org.drasyl.util.RandomUtil.randomInt;
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
-    public static final int IP_MTU = 1460;
+    static final int IP_MTU = 1460;
     // here, drasyl replaces IP
     // IPv4: 20 bytes
     // UDP: 8 bytes

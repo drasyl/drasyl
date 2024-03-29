@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,16 +77,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public class TransmissionControlBlock {
     public static final int MIN_PORT = 1;
     public static final int MAX_PORT = 65_535;
-    // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
-    // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
-    //
-    // 536 is the result of an assumed MTU of 576 - IPv4 header (20) - TCP header (20) = 536
-    // 1220 is the result of an assumed MTU of 1280 - IPv6 header (40) - TCP header (20) = 1220
-    //
-    // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
-    // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
-    // (DRASYL_HDR_SIZE) and our TCP header (SEG_HDR_SIZE)
-    //public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
