@@ -478,10 +478,10 @@ public class TransmissionControlBlock {
 
     private void trySendingPreviouslyUnsentData(final ChannelHandlerContext ctx,
                                                 final boolean overrideTimeoutOccurred) {
-        LOG.trace("[{}] Try to segmentize and send previously unsent data in `{}`.", ctx.channel(), sendBuffer);
+        LOG.trace("{} Try to segmentize and send previously unsent data in `{}`.", ctx.channel(), sendBuffer);
         long readableBytes = sendBuffer.length();
         while (readableBytes > 0) {
-            LOG.trace("[{}] {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
+            LOG.trace("{} {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
             final long wnd = min(sndWnd(), cwnd());
             final long flightSize = flightSize();
             final long usableWindow = max(0, wnd - flightSize);
