@@ -34,7 +34,6 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
 import static org.drasyl.util.RandomUtil.randomInt;
@@ -43,6 +42,11 @@ import static org.drasyl.util.RandomUtil.randomInt;
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
     public static final int IP_MTU = 1460;
+    // here, drasyl replaces IP
+    // IPv4: 20 bytes
+    // UDP: 8 bytes
+    // drasyl: 104 bytes
+    public static final int DRASYL_HDR_SIZE = 20 + 8 + 104;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)

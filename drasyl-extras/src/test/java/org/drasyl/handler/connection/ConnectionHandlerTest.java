@@ -51,6 +51,7 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
@@ -80,7 +81,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -2483,7 +2483,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2545,7 +2545,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2651,7 +2651,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2713,7 +2713,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -3299,9 +3299,9 @@ class ConnectionHandlerTest {
                     when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                     when(tcb.rto()).thenReturn(1234);
                     when(tcb.flightSize()).thenReturn(64_000L);
-                    when(tcb.smss()).thenReturn(1000L);
+                    when(tcb.smss()).thenReturn(1000);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
-                    when(tcb.effSndMss()).thenReturn(1401L);
+                    when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
                     when(seg.content()).thenReturn(Unpooled.buffer());
 
