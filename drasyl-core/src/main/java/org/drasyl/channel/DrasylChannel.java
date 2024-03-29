@@ -27,10 +27,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.internal.InternalThreadLocalMap;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
@@ -41,6 +46,8 @@ import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -54,17 +61,34 @@ import java.nio.channels.NotYetConnectedException;
 @UnstableApi
 public class DrasylChannel extends AbstractChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
+    @SuppressWarnings({ "rawtypes" })
+    static final AtomicReferenceFieldUpdater<DrasylChannel, Future> FINISH_READ_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DrasylChannel.class, Future.class, "finishReadFuture");
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
 
     enum State {OPEN, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
+    private static final int MAX_READER_STACK_DEPTH = 8;
     private final ChannelConfig config = new DefaultChannelConfig(this);
+    // To further optimize this we could write our own SPSC queue.
+    final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    private final Runnable readTask = new Runnable() {
+        @Override
+        public void run() {
+            // Ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
+            if (!inboundBuffer.isEmpty()) {
+                readInbound();
+            }
+        }
+    };
     private volatile State state;
     volatile boolean pendingWrites;
     private volatile DrasylAddress localAddress; // NOSONAR
     private final DrasylAddress remoteAddress;
+    volatile boolean readInProgress;
+    volatile Future<?> finishReadFuture;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
@@ -121,12 +145,59 @@ public class DrasylChannel extends AbstractChannel {
         localAddress = null;
 
         state = State.CLOSED;
+
+        releaseInboundBuffers();
+    }
+
+    void readInbound() {
+        final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
+        handle.reset(config());
+        final ChannelPipeline pipeline = pipeline();
+        do {
+            final Object received = inboundBuffer.poll();
+            if (received == null) {
+                break;
+            }
+            handle.incMessagesRead(1);
+            pipeline.fireChannelRead(received);
+        } while (handle.continueReading());
+        handle.readComplete();
+        pipeline.fireChannelReadComplete();
     }
 
     @Override
     protected void doBeginRead() {
-        // NOOP
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
+        if (readInProgress) {
+            return;
+        }
+
+        final Queue<Object> inboundBuffer = this.inboundBuffer;
+        if (inboundBuffer.isEmpty()) {
+            readInProgress = true;
+            return;
+        }
+
+        final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
+        final int stackDepth = threadLocals.localChannelReaderStackDepth();
+        if (stackDepth < MAX_READER_STACK_DEPTH) {
+            threadLocals.setLocalChannelReaderStackDepth(stackDepth + 1);
+            try {
+                readInbound();
+            }
+            finally {
+                threadLocals.setLocalChannelReaderStackDepth(stackDepth);
+            }
+        }
+        else {
+            try {
+                eventLoop().execute(readTask);
+            }
+            catch (final Throwable cause) {
+                LOG.warn("Closing DrasylChannel {} because exception occurred!", this, cause);
+                close();
+                PlatformDependent.throwException(cause);
+            }
+        }
     }
 
     @Override
@@ -177,6 +248,16 @@ public class DrasylChannel extends AbstractChannel {
         if (wroteToParent) {
             // only pass flush event to parent channel if we actually have wrote something
             parent().flush();
+        }
+    }
+
+    private void releaseInboundBuffers() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+        readInProgress = false;
+        final Queue<Object> inboundBuffer = this.inboundBuffer;
+        Object msg;
+        while ((msg = inboundBuffer.poll()) != null) {
+            ReferenceCountUtil.release(msg);
         }
     }
 
