@@ -483,6 +483,6 @@ public class Segment extends DefaultByteBufHolder {
      * {@code false}
      */
     public static boolean greaterThanOrEqualTo(final long s1, final long s2) {
-        return s1 == s2 ||greaterThan(s1, s2);
+        return s1 == s2 || greaterThan(s1, s2);
     }
 }
