@@ -33,8 +33,6 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
@@ -169,25 +167,24 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
         if (eventLoop().inEventLoop()) {
-            serve0(peer, promise);
+            promise.trySuccess(serve0(peer));
         }
         else {
-            eventLoop().execute(() -> serve0(peer, promise));
+            eventLoop().execute(() -> promise.trySuccess(serve0(peer)));
         }
 
         return promise;
     }
 
-    private void serve0(DrasylAddress peer, Promise<DrasylChannel> promise) {
-        if (!promise.isCancelled()) {
-            DrasylChannel channel = channels.get(peer);
-            if (channel == null) {
-                channel = newDrasylChannel(peer);
-                pipeline().fireChannelRead(channel);
-                pipeline().fireChannelReadComplete();
-            }
-            promise.trySuccess(channel);
+    private DrasylChannel serve0(DrasylAddress peer) {
+        assert eventLoop().inEventLoop();
+        DrasylChannel channel = channels.get(peer);
+        if (channel == null) {
+            channel = newDrasylChannel(peer);
+            pipeline().fireChannelRead(channel);
+            pipeline().fireChannelReadComplete();
         }
+        return channel;
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer) {
@@ -273,25 +270,21 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                           final Object o,
                                           final IdentityPublicKey peer,
                                           final boolean recreateClosedChannel) {
-            ((DrasylServerChannel) ctx.channel()).serve(peer).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                if (future.isSuccess()) {
-                    final DrasylChannel channel = future.getNow();
+            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
 
-                    // pass event to channel
-                    channel.eventLoop().execute(() -> {
-                        if (channel.isActive()) {
-                            channel.pipeline().fireChannelRead(o);
-                        }
-                        else if (ctx.channel().isOpen() && recreateClosedChannel) {
-                            // channel to which the message is to be passed to has been closed in the
-                            // meantime. give message chance to be consumed by recreate a new channel once
-                            ctx.executor().execute(() -> fireChildChannelRead(ctx, o, peer, false));
-                        }
-                        else {
-                            // drop message
-                            ReferenceCountUtil.release(o);
-                        }
-                    });
+            // pass event to channel
+            channel.eventLoop().execute(() -> {
+                if (channel.isActive()) {
+                    channel.pipeline().fireChannelRead(o);
+                }
+                else if (ctx.channel().isOpen() && recreateClosedChannel) {
+                    // channel to which the message is to be passed to has been closed in the
+                    // meantime. give message chance to be consumed by recreate a new channel once
+                    ctx.executor().execute(() -> fireChildChannelRead(ctx, o, peer, false));
+                }
+                else {
+                    // drop message
+                    ReferenceCountUtil.release(o);
                 }
             });
         }
