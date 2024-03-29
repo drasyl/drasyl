@@ -176,7 +176,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return promise;
     }
 
-    private DrasylChannel serve0(DrasylAddress peer) {
+    private DrasylChannel serve0(final DrasylAddress peer) {
         assert eventLoop().inEventLoop();
         DrasylChannel channel = channels.get(peer);
         if (channel == null) {
@@ -295,11 +295,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
             if (channel != null) {
                 // pass event to channel
-                channel.eventLoop().execute(() -> {
-                    if (channel.isActive()) {
-                        channel.pipeline().fireChannelReadComplete();
-                    }
-                });
+                channel.pipeline().fireChannelReadComplete();
             }
         }
 
