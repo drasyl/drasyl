@@ -21,11 +21,8 @@
  */
 package org.drasyl.cli.wormhole.handler;
 
-import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.cli.handler.ChunkedInputProgressBarHandler;
@@ -61,13 +58,6 @@ public class WormholeFileSender extends AbstractWormholeSender {
 
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
-//        ctx.pipeline().addBefore(ctx.name(), null, new ChannelDuplexHandler() {
-//            @Override
-//            public void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
-//                LOG.error("WormholeFileSender.channelWritabilityChanged " + ctx.channel().isWritable());
-//                super.channelWritabilityChanged(ctx);
-//            }
-//        });
 
         ctx.writeAndFlush(new FileMessage(file.getName(), file.length())).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
