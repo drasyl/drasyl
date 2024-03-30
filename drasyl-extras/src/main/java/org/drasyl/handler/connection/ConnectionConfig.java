@@ -24,6 +24,9 @@ package org.drasyl.handler.connection;
 import com.google.auto.value.AutoValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.handler.remote.protocol.PrivateHeader;
+import org.drasyl.handler.remote.protocol.PublicHeader;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 
 import java.time.Duration;
 import java.util.function.BiFunction;
@@ -41,12 +44,12 @@ import static org.drasyl.util.RandomUtil.randomInt;
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
-    static final int IP_MTU = 1460;
+    public static final int IP_MTU = 1460;
     // here, drasyl replaces IP
     // IPv4: 20 bytes
     // UDP: 8 bytes
-    // drasyl: 104 bytes
-    public static final int DRASYL_HDR_SIZE = 20 + 8 + 104;
+    // drasyl: 120 bytes
+    public static final int DRASYL_HDR_SIZE = 20 + 8 + RemoteMessage.MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.ARMED_LENGTH;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)
