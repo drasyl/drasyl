@@ -21,8 +21,6 @@
  */
 package org.drasyl.channel;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -35,8 +33,6 @@ import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Arrays;
 
@@ -57,7 +53,6 @@ import static org.drasyl.util.Preconditions.requireInRange;
  */
 @UnstableApi
 public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionChannelInitializer.class);
     public static final int DEFAULT_SERVER_PORT = 21_037;
     private final Boolean doServer;
     private final int port;
