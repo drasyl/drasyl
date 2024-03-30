@@ -46,6 +46,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
     private final long length;
     private RandomAccessFile randomAccessFile;
     private boolean succeeded;
+    private boolean failed;
 
     public WormholeFileReceiver(final PrintStream out,
                                 final File file,
@@ -66,6 +67,7 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
         out.println("Receiving file (" + numberToHumanData(length) + ") into: " + file.getName());
 
         if (file.exists()) {
+            failed = true;
             ctx.fireExceptionCaught(new FileExistException(file.getName()));
             return;
         }
@@ -99,6 +101,12 @@ public class WormholeFileReceiver extends ChannelDuplexHandler {
     @Override
     public void channelRead(ChannelHandlerContext ctx, Object msg) throws Exception {
         if (msg instanceof ByteBuf) {
+            if (failed) {
+                // ignore
+                ((ByteBuf) msg).release();
+                return;
+            }
+
             final long currentFileLength = file.length();
             final int readableBytes = ((ByteBuf) msg).readableBytes();
             final ByteBuffer byteBuffer = ((ByteBuf) msg).nioBuffer();
