@@ -51,6 +51,7 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
@@ -80,7 +81,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
-import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -3479,28 +3479,28 @@ class ConnectionHandlerTest {
                 int expectedCwnd = 5_000;
 
                 // ACK 1st SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 306;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - 20), ACK, 64_000));
+                expectedCwnd += 332;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 288;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 312;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 274;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 294;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 261;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 280;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 250;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 267;
                 assertEquals(expectedCwnd, tcb.cwnd());
             }
         }
