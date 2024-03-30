@@ -28,7 +28,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.handler.connection.Segment.*;
+import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SYN;
