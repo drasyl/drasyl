@@ -43,9 +43,9 @@ import static picocli.CommandLine.Command;
         }
 )
 public class WormholeCommand {
-    // reduce MMS by 4 bytes (wormhole header length)
+    // reduce MMS by 4+45 bytes (wormhole header length)
     public static final ConnectionConfig CONNECTION_CONFIG = ConnectionConfig.newBuilder()
-            .mmsS(IP_MTU - DRASYL_HDR_SIZE - 4)
-            .mmsR(IP_MTU - DRASYL_HDR_SIZE - 4)
+            .mmsS(IP_MTU - DRASYL_HDR_SIZE - 4 - 45)
+            .mmsR(IP_MTU - DRASYL_HDR_SIZE - 4 - 45)
             .build();
 }
