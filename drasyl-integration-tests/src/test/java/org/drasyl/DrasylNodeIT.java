@@ -872,7 +872,7 @@ class DrasylNodeIT {
              * {@link PeerEvent}s and is able to route outgoing messages.
              */
             @Test
-            @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
+            //@Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
                 await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
                 await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));

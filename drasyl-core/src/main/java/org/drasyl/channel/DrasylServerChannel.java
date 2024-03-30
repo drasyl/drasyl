@@ -270,12 +270,13 @@ public class DrasylServerChannel extends AbstractServerChannel {
                                           final Object o,
                                           final IdentityPublicKey peer,
                                           final boolean recreateClosedChannel) {
+            LOG.error("{} {} fireChildChannelRead", ctx.channel().localAddress(), peer);
             final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
 
             // pass event to channel
             channel.eventLoop().execute(() -> {
                 if (channel.isActive()) {
-                    channel.pipeline().fireChannelRead(o);
+                    channel.inboundBuffer.add(o);
                 }
                 else if (ctx.channel().isOpen() && recreateClosedChannel) {
                     // channel to which the message is to be passed to has been closed in the
@@ -291,11 +292,18 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
         private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
                                                   final IdentityPublicKey peer) {
+            LOG.error("{} {} fireChildChannelReadComplete", ctx.channel().localAddress(), peer);
             final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
 
             if (channel != null) {
                 // pass event to channel
                 channel.pipeline().fireChannelReadComplete();
+                if (channel.eventLoop() == ((DrasylServerChannel) ctx.channel()).eventLoop()) {
+                    channel.readInbound();
+                }
+                else {
+                    channel.eventLoop().execute(channel::readInbound);
+                }
             }
         }
 
