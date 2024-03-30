@@ -21,8 +21,11 @@
  */
 package org.drasyl.cli.wormhole;
 
+import org.drasyl.handler.connection.ConnectionConfig;
 import picocli.CommandLine.HelpCommand;
 
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static picocli.CommandLine.Command;
 
 /**
@@ -40,4 +43,9 @@ import static picocli.CommandLine.Command;
         }
 )
 public class WormholeCommand {
+    // reduce MMS by 4 bytes (wormhole header length)
+    public static final ConnectionConfig CONNECTION_CONFIG = ConnectionConfig.newBuilder()
+            .mmsS(IP_MTU - DRASYL_HDR_SIZE - 4)
+            .mmsR(IP_MTU - DRASYL_HDR_SIZE - 4)
+            .build();
 }

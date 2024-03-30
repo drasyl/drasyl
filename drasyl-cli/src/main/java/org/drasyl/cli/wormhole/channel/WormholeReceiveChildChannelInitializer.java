@@ -42,6 +42,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.wormhole.WormholeCommand.CONNECTION_CONFIG;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARM_SESSION_TIME;
 
@@ -60,7 +61,7 @@ public class WormholeReceiveChildChannelInitializer extends ConnectionChannelIni
                                                   final Identity identity,
                                                   final IdentityPublicKey sender,
                                                   final String password) {
-        super(false, DEFAULT_SERVER_PORT);
+        super(false, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

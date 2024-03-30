@@ -43,6 +43,7 @@ import java.io.PrintStream;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.wormhole.WormholeCommand.CONNECTION_CONFIG;
 import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 
 public class WormholeSendChildChannelInitializer extends ConnectionChannelInitializer {
@@ -61,7 +62,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
                                                final Identity identity,
                                                final String password,
                                                final Payload payload) {
-        super(true, DEFAULT_SERVER_PORT);//, ConnectionConfig.newBuilder().mmsS(IP_MTU - DRASYL_HDR_SIZE).mmsR(IP_MTU - DRASYL_HDR_SIZE).build());
+        super(true, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
