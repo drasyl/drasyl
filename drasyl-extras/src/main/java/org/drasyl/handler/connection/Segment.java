@@ -48,6 +48,7 @@ public class Segment extends DefaultByteBufHolder {
     public static final long MIN_SEQ_NO = 0L;
     public static final long MAX_SEQ_NO = (1L << 32) - 1L;
     public static final long HALF_MAX_SEQ_NO = 1L << 31;
+    // Magic Number: 4 bytes
     // Source Port: 2 bytes
     // Destination Port: 2 bytes
     // SEQ: 4 bytes
@@ -58,8 +59,7 @@ public class Segment extends DefaultByteBufHolder {
     // Options: 1 bytes
     //   END_OF_OPTION_LIST: 1 byte
     // data: arbitrary number of bytes
-    public static final int SEG_HDR_SIZE = 20;
-    static final int SEQ_NO_SPACE = 32;
+    public static final int SEG_HDR_SIZE = 24;
     static final byte ACK = 1 << 4;
     static final byte PSH = 1 << 3;
     static final byte RST = 1 << 2;
