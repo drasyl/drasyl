@@ -49,10 +49,10 @@ import java.time.Duration;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 
 public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
     public static final int ARQ_RETRY_TIMEOUT = 250;
+    public static final int ARQ_WINDOW_SIZE = 50;
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
     private final Worm<Integer> exitCode;

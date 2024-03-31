@@ -35,7 +35,6 @@ import org.drasyl.util.Pair;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
@@ -45,7 +44,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "receive",
@@ -60,12 +58,6 @@ public class WormholeReceiveCommand extends ChannelOptions {
             converter = WormholeCodeConverter.class
     )
     private Pair<IdentityPublicKey, String> code;
-    @CommandLine.Option(
-            description = "Go-Back-N ARQ acknowledgment interval. Decreasing this value could increase the throughput.",
-            names = { "--ack-interval" },
-            defaultValue = "10"
-    )
-    private long ackInterval;
 
     @SuppressWarnings("java:S107")
     WormholeReceiveCommand(final PrintStream out,
@@ -79,11 +71,9 @@ public class WormholeReceiveCommand extends ChannelOptions {
                            final int onlineTimeoutMillis,
                            final int networkId,
                            final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                           final Pair<IdentityPublicKey, String> code,
-                           final long ackInterval) {
+                           final Pair<IdentityPublicKey, String> code) {
         super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.code = requireNonNull(code);
-        this.ackInterval = requirePositive(ackInterval);
     }
 
     @SuppressWarnings("unused")
@@ -100,7 +90,7 @@ public class WormholeReceiveCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second(), ackInterval);
+        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second());
     }
 
     @Override
