@@ -23,26 +23,26 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
-import org.drasyl.channel.DrasylChannel;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
+import org.drasyl.cli.perf.handler.PerfSessionReceiverHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
+import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.perf.PerfCommand.CONNECTION_CONFIG;
 
-public class PerfServerChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
-    public static final int ARQ_RETRY_TIMEOUT = 250;
+public class PerfServerChildChannelInitializer extends ConnectionChannelInitializer {
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -50,27 +50,32 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
     public PerfServerChildChannelInitializer(final PrintStream out,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode) {
-        super(false);
+        super(false, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
+
+        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        p.addLast(new LengthFieldPrepender(4));
 
         // fast (de)serializer for Probe messages
-        p.addLast(new ProbeCodec());
-
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
+        p.addBefore(p.context(SegmentCodec.class).name(), null, new ProbeCodec()); // bypass reliability layer
+        p.addBefore(p.context(SegmentCodec.class).name(), null, new SimpleChannelInboundHandler<Probe>() {
+            @Override
+            protected void channelRead0(final ChannelHandlerContext ctx, final Probe msg) {
+                ctx.pipeline().context(PerfSessionReceiverHandler.class).fireChannelRead(msg.retain()); // bypass reliability layer
+            }
+        });
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
+
+        // FIXME: lets Probe message skip ConnectionHandler
 
         // perf
         p.addLast(new PerfSessionAcceptorHandler(out));
@@ -80,7 +85,7 @@ public class PerfServerChildChannelInitializer extends ConnectionHandshakeChanne
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + handshakeTimeout.toMillis() + "ms.");
+        out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
         ctx.close();
     }
 }

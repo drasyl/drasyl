@@ -23,32 +23,32 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
+import org.drasyl.cli.perf.handler.PerfSessionReceiverHandler;
 import org.drasyl.cli.perf.handler.PerfSessionRequestorHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
+import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer.ARQ_RETRY_TIMEOUT;
+import static org.drasyl.cli.perf.PerfCommand.CONNECTION_CONFIG;
 
-public class PerfClientChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
+public class PerfClientChildChannelInitializer extends ConnectionChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(PerfClientChildChannelInitializer.class);
-    public static final int REQUEST_TIMEOUT_MILLIS = 10_000;
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -62,7 +62,7 @@ public class PerfClientChildChannelInitializer extends ConnectionHandshakeChanne
                                              final IdentityPublicKey server,
                                              final boolean waitForDirectConnection,
                                              final SessionRequest sessionRequest) {
-        super(true);
+        super(false, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -86,23 +86,28 @@ public class PerfClientChildChannelInitializer extends ConnectionHandshakeChanne
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
+
+        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        p.addLast(new LengthFieldPrepender(4));
 
         // fast (de)serializer for Probe messages
-        p.addLast(new ProbeCodec());
-
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(150, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(ARQ_RETRY_TIMEOUT).dividedBy(5)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
+        p.addBefore(p.context(SegmentCodec.class).name(), null, new ProbeCodec()); // bypass reliability layer
+        p.addBefore(p.context(SegmentCodec.class).name(), null, new SimpleChannelInboundHandler<Probe>() {
+            @Override
+            protected void channelRead0(final ChannelHandlerContext ctx, final Probe msg) {
+                ctx.pipeline().context(PerfSessionReceiverHandler.class).fireChannelRead(msg.retain()); // bypass reliability layer
+            }
+        });
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
 
+        // FIXME: lets Probe message skip ConnectionHandler
+
         // perf
-        p.addLast(new PerfSessionRequestorHandler(out, sessionRequest, REQUEST_TIMEOUT_MILLIS, waitForDirectConnection));
+        p.addLast(new PerfSessionRequestorHandler(out, sessionRequest, waitForDirectConnection));
 
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
