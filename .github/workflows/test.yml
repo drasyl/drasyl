@@ -22,7 +22,7 @@ jobs:
       - uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
-      # we sign our artifacts to dry-run if signing works at all (this is used to prevent cases wo erst beim releasen bzw. nach mergen im master branch fehler auffallen)
+      # sign artefacts to check if signing works, otherwise we would only find out after merging with the master, which is too late
       - name: Set up JDK
         uses: actions/setup-java@v4.2.1
         with:
@@ -32,7 +32,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: GPG_PASSPHRASE
       - name: Build with Maven
-        run: ./mvnw --batch-mode --update-snapshots -Dmaven.javadoc.skip=true -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 verify | tee build.output && exit ${PIPESTATUS[0]}
+        run: ./mvnw --batch-mode --update-snapshots -Dmaven.javadoc.skip=true -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 verify gpg:sign | tee build.output && exit ${PIPESTATUS[0]}
         env:
           GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       - name: Checking for detected leak
