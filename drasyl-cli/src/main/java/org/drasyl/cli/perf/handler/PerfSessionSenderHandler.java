@@ -32,7 +32,6 @@ import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.cli.perf.message.SessionRejection;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.drasyl.cli.perf.message.TestResults;
-import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -129,8 +128,7 @@ public class PerfSessionSenderHandler extends SimpleChannelInboundHandler<PerfMe
                 if (shouldSendNextMessage) {
                     if (channelWritable) {
                         final TestResults finalIntervalResults = intervalResults;
-                        // bypass reliability layer
-                        channel.pipeline().context(SegmentCodec.class).writeAndFlush(new Probe(probePayload.retainedDuplicate(), sentMessages)).addListener(future -> {
+                        channel.writeAndFlush(new Probe(probePayload.retainedDuplicate(), sentMessages)).addListener(future -> {
                             if (!future.isSuccess()) {
                                 LOG.trace("Unable to send message", future::cause);
                                 finalIntervalResults.incrementLostMessages();

@@ -23,18 +23,14 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.perf.handler.PerfSessionAcceptorHandler;
-import org.drasyl.cli.perf.handler.PerfSessionReceiverHandler;
 import org.drasyl.cli.perf.handler.ProbeCodec;
 import org.drasyl.cli.perf.message.PerfMessage;
-import org.drasyl.cli.perf.message.Probe;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
@@ -64,18 +60,10 @@ public class PerfServerChildChannelInitializer extends ConnectionChannelInitiali
         p.addLast(new LengthFieldPrepender(4));
 
         // fast (de)serializer for Probe messages
-        p.addBefore(p.context(SegmentCodec.class).name(), null, new ProbeCodec()); // bypass reliability layer
-        p.addBefore(p.context(SegmentCodec.class).name(), null, new SimpleChannelInboundHandler<Probe>() {
-            @Override
-            protected void channelRead0(final ChannelHandlerContext ctx, final Probe msg) {
-                ctx.pipeline().context(PerfSessionReceiverHandler.class).fireChannelRead(msg.retain()); // bypass reliability layer
-            }
-        });
+        p.addLast(new ProbeCodec());
 
         // (de)serializer for PerfMessages
         p.addLast(new JacksonCodec<>(PerfMessage.class));
-
-        // FIXME: lets Probe message skip ConnectionHandler
 
         // perf
         p.addLast(new PerfSessionAcceptorHandler(out));
