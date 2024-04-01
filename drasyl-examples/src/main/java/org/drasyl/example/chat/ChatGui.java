@@ -56,6 +56,8 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.time.Duration;
 
@@ -129,7 +131,11 @@ public class ChatGui {
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
                         if (e != null) {
-                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getClass().getName() + ": " + e.getMessage() + "\n");
+                            final StringWriter stringWriter = new StringWriter();
+                            final PrintWriter printWriter = new PrintWriter(stringWriter);
+                            e.printStackTrace(printWriter);
+
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getMessage() + "\n" + stringWriter + "\n");
                         }
                     });
                 }
