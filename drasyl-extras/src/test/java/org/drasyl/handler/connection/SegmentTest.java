@@ -32,6 +32,8 @@ import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SYN;
+import static org.drasyl.handler.connection.Segment.add;
+import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -158,6 +160,29 @@ class SegmentTest {
         void shouldReturnTrueForSegmentsThatMustBeAcknowledged() {
             final Segment seg2 = new Segment(1234, 5678, 100, 0, ACK, Unpooled.buffer(4).writeInt(1));
             assertTrue(seg2.mustBeAcked());
+        }
+    }
+
+    @Nested
+    class Add {
+        @Test
+        void shouldReturnTheAddedResult() {
+            assertEquals(1, add(1, 0));
+            assertEquals(1, add(0, 1));
+            assertEquals(2, add(1, 1));
+            assertEquals(0, add(MAX_SEQ_NO, 1));
+            assertEquals(0, add(1, MAX_SEQ_NO));
+        }
+    }
+
+    @Nested
+    class Sub {
+        @Test
+        void shouldReturnTheSubtractedResult() {
+            assertEquals(1, sub(1, 0));
+            assertEquals(MAX_SEQ_NO, sub(0, 1));
+            assertEquals(0, sub(1, 1));
+            assertEquals(1, sub(0, MAX_SEQ_NO));
         }
     }
 }

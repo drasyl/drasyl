@@ -21,8 +21,11 @@
  */
 package org.drasyl.cli.tunnel;
 
+import org.drasyl.handler.connection.ConnectionConfig;
 import picocli.CommandLine.HelpCommand;
 
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
+import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static picocli.CommandLine.Command;
 
 /**
@@ -47,4 +50,9 @@ import static picocli.CommandLine.Command;
         }
 )
 public class TunnelCommand {
+    // reduce MMS by 4+45 bytes (tunnel header length)
+    public static final ConnectionConfig CONNECTION_CONFIG = ConnectionConfig.newBuilder()
+            .mmsS(IP_MTU - DRASYL_HDR_SIZE - 4 - 45)
+            .mmsR(IP_MTU - DRASYL_HDR_SIZE - 4 - 45)
+            .build();
 }

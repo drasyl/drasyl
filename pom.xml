@@ -134,7 +134,7 @@
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.38.0</json-unit-assertj.version>
-        <protobuf.version>4.26.0</protobuf.version>
+        <protobuf.version>4.26.1</protobuf.version>
         <auto-value.version>1.10.4</auto-value.version>
         <jna.version>5.14.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -578,7 +578,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.14.2</version>
+                        <version>10.15.0</version>
                     </dependency>
                 </dependencies>
             </plugin>

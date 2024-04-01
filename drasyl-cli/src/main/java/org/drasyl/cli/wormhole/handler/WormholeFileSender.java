@@ -25,7 +25,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.stream.ChunkedFile;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import org.drasyl.cli.handler.ChunkedInputProgressBarHandler;
 import org.drasyl.cli.wormhole.message.FileMessage;
 import org.drasyl.util.logging.Logger;
@@ -42,11 +41,7 @@ import static org.drasyl.util.NumberUtil.numberToHumanData;
 
 public class WormholeFileSender extends AbstractWormholeSender {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeFileSender.class);
-    public static final int IDLE_TIMEOUT = 10;
     public static final int PROGRESS_BAR_INTERVAL = 250;
-    // mtu: 1432
-    // protocol overhead: 185 bytes
-    private static final int CHUNK_SIZE = 1432 - 185;
     private final File file;
 
     public WormholeFileSender(final PrintStream out,
@@ -61,13 +56,12 @@ public class WormholeFileSender extends AbstractWormholeSender {
     protected void transferPayload(final ChannelHandlerContext ctx) {
         out.println("Sending file (" + numberToHumanData(file.length()) + "): " + file.getName());
 
-        ctx.pipeline().addBefore(ctx.name(), null, new WriteTimeoutHandler(IDLE_TIMEOUT));
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedWriteHandler());
         ctx.pipeline().addBefore(ctx.name(), null, new ChunkedInputProgressBarHandler(PROGRESS_BAR_INTERVAL));
 
         ctx.writeAndFlush(new FileMessage(file.getName(), file.length())).addListener((ChannelFutureListener) f -> {
             if (f.isSuccess()) {
-                final ChunkedFile chunkedFile = new ChunkedFile(file, CHUNK_SIZE);
+                final ChunkedFile chunkedFile = new ChunkedFile(file);
 
                 ctx.writeAndFlush(chunkedFile).addListener((ChannelFutureListener) f2 -> {
                     if (f2.isSuccess()) {

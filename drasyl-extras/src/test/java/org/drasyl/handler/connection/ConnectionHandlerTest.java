@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +51,7 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
@@ -80,7 +81,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -2483,7 +2483,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2545,7 +2545,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2651,7 +2651,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -2713,7 +2713,7 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
@@ -3299,9 +3299,9 @@ class ConnectionHandlerTest {
                     when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                     when(tcb.rto()).thenReturn(1234);
                     when(tcb.flightSize()).thenReturn(64_000L);
-                    when(tcb.smss()).thenReturn(1000L);
+                    when(tcb.smss()).thenReturn(1000);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
-                    when(tcb.effSndMss()).thenReturn(1401L);
+                    when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
                     when(seg.content()).thenReturn(Unpooled.buffer());
 
@@ -3479,28 +3479,28 @@ class ConnectionHandlerTest {
                 int expectedCwnd = 5_000;
 
                 // ACK 1st SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 296;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - 20), ACK, 64_000));
+                expectedCwnd += 332;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 280;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 312;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 266;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 294;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 254;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 280;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 243;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 267;
                 assertEquals(expectedCwnd, tcb.cwnd());
             }
         }
