@@ -21,11 +21,14 @@
  */
 package org.drasyl.util;
 
+import org.drasyl.util.internal.UnstableApi;
+
 import java.util.Arrays;
 
 /**
  * Immutable byte array implementation, that do not allow any modifications to the original input.
  */
+@UnstableApi
 public final class ImmutableByteArray {
     private final byte[] array;
 

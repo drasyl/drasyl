@@ -24,6 +24,7 @@ package org.drasyl.handler.connection;
 /**
  * Signals that the connection is closing.
  */
+@Deprecated
 public class ConnectionHandshakeClosing implements ConnectionHandshakeEvent {
     @Override
     public String toString() {

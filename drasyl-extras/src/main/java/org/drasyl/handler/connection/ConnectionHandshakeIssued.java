@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,15 @@
  */
 package org.drasyl.handler.connection;
 
+import org.drasyl.util.internal.UnstableApi;
+
 /**
- * Signals that the handshake was started but the remote peer dis not response yet to the request.
+ * Signals that the handshake has been issued but the remote peer did not response yet to the
+ * request.
  */
-public class ConnectionHandshakeIssued implements ConnectionHandshakeEvent {
+@UnstableApi
+@Deprecated
+public class ConnectionHandshakeIssued implements ConnectionEvent {
     @Override
     public String toString() {
         return "ConnectionHandshakeIssued{}";

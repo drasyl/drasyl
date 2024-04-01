@@ -40,7 +40,7 @@
     <properties>
         <!-- Skip tests by default; run only if -DskipTests=false is specified -->
         <skipTests>true</skipTests>
-        <jmh.version>1.36</jmh.version>
+        <jmh.version>1.37</jmh.version>
     </properties>
 
     <dependencies>
@@ -85,7 +85,7 @@
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>31.1-jre</version>
+            <version>33.1.0-jre</version>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -95,8 +95,8 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
-                <!-- downgraded to 3.1.0 because in 3.0.0-M5 STDOUT will only be printed after test is finished. This is annoying for long running tests (benchmarks) -->
-                <version>3.1.0</version>
+                <!-- downgraded to 3.2.5 because in 3.0.0-M5 STDOUT will only be printed after test is finished. This is annoying for long running tests (benchmarks) -->
+                <version>3.2.5</version>
                 <configuration>
                     <includes>
                         <include>**/*Benchmark.java</include>

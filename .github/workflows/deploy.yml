@@ -10,13 +10,14 @@ jobs:
   maven-central:
     name: Deploy to Maven Central
     runs-on: ubuntu-latest
+    timeout-minutes: 15
 
     steps:
-      - uses: actions/checkout@v3.5.2
+      - uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
       - name: Set up JDK
-        uses: actions/setup-java@v3.11.0
+        uses: actions/setup-java@v4.2.1
         with:
           java-version: 11
           distribution: 'adopt'

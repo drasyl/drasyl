@@ -24,6 +24,10 @@ package org.drasyl.node.event;
 import com.google.auto.value.AutoValue;
 import org.drasyl.util.internal.NonNull;
 
+import java.io.IOException;
+import java.io.PrintWriter;
+import java.io.StringWriter;
+
 /**
  * This event signals that the node was unable to process an inbound message. Both application-level
  * messages and internal drasyl signaling messages can trigger this event. The occurrence of this
@@ -35,6 +39,24 @@ import org.drasyl.util.internal.NonNull;
 @SuppressWarnings("java:S118")
 @AutoValue
 public abstract class InboundExceptionEvent implements Event {
+    @Override
+    public String toString() {
+        try {
+            final StringWriter stringWriter = new StringWriter();
+            final PrintWriter printWriter = new PrintWriter(stringWriter);
+            getError().printStackTrace(printWriter);
+            printWriter.flush();
+            final String error = stringWriter.toString();
+            stringWriter.close();
+            printWriter.close();
+
+            return "InboundExceptionEvent{error='" + error + "'}";
+        }
+        catch (final IOException e) {
+            return "InboundExceptionEvent{error='" + getError() + "'}";
+        }
+    }
+
     /**
      * Returns the exception why the message could not be processed.
      *

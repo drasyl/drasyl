@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -192,7 +192,7 @@ public class Crypto {
     /**
      * Generates a SHA-256 hash of the given input.
      *
-     * @param in the input to hash
+     * @param input the input to hash
      * @return SHA-256 hash of the input
      */
     public byte[] sha256(final byte[] input) throws CryptoException {
@@ -341,7 +341,7 @@ public class Crypto {
                 message,
                 authTag,
                 nonce.toByteArray(),
-                sessionPair.getTx()
+                sessionPair.getTx().getArray()
         );
 
         if (cipherBytes == null) {
@@ -381,7 +381,7 @@ public class Crypto {
                 cipher,
                 authTag,
                 nonce.toByteArray(),
-                sessionPair.getRx()
+                sessionPair.getRx().getArray()
         );
 
         if (messageBytes == null) {

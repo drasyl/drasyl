@@ -24,18 +24,15 @@ package org.drasyl.cli.tunnel.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.timeout.WriteTimeoutHandler;
-import org.drasyl.channel.ConnectionHandshakeChannelInitializer;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
+import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
 import org.drasyl.cli.tunnel.handler.ExposeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
-import org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqCodec;
-import org.drasyl.handler.arq.gobackn.GoBackNArqReceiverHandler;
-import org.drasyl.handler.arq.gobackn.GoBackNArqSenderHandler;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -47,12 +44,10 @@ import java.io.PrintStream;
 import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.tunnel.TunnelExposeCommand.WRITE_TIMEOUT_SECONDS;
+import static org.drasyl.cli.tunnel.TunnelCommand.CONNECTION_CONFIG;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer.ARQ_WINDOW_SIZE;
 
-public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChannelInitializer {
-    public static final int ARQ_RETRY_TIMEOUT = 250;
+public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitializer {
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -65,7 +60,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
                                                final Identity identity,
                                                final String password,
                                                final Service service) {
-        super(false);
+        super(true, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.identity = requireNonNull(identity);
@@ -83,15 +78,11 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
     }
 
     @Override
-    protected void handshakeCompleted(final DrasylChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+    protected void handshakeCompleted(final ChannelHandlerContext ctx) {
+        final ChannelPipeline p = ctx.pipeline();
 
-        // add ARQ to make sure messages arrive
-        p.addLast(new GoBackNArqCodec());
-        p.addLast(new GoBackNArqSenderHandler(ARQ_WINDOW_SIZE, Duration.ofMillis(ARQ_RETRY_TIMEOUT)));
-        p.addLast(new GoBackNArqReceiverHandler(Duration.ofMillis(50)));
-        p.addLast(new ByteToGoBackNArqDataCodec());
-        p.addLast(new WriteTimeoutHandler(WRITE_TIMEOUT_SECONDS));
+        p.addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        p.addLast(new LengthFieldPrepender(4));
 
         // (de)serializers for TunnelMessages
         p.addLast(new TunnelWriteCodec());
@@ -104,7 +95,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionHandshakeChan
 
     @Override
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
-        new Exception("The exposing node did not respond within " + handshakeTimeout.toMillis() + "ms. Try again later.", cause).printStackTrace(err);
+        new Exception("The consuming node did not respond within " + config.userTimeout().toMillis() + "ms. Try again later.", cause).printStackTrace(err);
         ctx.channel().close();
         exitCode.trySet(1);
     }

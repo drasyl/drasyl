@@ -69,6 +69,7 @@ import static org.drasyl.util.SerialNumberArithmetic.lessThanOrEqualTo;
  * once the handshake has been issued. The handshake process will result either in a
  * {@link ConnectionHandshakeCompleted} event or {@link ConnectionHandshakeException} exception.
  */
+@Deprecated
 @SuppressWarnings({ "java:S138", "java:S1142", "java:S1151", "java:S1192", "java:S1541" })
 public class ConnectionHandshakeHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionHandshakeHandler.class);

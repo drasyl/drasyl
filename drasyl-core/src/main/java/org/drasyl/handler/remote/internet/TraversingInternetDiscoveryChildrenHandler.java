@@ -47,6 +47,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
@@ -187,17 +188,26 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
         final DrasylAddress address = msg.getAddress();
         final Set<InetSocketAddress> endpoints = msg.getEndpoints();
-        LOG.trace("Got Unite for peer `{}` with endpoints `{}`. Try to reach peer.", address, endpoints);
+        LOG.debug("Got Unite for peer `{}` with endpoints `{}`.", address, endpoints);
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
-            // send Hello
-            final TraversingPeer traversingPeer = traversingPeers.computeIfAbsent(address, k -> new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints));
-            traversingPeer.applicationTrafficSentOrReceived();
-            traversingPeer.helloSent();
-            for (final InetSocketAddress inetAddress : traversingPeer.inetAddressCandidates()) {
-                writeHelloMessage(ctx, address, inetAddress, null);
+            final TraversingPeer existingTraversingPeer = traversingPeers.get(address);
+            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints);
+
+            if (!Objects.equals(existingTraversingPeer, newTraversingPeer)) {
+                // new peer or endpoints have changes -> send Hello
+                LOG.debug("Try to reach peer `{}` at endpoints `{}`", address, endpoints);
+                traversingPeers.put(address, newTraversingPeer);
+                newTraversingPeer.applicationTrafficSentOrReceived();
+                newTraversingPeer.helloSent();
+                for (final InetSocketAddress inetAddress : newTraversingPeer.inetAddressCandidates()) {
+                    writeHelloMessage(ctx, address, inetAddress, null);
+                }
+                ctx.flush();
             }
-            ctx.flush();
+            else {
+                LOG.debug("Do nothing, as we are already trying to reach the peer via received endpoints.");
+            }
         }
         else {
             LOG.trace("Got Unite for peer `{}` with address `{}`. But we've already reached maximum number of traversed peers. Drop message.", address, endpoints, endpoints);
@@ -438,6 +448,23 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          */
         public boolean isStale() {
             return !isNew() && (!hasApplicationTraffic() || !isReachable());
+        }
+
+        @Override
+        public boolean equals(Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final TraversingPeer that = (TraversingPeer) o;
+            return Objects.equals(inetAddressCandidates, that.inetAddressCandidates);
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(inetAddressCandidates);
         }
     }
 }

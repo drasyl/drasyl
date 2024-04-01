@@ -25,6 +25,7 @@ package org.drasyl.handler.connection;
  * Is thrown when a connection handshake failed or an established connection is being reset by the
  * remote peer. {@link io.netty.channel.Channel} should be closed after receiving such exception.
  */
+@Deprecated
 public class ConnectionHandshakeException extends RuntimeException {
     public ConnectionHandshakeException(final String message) {
         super(message);

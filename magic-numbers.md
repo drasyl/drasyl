@@ -1,24 +1,33 @@
-# Magic Numbers
-This document contains a list of the magic numbers used by drasyl.
-
-| Magic Number   | Description        | Location                                                                                                                                     |
-|----------------|--------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
-| 507,465,729    | drasyl             | [RemoteMessage](drasyl-core/src/main/java/org/drasyl/handler/remote/protocol/RemoteMessage.java)                                             |
-| -2,081,612,027 | TUN                | [TunnelWriteCodec](drasyl-cli/src/main/java/org/drasyl/cli/tunnel/handler/TunnelWriteCodec.java)                                             |
-| 523,370,708    | Stop and Wait DATA | [StopAndWaitArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/stopandwait/StopAndWaitArqCodec.java)                                 |
-| 523,370,709    | Stop and Wait ACK  | [StopAndWaitArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/stopandwait/StopAndWaitArqCodec.java)                                 |
-| -143,591,473   | Chunking content   | [MessageChunkEncoder](drasyl-core/src/main/java/org/drasyl/handler/stream/MessageChunkEncoder.java)                                          |
-| -143,591,472   | Chunking last      | [MessageChunkEncoder](drasyl-core/src/main/java/org/drasyl/handler/stream/MessageChunkEncoder.java)                                          |
-| -578,611,194   | Groups joined      | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
-| -578,611,195   | Groups left        | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
-| -578,611,196   | Groups welcome     | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
-| -578,611,197   | Groups failed      | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
-| -376,669,039   | Probe              | [ProbeCodec](drasyl-cli/src/main/java/org/drasyl/cli/perf/handler/ProbeCodec.java)                                                           |
-| 360,023,952    | GBN data           | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
-| 360,023,955    | GBN ACK            | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
-| -616,382,829    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
-| -616,382,828    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
-| -616,382,827    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
-| -616,382,826    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
-| -616,382,825    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                            |
-| -616,382,824    | Pub/Sub           | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                             |
+| Magic Number       | Hex Value                 | Description                  | Location                                                                                                                                     |
+|-------------------:|---------------------------|------------------------------|----------------------------------------------------------------------------------------------------------------------------------------------|
+| `-2,081,612,027`   | `83 ed 1f 05`             | TUN                          | [TunnelWriteCodec](drasyl-cli/src/main/java/org/drasyl/cli/tunnel/handler/TunnelWriteCodec.java)                                             |
+| `-760,063,585`     | `d2 b2 59 9f`             | RMI request                  | [RmiCodec](drasyl-extras/src/main/java/org/drasyl/handler/rmi/RmiCodec.java)                                                                 |
+| `-760,063,584`     | `d2 b2 59 a0`             | RMI response                 | [RmiCodec](drasyl-extras/src/main/java/org/drasyl/handler/rmi/RmiCodec.java)                                                                 |
+| `-760,063,583`     | `d2 b2 59 a1`             | RMI error                    | [RmiCodec](drasyl-extras/src/main/java/org/drasyl/handler/rmi/RmiCodec.java)                                                                 |
+| `-760,063,582`     | `d2 b2 59 a2`             | RMI cancel                   | [RmiCodec](drasyl-extras/src/main/java/org/drasyl/handler/rmi/RmiCodec.java)                                                                 |
+| `-616,382,829`     | `db 42 be 93`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-616,382,828`     | `db 42 be 94`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-616,382,827`     | `db 42 be 95`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-616,382,826`     | `db 42 be 96`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-616,382,825`     | `db 42 be 97`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-616,382,824`     | `db 42 be 98`             | Pub/Sub                      | [PubSubCodec](drasyl-core/src/main/java/org/drasyl/handler/pubsub/PubSubCodec.java)                                                          |
+| `-578,611,199`     | `dd 83 18 01`             | Groups plugin client leave   | [GroupsClientMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsClientMessageEncoder.java) |
+| `-578,611,198`     | `dd 83 18 02`             | Groups plugin client join    | [GroupsClientMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsClientMessageEncoder.java) |
+| `-578,611,197`     | `dd 83 18 03`             | Groups plugin server failed  | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
+| `-578,611,196`     | `dd 83 18 04`             | Groups plugin server welcome | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
+| `-578,611,195`     | `dd 83 18 05`             | Groups plugin server left    | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
+| `-578,611,194`     | `dd 83 18 06`             | Groups plugin server joined  | [GroupsServerMessageEncoder](drasyl-plugin-groups-client/src/main/java/org/drasyl/node/plugin/groups/client/GroupsServerMessageEncoder.java) |
+| `-376,669,039`     | `e9 8c 7c 91`             | Probe                        | [ProbeCodec](drasyl-cli/src/main/java/org/drasyl/cli/perf/handler/ProbeCodec.java)                                                           |
+| `-143,591,473`     | `f7 70 f7 cf`             | Chunking content             | [MessageChunkEncoder](drasyl-core/src/main/java/org/drasyl/handler/stream/MessageChunkEncoder.java)                                          |
+| `-143,591,472`     | `f7 70 f7 d0`             | Chunking last                | [MessageChunkEncoder](drasyl-core/src/main/java/org/drasyl/handler/stream/MessageChunkEncoder.java)                                          |
+| `-85,766,231`      | `fa e3 4f a9`             | Cyclon request               | [CyclonCodec](drasyl-extras/src/main/java/org/drasyl/handler/membership/cyclon/CyclonCodec.java)                                             |
+| `-85,766,230`      | `fa e3 4f aa`             | Cyclon response              | [CyclonCodec](drasyl-extras/src/main/java/org/drasyl/handler/membership/cyclon/CyclonCodec.java)                                             |
+| `360,023,952`      | `15 75 87 90`             | GBN data                     | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
+| `360,023,955`      | `15 75 87 93`             | GBN ACK                      | [GoBackNArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/gobackn/GoBackNArqCodec.java)                                             |
+| `507,465,729`      | `1e 3f 50 01`             | drasyl                       | [RemoteMessage](drasyl-core/src/main/java/org/drasyl/handler/remote/protocol/RemoteMessage.java)                                             |
+| `523,370,708`      | `1f 32 00 d4`             | Stop and Wait DATA           | [StopAndWaitArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/stopandwait/StopAndWaitArqCodec.java)                                 |
+| `523,370,709`      | `1f 32 00 d5`             | Stop and Wait ACK            | [StopAndWaitArqCodec](drasyl-core/src/main/java/org/drasyl/handler/arq/stopandwait/StopAndWaitArqCodec.java)                                 |
+| `852,550,535`      | `32 d0 e3 87`             | Connection handshake         | [ConnectionHandshakeCodec](drasyl-extras/src/main/java/org/drasyl/handler/connection/ConnectionHandshakeCodec.java)                          |
+| `899,812,335`      | `35 a2 0b ef`             | Tun                          | [TunPacketCodec](drasyl-cli/src/main/java/org/drasyl/cli/tun/handler/TunPacketCodec.java)                                                    |
+| `1,232,217,832`    | `49 72 26 e8`             | Connection                   | [SegmentCodec](drasyl-extras/src/main/java/org/drasyl/handler/connection/SegmentCodec.java)                                                  |
+| `8,989,898,989`    | `00 00 00 02 17 d6 f8 ed` | NOOP                         | [NoopDiscardHandler](drasyl-extras/src/main/java/org/drasyl/handler/noop/NoopDiscardHandler.java)                                            |

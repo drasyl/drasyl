@@ -26,6 +26,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.io.PrintStream;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -44,7 +45,7 @@ public class PrintAndCloseOnExceptionHandler extends ChannelInboundHandlerAdapte
                                 final Throwable cause) {
         if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
-            ctx.channel().close();
+            ctx.channel().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
         }
     }
 }

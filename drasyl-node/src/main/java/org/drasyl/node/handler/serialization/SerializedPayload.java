@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,9 +23,10 @@ package org.drasyl.node.handler.serialization;
 
 import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
-import org.drasyl.util.internal.Nullable;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
+import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.Nullable;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
@@ -39,7 +40,7 @@ public abstract class SerializedPayload {
     @Nullable
     public abstract String getType();
 
-    public abstract byte[] getPayload();
+    public abstract ImmutableByteArray getPayload();
 
     /**
      * Writes this message to the buffer {@code byteBuf}.
@@ -49,16 +50,16 @@ public abstract class SerializedPayload {
     public void writeTo(final ByteBuf byteBuf) {
         if (getType() == null) {
             byteBuf.writeBytes(UnsignedShort.of(0).toBytes())
-                    .writeBytes(getPayload());
+                    .writeBytes(getPayload().getArray());
         }
         else {
             byteBuf.writeBytes(UnsignedShort.of(getType().length()).toBytes());
             byteBuf.writeCharSequence(getType(), UTF_8);
-            byteBuf.writeBytes(getPayload());
+            byteBuf.writeBytes(getPayload().getArray());
         }
     }
 
-    public static SerializedPayload of(final String type, final byte[] payload) {
+    public static SerializedPayload of(final String type, final ImmutableByteArray payload) {
         return new AutoValue_SerializedPayload(type, payload);
     }
 
@@ -78,6 +79,6 @@ public abstract class SerializedPayload {
         payload = new byte[byteBuf.readableBytes()];
         byteBuf.readBytes(payload);
 
-        return of(type, payload);
+        return of(type, ImmutableByteArray.of(payload));
     }
 }
