@@ -362,6 +362,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: change the connection from passive to active,
                 LOG.trace("{} Handler is configured to perform passive OPEN process. Got OPEN call. Switch to active OPEN.", ctx.channel(), LISTEN);
 
+                tcb.ensureLocalPortIsSelected(requestedLocalPort);
+                tcb.remotePort(remotePort);
+
                 // RFC 9293: select an ISS.
                 tcb.selectIss();
 
@@ -427,6 +430,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: If the remote socket is specified, then change the connection from
                 // RFC 9293: passive to active,
                 LOG.trace("{} SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), data);
+
+                tcb.ensureLocalPortIsSelected(requestedLocalPort);
+                tcb.remotePort(remotePort);
 
                 // RFC 9293: select an ISS.
                 tcb.selectIss();
