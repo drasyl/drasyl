@@ -44,7 +44,7 @@ public class VisualPipeline {
             // make private fields accessible through reflection
             final Field headField = DefaultChannelPipeline.class.getDeclaredField("head");
             headField.setAccessible(true);
-            Class<?> clazz = Class.forName("io.netty.channel.AbstractChannelHandlerContext");
+            final Class<?> clazz = Class.forName("io.netty.channel.AbstractChannelHandlerContext");
             final Field nextField = clazz.getDeclaredField("next");
             nextField.setAccessible(true);
 
@@ -70,7 +70,7 @@ public class VisualPipeline {
                     printCenter("↓", maxLength);
                 }
 
-                String label = labels.get(i);
+                final String label = labels.get(i);
                 printCenter(label, maxLength);
             }
         }
@@ -82,7 +82,7 @@ public class VisualPipeline {
 
     @SuppressWarnings({ "java:S106", "java:S3457" })
     private static void printCenter(final String s, final int width) {
-        int padding = (width - s.length()) / 2;
+        final int padding = (width - s.length()) / 2;
         if (padding > 0) {
             System.out.printf("%" + padding + "s%s%" + padding + "s%n", "", s, "");
         }
