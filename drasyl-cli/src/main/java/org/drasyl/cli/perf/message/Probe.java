@@ -22,23 +22,17 @@
 package org.drasyl.cli.perf.message;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.DefaultByteBufHolder;
 
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
-public class Probe {
-    private final ByteBuf payload;
+public class Probe extends DefaultByteBufHolder {
     private final long messageNo;
 
     @SuppressWarnings("java:S2384")
-    public Probe(final ByteBuf payload, final long messageNo) {
-        this.payload = requireNonNull(payload);
+    public Probe(final ByteBuf content, final long messageNo) {
+        super(content);
         this.messageNo = requireNonNegative(messageNo);
-    }
-
-    @SuppressWarnings("java:S2384")
-    public ByteBuf getPayload() {
-        return payload;
     }
 
     public long getMessageNo() {

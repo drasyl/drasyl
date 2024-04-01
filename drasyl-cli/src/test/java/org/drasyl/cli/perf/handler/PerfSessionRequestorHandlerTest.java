@@ -38,7 +38,7 @@ class PerfSessionRequestorHandlerTest {
     @Test
     void shouldRequestNonDirectSessionOnChannelActive(@Mock final PrintStream out,
                                                       @Mock final SessionRequest request) {
-        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, 1, false);
+        final ChannelHandler handler = new PerfSessionRequestorHandler(out, request, false);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         try {
