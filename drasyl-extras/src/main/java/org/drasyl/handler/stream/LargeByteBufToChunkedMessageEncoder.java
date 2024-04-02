@@ -40,6 +40,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  * <p>
  * This handler should be used together with {@link io.netty.handler.stream.ChunkedWriteHandler}.
  */
+@Deprecated
 public class LargeByteBufToChunkedMessageEncoder extends MessageToMessageEncoder<ByteBuf> {
     private static final Logger LOG = LoggerFactory.getLogger(LargeByteBufToChunkedMessageEncoder.class);
     private final int maxChunkLength;

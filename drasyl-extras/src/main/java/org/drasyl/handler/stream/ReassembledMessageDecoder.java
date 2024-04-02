@@ -30,6 +30,7 @@ import java.util.List;
 /**
  * Decodes {@link ReassembledMessage}s to {@link io.netty.buffer.ByteBuf}s.
  */
+@Deprecated
 @Sharable
 public final class ReassembledMessageDecoder extends MessageToMessageDecoder<ReassembledMessage> {
     @Override

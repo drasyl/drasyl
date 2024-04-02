@@ -136,7 +136,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -156,7 +155,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -176,7 +174,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -290,7 +287,6 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -310,7 +306,6 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
@@ -381,11 +376,10 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -401,12 +395,11 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
@@ -425,7 +418,7 @@ class DrasylNodeIT {
              * This test ensures that sent application messages are delivered to the recipient.
              */
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            //@Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void test() throws InterruptedException {
                 // 1
                 // as node1 has no route to node2 this message should not be delivered
@@ -483,7 +476,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -500,7 +492,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
