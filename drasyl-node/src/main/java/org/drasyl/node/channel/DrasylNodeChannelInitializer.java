@@ -89,7 +89,8 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
     }
 
     protected void firstStage(final DrasylChannel ch) {
-        // NOOP
+        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        ch.pipeline().addLast(new LengthFieldPrepender(4));
     }
 
     /**
@@ -127,8 +128,6 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
      * versa.
      */
     protected void serializationStage(final DrasylChannel ch) {
-        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
-        ch.pipeline().addLast(new LengthFieldPrepender(4));
         ch.pipeline().addLast(new MessageSerializer(config));
     }
 
