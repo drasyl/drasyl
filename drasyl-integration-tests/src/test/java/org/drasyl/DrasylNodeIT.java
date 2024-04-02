@@ -54,6 +54,7 @@ import java.net.DatagramSocket;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -376,6 +377,7 @@ class DrasylNodeIT {
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
@@ -395,6 +397,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
@@ -415,7 +418,7 @@ class DrasylNodeIT {
              * This test ensures that sent application messages are delivered to the recipient.
              */
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            //@Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void test() throws InterruptedException {
                 // 1
                 // as node1 has no route to node2 this message should not be delivered

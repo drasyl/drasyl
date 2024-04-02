@@ -64,7 +64,10 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
 
     public DrasylNodeChannelInitializer(final DrasylConfig config,
                                         final DrasylNode node) {
-        super(DEFAULT_SERVER_PORT, DEFAULT_SERVER_PORT, ConnectionConfig.newBuilder().activeOpen(false).build());
+        super(DEFAULT_SERVER_PORT, DEFAULT_SERVER_PORT, ConnectionConfig.newBuilder()
+                .activeOpen(false)
+                .userTimeout(config.getRemoteHandshakeTimeout())
+                .build());
         this.config = requireNonNull(config);
         this.node = requireNonNull(node);
     }

@@ -95,6 +95,7 @@ public abstract class DrasylConfig {
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.remote.local-host-discovery.lease-time";
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED = "drasyl.remote.local-host-discovery.watch.enabled";
     public static final String REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED = "drasyl.remote.local-network-discovery.enabled";
+    public static final String REMOTE_HANDSHAKE_TIMEOUT = "drasyl.remote.handshake.timeout";
     public static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
     public static final String REMOTE_MESSAGE_ARM_PROTOCOL_ENABLED = "drasyl.remote.message.arm.protocol.enabled";
     public static final String REMOTE_MESSAGE_ARM_PROTOCOL_SESSION_MAX_COUNT = "drasyl.remote.message.arm.protocol.session.max-count";
@@ -172,6 +173,9 @@ public abstract class DrasylConfig {
             builder.remoteTcpFallbackServerBindPort(config.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT));
             builder.remoteTcpFallbackClientTimeout(config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT));
             builder.remoteTcpFallbackClientAddress(getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS));
+
+            // handshake
+            builder.remoteHandshakeTimeout(config.getDuration(REMOTE_HANDSHAKE_TIMEOUT));
 
             // arm
             builder.remoteMessageArmProtocolEnabled(config.getBoolean(REMOTE_MESSAGE_ARM_PROTOCOL_ENABLED));
@@ -732,6 +736,8 @@ public abstract class DrasylConfig {
 
     public abstract Map<DrasylAddress, InetSocketAddress> getRemoteStaticRoutes();
 
+    public abstract Duration getRemoteHandshakeTimeout();
+
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
     public abstract Path getRemoteLocalHostDiscoveryPath();
@@ -822,6 +828,8 @@ public abstract class DrasylConfig {
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
         public abstract Builder remoteStaticRoutes(final Map<DrasylAddress, InetSocketAddress> remoteStaticRoutes);
+
+        public abstract Builder remoteHandshakeTimeout(final Duration remoteHandshakeTimeout);
 
         public abstract Builder remoteMessageHopLimit(final byte remoteMessageHopLimit);
 
