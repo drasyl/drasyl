@@ -24,6 +24,8 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.handler.codec.EncoderException;
+import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
+import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.crypto.Crypto;
@@ -60,7 +62,7 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
 
     public DrasylNodeChannelInitializer(final DrasylConfig config,
                                         final DrasylNode node) {
-        super(null, DEFAULT_SERVER_PORT, ConnectionConfig.newBuilder().build());
+        super(DEFAULT_SERVER_PORT, DEFAULT_SERVER_PORT, ConnectionConfig.newBuilder().activeOpen(false).build());
         this.config = requireNonNull(config);
         this.node = requireNonNull(node);
     }
@@ -125,6 +127,8 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
      * versa.
      */
     protected void serializationStage(final DrasylChannel ch) {
+        ch.pipeline().addLast(new LengthFieldBasedFrameDecoder(Integer.MAX_VALUE, 0, 4, 0, 4));
+        ch.pipeline().addLast(new LengthFieldPrepender(4));
         ch.pipeline().addLast(new MessageSerializer(config));
     }
 
