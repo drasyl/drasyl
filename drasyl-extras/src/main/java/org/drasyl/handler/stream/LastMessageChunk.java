@@ -29,6 +29,7 @@ import io.netty.buffer.ByteBuf;
  * @see MessageChunk
  * @see ChunkedMessageInput
  */
+@Deprecated
 public class LastMessageChunk extends MessageChunk {
     /**
      * @param msgId   id of the message to which this chunk belongs
