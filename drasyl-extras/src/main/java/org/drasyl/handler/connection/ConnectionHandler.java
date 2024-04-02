@@ -429,7 +429,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LISTEN:
                 // RFC 9293: If the remote socket is specified, then change the connection from
                 // RFC 9293: passive to active,
-                LOG.trace("{} SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), data);
+                LOG.trace("{} SEND user call was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue {} bytes for transmission after connection has been established.", ctx.channel(), data.readableBytes());
 
                 tcb.ensureLocalPortIsSelected(requestedLocalPort);
                 tcb.remotePort(remotePort);
@@ -1353,7 +1353,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (somethingWasAcked) {
             if (tcb.retransmissionQueue().isEmpty()) {
-                LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
+                LOG.trace("{} All outstanding data has been acknowledged. Turn off the RETRANSMISSION timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
@@ -2290,7 +2290,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (isRfc9293Duplicate) {
             // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
-            LOG.trace("{} As SEG `{}` does not acknowledge any new data, we can now stop processing this SEG.", ctx.channel(), seg);
+            LOG.trace("{} As SEG `{}` does not acknowledge any new data, we can now stop processing this SEG's acknowledgement.", ctx.channel(), seg);
             return false;
         }
         tcb.lastAdvertisedWindow(seg.wnd());
