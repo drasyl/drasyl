@@ -164,9 +164,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this(requestedLocalPort, remotePort, config, null, null, null, null, null, false, false, null, null);
     }
 
+    public ConnectionHandler(final int requestedLocalPort,
+                             final int remotePort) {
+        this(requestedLocalPort, remotePort, ConnectionConfig.newBuilder().build());
+    }
+
     public ConnectionHandler(final int remotePort,
                              final ConnectionConfig config) {
-        this(0, remotePort, config, null, null, null, null, null, false, false, null, null);
+        this(0, remotePort, config);
     }
 
     public ConnectionHandler() {
