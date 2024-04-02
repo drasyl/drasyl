@@ -542,7 +542,7 @@ public class TransmissionControlBlock {
                     sendData = true;
                 }
                 else {
-                    LOG.trace("{} Sender's SWS avoidance: Usable window is {} bytes.", ctx.channel(), usableWindow);
+                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} byte until send condition is met or override timeout occured. Usable window is {} bytes (SND.WND={}/CWND={}).", ctx.channel(), readableBytes, usableWindow, sndWnd(), cwnd());
                     createOverrideTimer(ctx);
                     sendData = false;
                 }
@@ -551,7 +551,6 @@ public class TransmissionControlBlock {
                     cancelOverrideTimer();
                 }
                 else {
-                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
                     return;
                 }
             }
@@ -607,14 +606,18 @@ public class TransmissionControlBlock {
 
     private void createOverrideTimer(final ChannelHandlerContext ctx) {
         if (overrideTimer == null) {
+            LOG.trace("{} Sender's SWS avoidance: Override timer created: Timeout {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
+                LOG.trace("{} Sender's SWS avoidance: Override timer timeout after {}ms! Try sending enqueued data.", ctx.channel(), config.overrideTimeout().toMillis());
                 trySendingPreviouslyUnsentData(ctx, true);
                 if (!outgoingSegmentQueue.isEmpty()) {
                     flush(ctx);
                 }
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
+        }
+        else {
+            LOG.trace("{} Sender's SWS avoidance: Override timer already running.", ctx.channel());
         }
     }
 
