@@ -135,7 +135,7 @@ public class ChatGui {
                             final PrintWriter printWriter = new PrintWriter(stringWriter);
                             e.printStackTrace(printWriter);
 
-                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getMessage() + "\n" + stringWriter + "\n");
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + stringWriter + "\n");
                         }
                     });
                 }
