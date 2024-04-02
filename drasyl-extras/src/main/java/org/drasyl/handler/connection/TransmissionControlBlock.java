@@ -542,7 +542,7 @@ public class TransmissionControlBlock {
                     sendData = true;
                 }
                 else {
-                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes. Usable window is {} bytes (SND.WND={}/CWND={}).", ctx.channel(), readableBytes, usableWindow, sndWnd(), cwnd());
+                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} byte until send condition is met or override timeout occured. Usable window is {} bytes (SND.WND={}/CWND={}).", ctx.channel(), readableBytes, usableWindow, sndWnd(), cwnd());
                     createOverrideTimer(ctx);
                     sendData = false;
                 }
@@ -615,6 +615,9 @@ public class TransmissionControlBlock {
                     flush(ctx);
                 }
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
+        }
+        else {
+            LOG.trace("{} Sender's SWS avoidance: Override timer already running.", ctx.channel());
         }
     }
 
