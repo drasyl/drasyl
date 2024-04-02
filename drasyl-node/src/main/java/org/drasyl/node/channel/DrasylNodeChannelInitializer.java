@@ -41,6 +41,7 @@ import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.node.handler.crypto.PFSArmHandler;
 import org.drasyl.node.handler.serialization.MessageSerializer;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -50,6 +51,7 @@ import static org.drasyl.node.Null.NULL;
 /**
  * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
  */
+@UnstableApi
 public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
     // SortedChunk: 6 bytes
     // PublicHeader: 98 bytes + 4 bytes MagicNumber

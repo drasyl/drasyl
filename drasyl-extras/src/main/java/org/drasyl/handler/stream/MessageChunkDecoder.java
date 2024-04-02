@@ -37,6 +37,7 @@ import static org.drasyl.handler.stream.MessageChunkEncoder.MAGIC_NUMBER_LAST;
  *
  * @see ChunkedMessageInput
  */
+@Deprecated
 @Sharable
 public class MessageChunkDecoder extends MessageToMessageDecoder<ByteBuf> {
     private final int chunkNoFieldLength;
