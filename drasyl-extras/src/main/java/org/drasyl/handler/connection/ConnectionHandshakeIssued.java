@@ -28,6 +28,7 @@ import org.drasyl.util.internal.UnstableApi;
  * request.
  */
 @UnstableApi
+@Deprecated
 public class ConnectionHandshakeIssued implements ConnectionEvent {
     @Override
     public String toString() {

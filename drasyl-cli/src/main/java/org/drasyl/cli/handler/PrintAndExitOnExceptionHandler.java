@@ -21,12 +21,14 @@
  */
 package org.drasyl.cli.handler;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
 
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 
 /**
@@ -48,8 +50,9 @@ public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter
                                 final Throwable cause) {
         if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
-            ctx.channel().close();
-            exitCode.trySet(1);
+            ctx.channel().close()
+                    .addListener(FIRE_EXCEPTION_ON_FAILURE)
+                    .addListener((ChannelFutureListener) future -> exitCode.trySet(1));
         }
     }
 }

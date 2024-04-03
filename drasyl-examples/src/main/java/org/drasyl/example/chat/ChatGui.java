@@ -21,13 +21,7 @@
  */
 package org.drasyl.example.chat;
 
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
-import io.netty.handler.timeout.WriteTimeoutException;
-import io.netty.handler.timeout.WriteTimeoutHandler;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -35,7 +29,6 @@ import org.drasyl.node.DrasylNode;
 import org.drasyl.node.behaviour.Behavior;
 import org.drasyl.node.behaviour.BehavioralDrasylNode;
 import org.drasyl.node.behaviour.Behaviors;
-import org.drasyl.node.channel.DrasylNodeChannelInitializer;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.LongTimeEncryptionEvent;
 import org.drasyl.node.event.NodeDownEvent;
@@ -63,6 +56,8 @@ import java.awt.RenderingHints;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
+import java.io.PrintWriter;
+import java.io.StringWriter;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.time.LocalTime;
@@ -140,7 +135,11 @@ public class ChatGui {
                     appendTextToMessageArea(" To " + recipient + ": " + text + "\n");
                     node.send(recipient, text).whenComplete((result, e) -> {
                         if (e != null) {
-                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + e.getClass().getName() + ": " + e.getMessage() + "\n");
+                            final StringWriter stringWriter = new StringWriter();
+                            final PrintWriter printWriter = new PrintWriter(stringWriter);
+                            e.printStackTrace(printWriter);
+
+                            appendTextToMessageArea("Unable to send message `" + text + "` to `" + recipient + "`: " + stringWriter + "\n");
                         }
                     });
                 }
@@ -248,30 +247,6 @@ public class ChatGui {
     private class ChatGuiNode extends BehavioralDrasylNode {
         public ChatGuiNode() throws DrasylException {
             super(ChatGui.this.config);
-
-            bootstrap.childHandler(new DrasylNodeChannelInitializer(ChatGui.this.config, this) {
-                @Override
-                protected void arqStage(final DrasylChannel ch) {
-                    super.arqStage(ch);
-
-                    final ChannelPipeline p = ch.pipeline();
-
-                    // ensure that messages are delivered
-                    p.addLast(new WriteTimeoutHandler(TIMEOUT_SECONDS));
-                    p.addLast(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void exceptionCaught(final ChannelHandlerContext ctx,
-                                                    final Throwable cause) {
-                            if (cause instanceof WriteTimeoutException) {
-                                appendTextToMessageArea("Message to " + ctx.channel().remoteAddress() + " was not acknowledged. Maybe recipient is offline/unreachable?\n");
-                            }
-                            else {
-                                ctx.fireExceptionCaught(cause);
-                            }
-                        }
-                    });
-                }
-            });
         }
 
         @Override

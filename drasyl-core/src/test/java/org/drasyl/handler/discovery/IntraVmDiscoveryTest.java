@@ -105,6 +105,7 @@ class IntraVmDiscoveryTest {
                 channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
                 verify(ctx).fireChannelRead(any());
+                verify(ctx).fireChannelReadComplete();
             }
             finally {
                 channel.close();

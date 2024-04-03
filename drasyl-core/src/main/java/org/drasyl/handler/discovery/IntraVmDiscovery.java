@@ -67,6 +67,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             else {
                 LOG.debug("Send message `{}` via Intra VM Discovery.", ((OverlayAddressedMessage<?>) msg)::content);
                 discoveree.fireChannelRead(msg);
+                discoveree.fireChannelReadComplete();
                 promise.setSuccess();
             }
         }

@@ -32,6 +32,8 @@ import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SYN;
+import static org.drasyl.handler.connection.Segment.add;
+import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -52,17 +54,56 @@ class SegmentTest {
         }
 
         @Test
-        void shouldCountSyn() {
-            final Segment seg = new Segment(1234, 5678, 100, SYN);
+        void shouldNotCountSyn() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, SYN, data);
 
-            assertEquals(1, seg.len());
+            assertEquals(10, seg.len());
+
+            seg.release();
+        }
+
+        @Test
+        void shouldNotCountFin() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, FIN, data);
+
+            assertEquals(10, seg.len());
+
+            seg.release();
+        }
+    }
+
+    @Nested
+    class NxtSeq {
+        @Test
+        void shouldReturnNextSegment() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, ACK, data);
+
+            assertEquals(110, seg.nxtSeq());
+
+            seg.release();
+        }
+
+        @Test
+        void shouldCountSyn() {
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, SYN, data);
+
+            assertEquals(111, seg.nxtSeq());
+
+            seg.release();
         }
 
         @Test
         void shouldCountFin() {
-            final Segment seg = new Segment(1234, 5678, 100, FIN);
+            final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
+            final Segment seg = new Segment(1234, 5678, 100, 0, FIN, data);
 
-            assertEquals(1, seg.len());
+            assertEquals(111, seg.nxtSeq());
+
+            seg.release();
         }
     }
 
@@ -119,6 +160,29 @@ class SegmentTest {
         void shouldReturnTrueForSegmentsThatMustBeAcknowledged() {
             final Segment seg2 = new Segment(1234, 5678, 100, 0, ACK, Unpooled.buffer(4).writeInt(1));
             assertTrue(seg2.mustBeAcked());
+        }
+    }
+
+    @Nested
+    class Add {
+        @Test
+        void shouldReturnTheAddedResult() {
+            assertEquals(1, add(1, 0));
+            assertEquals(1, add(0, 1));
+            assertEquals(2, add(1, 1));
+            assertEquals(0, add(MAX_SEQ_NO, 1));
+            assertEquals(0, add(1, MAX_SEQ_NO));
+        }
+    }
+
+    @Nested
+    class Sub {
+        @Test
+        void shouldReturnTheSubtractedResult() {
+            assertEquals(1, sub(1, 0));
+            assertEquals(MAX_SEQ_NO, sub(0, 1));
+            assertEquals(0, sub(1, 1));
+            assertEquals(1, sub(0, MAX_SEQ_NO));
         }
     }
 }

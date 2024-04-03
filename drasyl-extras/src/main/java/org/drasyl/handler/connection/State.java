@@ -58,6 +58,12 @@ public enum State {
     // RFC 9293: represents no connection state at all.
     CLOSED;
 
+    @Override
+    public String toString() {
+        // use same string representation as in RFC 9293
+        return name().replace('_', '-');
+    }
+
     /**
      * Is connection in a synchronized state?
      */

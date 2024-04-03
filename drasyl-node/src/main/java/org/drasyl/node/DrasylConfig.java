@@ -97,9 +97,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED = "drasyl.remote.local-host-discovery.watch.enabled";
     public static final String REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED = "drasyl.remote.local-network-discovery.enabled";
     public static final String REMOTE_HANDSHAKE_TIMEOUT = "drasyl.remote.handshake.timeout";
-    public static final String REMOTE_MESSAGE_MTU = "drasyl.remote.message.mtu";
-    public static final String REMOTE_MESSAGE_MAX_CONTENT_LENGTH = "drasyl.remote.message.max-content-length";
-    public static final String REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.remote.message.composed-message-transfer-timeout";
     public static final String REMOTE_MESSAGE_HOP_LIMIT = "drasyl.remote.message.hop-limit";
     public static final String REMOTE_MESSAGE_ARM_PROTOCOL_ENABLED = "drasyl.remote.message.arm.protocol.enabled";
     public static final String REMOTE_MESSAGE_ARM_PROTOCOL_SESSION_MAX_COUNT = "drasyl.remote.message.arm.protocol.session.max-count";
@@ -108,11 +105,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_MAX_COUNT = "drasyl.remote.message.arm.application.agreement.max-count";
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_EXPIRE_AFTER = "drasyl.remote.message.arm.application.agreement.expire-after";
     public static final String REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_RETRY_INTERVAL = "drasyl.remote.message.arm.application.agreement.retry-interval";
-    public static final String REMOTE_MESSAGE_ARQ_ENABLED = "drasyl.remote.message.arq.enabled";
-    public static final String REMOTE_MESSAGE_ARQ_WINDOW_SIZE = "drasyl.remote.message.arq.window-size";
-    public static final String REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT = "drasyl.remote.message.arq.retry-timeout";
-    public static final String REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT = "drasyl.remote.message.arq.dead-peer-timeout";
-    public static final String REMOTE_MESSAGE_ARQ_CLOCK = "drasyl.remote.message.arq.clock";
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
@@ -177,9 +169,6 @@ public abstract class DrasylConfig {
             builder.remoteLocalHostDiscoveryLeaseTime(config.getDuration(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME));
             builder.remoteLocalHostDiscoveryWatchEnabled(config.getBoolean(REMOTE_LOCAL_HOST_DISCOVERY_WATCH_ENABLED));
             builder.remoteLocalNetworkDiscoveryEnabled(config.getBoolean(REMOTE_LOCAL_NETWORK_DISCOVERY_ENABLED));
-            builder.remoteMessageMtu((int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MTU).toBytes(), Integer.MAX_VALUE));
-            builder.remoteMessageMaxContentLength((int) Math.min(config.getMemorySize(REMOTE_MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE));
-            builder.remoteMessageComposedMessageTransferTimeout(config.getDuration(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT));
             builder.remoteMessageHopLimit(getByte(config, REMOTE_MESSAGE_HOP_LIMIT));
             builder.remoteTcpFallbackEnabled(config.getBoolean(REMOTE_TCP_FALLBACK_ENABLED));
             builder.remoteTcpFallbackServerBindHost(getInetAddress(config, REMOTE_TCP_FALLBACK_SERVER_BIND_HOST));
@@ -198,13 +187,6 @@ public abstract class DrasylConfig {
             builder.remoteMessageArmApplicationAgreementMaxCount(config.getInt(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_MAX_COUNT));
             builder.remoteMessageArmApplicationAgreementExpireAfter(config.getDuration(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_EXPIRE_AFTER));
             builder.remoteMessageArmApplicationAgreementRetryInterval(config.getDuration(REMOTE_MESSAGE_ARM_APPLICATION_AGREEMENT_RETRY_INTERVAL));
-
-            // arq
-            builder.remoteMessageArqEnabled(config.getBoolean(REMOTE_MESSAGE_ARQ_ENABLED));
-            builder.remoteMessageArqWindowSize(config.getInt(REMOTE_MESSAGE_ARQ_WINDOW_SIZE));
-            builder.remoteMessageArqRetryTimeout(config.getDuration(REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT));
-            builder.remoteMessageArqDeadPeerTimeout(config.getDuration(REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT));
-            builder.remoteMessageArqClock(config.getDuration(REMOTE_MESSAGE_ARQ_CLOCK));
 
             // intra vm discovery
             builder.intraVmDiscoveryEnabled(config.getBoolean(INTRA_VM_DISCOVERY_ENABLED));
@@ -770,12 +752,6 @@ public abstract class DrasylConfig {
 
     public abstract boolean isRemoteLocalNetworkDiscoveryEnabled();
 
-    public abstract int getRemoteMessageMtu();
-
-    public abstract int getRemoteMessageMaxContentLength();
-
-    public abstract Duration getRemoteMessageComposedMessageTransferTimeout();
-
     public abstract byte getRemoteMessageHopLimit();
 
     public abstract boolean isRemoteMessageArmProtocolEnabled();
@@ -791,16 +767,6 @@ public abstract class DrasylConfig {
     public abstract Duration getRemoteMessageArmApplicationAgreementExpireAfter();
 
     public abstract Duration getRemoteMessageArmApplicationAgreementRetryInterval();
-
-    public abstract boolean isRemoteMessageArqEnabled();
-
-    public abstract int getRemoteMessageArqWindowSize();
-
-    public abstract Duration getRemoteMessageArqRetryTimeout();
-
-    public abstract Duration getRemoteMessageArqDeadPeerTimeout();
-
-    public abstract Duration getRemoteMessageArqClock();
 
     public abstract boolean isRemoteTcpFallbackEnabled();
 
@@ -871,10 +837,6 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteHandshakeTimeout(final Duration remoteHandshakeTimeout);
 
-        public abstract Builder remoteMessageMtu(final int remoteMessageMtu);
-
-        public abstract Builder remoteMessageMaxContentLength(final int remoteMessageMaxContentLength);
-
         public abstract Builder remoteMessageHopLimit(final byte remoteMessageHopLimit);
 
         public abstract Builder remoteMessageArmProtocolEnabled(final boolean remoteMessageArmProtocolEnabled);
@@ -890,18 +852,6 @@ public abstract class DrasylConfig {
         public abstract Builder remoteMessageArmApplicationAgreementExpireAfter(final Duration remoteMessageArmApplicationAgreementExpireAfter);
 
         public abstract Builder remoteMessageArmApplicationAgreementRetryInterval(final Duration remoteMessageArmApplicationAgreementRetryInterval);
-
-        public abstract Builder remoteMessageArqEnabled(final boolean remoteMessageArqEnabled);
-
-        public abstract Builder remoteMessageArqWindowSize(final int remoteMessageArqWindowSize);
-
-        public abstract Builder remoteMessageArqRetryTimeout(final Duration remoteMessageArqRetryTimeout);
-
-        public abstract Builder remoteMessageArqDeadPeerTimeout(final Duration remoteMessageArqDeadPeerTimeout);
-
-        public abstract Builder remoteMessageArqClock(final Duration remoteMessageArqClock);
-
-        public abstract Builder remoteMessageComposedMessageTransferTimeout(final Duration messageComposedMessageTransferTimeout);
 
         public abstract Builder remoteSuperPeerEnabled(final boolean remoteSuperPeerEnabled);
 
@@ -973,15 +923,6 @@ public abstract class DrasylConfig {
             }
             if (config.getRemoteLocalHostDiscoveryLeaseTime().isNegative() || config.getRemoteLocalHostDiscoveryLeaseTime().isZero()) {
                 throw new DrasylConfigException(REMOTE_LOCAL_HOST_DISCOVERY_LEASE_TIME, "Must be a positive value.");
-            }
-            if (config.getRemoteMessageMtu() < 1) {
-                throw new DrasylConfigException(REMOTE_MESSAGE_MTU, "Must be a positive value.");
-            }
-            if (config.getRemoteMessageMaxContentLength() < 0) {
-                throw new DrasylConfigException(REMOTE_MESSAGE_MAX_CONTENT_LENGTH, "Must be a non-negative value.");
-            }
-            if (config.getRemoteMessageComposedMessageTransferTimeout().isNegative()) {
-                throw new DrasylConfigException(REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT, "Must be a positive value.");
             }
             if (config.getChannelInactivityTimeout().isNegative()) {
                 throw new DrasylConfigException(REMOTE_UNITE_MIN_INTERVAL, "Must be a non-negative value.");

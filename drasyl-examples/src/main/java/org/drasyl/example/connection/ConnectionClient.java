@@ -32,10 +32,11 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
+import org.drasyl.handler.connection.ConnectionClosing;
+import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -45,8 +46,9 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
 import java.util.Scanner;
+
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 
 /**
  * This node will contact {@link ConnectionServer} and initiates a connection handshake.
@@ -115,9 +117,16 @@ public class ConnectionClient {
                     protected void initChannel(final DrasylChannel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), true));
+                        p.addLast(new SegmentCodec());
+                        p.addLast(new ConnectionHandler(0, 1234));
                         p.addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void channelInactive(final ChannelHandlerContext ctx) {
+                                System.out.println("Connection to " + ctx.channel().remoteAddress() + " closed.");
+
+                                ctx.fireChannelInactive();
+                            }
+
                             @Override
                             public void userEventTriggered(final ChannelHandlerContext ctx,
                                                            final Object evt) {
@@ -127,6 +136,12 @@ public class ConnectionClient {
 
                                     // add your connection-related handler here
                                 }
+                                else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).initatedByRemotePeer()) {
+                                    // confirm close request
+                                    System.out.println("Peer wants to close the connection. Confirm close request.");
+
+                                    ctx.pipeline().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
+                                }
                                 else {
                                     ctx.fireUserEventTriggered(evt);
                                 }
@@ -135,8 +150,9 @@ public class ConnectionClient {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
                                                         final Throwable cause) {
-                                if (cause instanceof ConnectionHandshakeException) {
+                                if (cause instanceof ConnectionAbortedDueToUserTimeoutException) {
                                     // handshake failed
+                                    System.out.println("Handshake failed. Please check if peer is online.");
                                     cause.printStackTrace();
                                 }
                                 else {

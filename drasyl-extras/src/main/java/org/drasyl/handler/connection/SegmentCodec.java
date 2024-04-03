@@ -87,7 +87,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
             if (LOG.isDebugEnabled()) {
                 seg.content().markReaderIndex();
                 seg.content().readerIndex(readerIndex);
-                LOG.debug("{} SEG `{}` has calculated checksum {}.", ctx.channel(), seg, cks);
+                LOG.trace("{} SEG `{}` has calculated checksum {}.", ctx.channel(), seg, cks);
                 seg.content().resetReaderIndex();
             }
             buf.setShort(CKS_INDEX, (short) cks);
@@ -100,7 +100,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= Integer.BYTES + SEG_HDR_SIZE) {
+        if (in.readableBytes() >= SEG_HDR_SIZE) {
             in.markReaderIndex();
             if (in.readInt() != MAGIC_NUMBER) {
                 in.resetReaderIndex();
