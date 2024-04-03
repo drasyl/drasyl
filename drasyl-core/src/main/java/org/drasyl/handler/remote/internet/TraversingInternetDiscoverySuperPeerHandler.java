@@ -97,6 +97,9 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
         if (shouldInitiateRendezvous(senderKey, recipientKey)) {
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
+        else {
+            LOG.error("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
+        }
     }
 
     private boolean shouldInitiateRendezvous(final DrasylAddress sender,
