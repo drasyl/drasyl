@@ -29,6 +29,9 @@ import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Utility to write to a CSV file.
+ */
 public class CsvWriter implements AutoCloseable {
     private final FileWriter fileWriter;
     private final String[] columns;

@@ -25,40 +25,46 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class CsvWriterTest {
     @Test
-    void test(@TempDir final Path dir) throws IOException {
+    void shouldWriteEntriesToFile(@TempDir final Path dir) throws IOException {
         final Path path = dir.resolve("my-file.csv");
 
-        try (CsvWriter writer = new CsvWriter(path)) {
+        try (final CsvWriter writer = new CsvWriter(path)) {
             writer.write("foo", "bar", "baz");
             writer.write("foo2", "bar2", "baz2");
             writer.write(1, true, 2.0);
         }
+
+        assertEquals("foo,bar,baz\n" +
+                "foo2,bar2,baz2\n" +
+                "1,true,2.0\n", Files.readString(path));
     }
 
     @Test
-    void test2(@TempDir final Path dir) throws IOException {
+    void shouldWriteEntriesToFileWithColumns(@TempDir final Path dir) throws IOException {
         final Path path = dir.resolve("my-file.csv");
 
-        try (CsvWriter writer = new CsvWriter(path, "column1", "column2")) {
+        try (final CsvWriter writer = new CsvWriter(path, "column1", "column2")) {
             writer.write("foo", "bar");
         }
 
-        System.out.println();
+        assertEquals("column1,column2\n" +
+                "foo,bar\n", Files.readString(path));
     }
 
     @Test
-    void test3(@TempDir final Path dir) throws IOException {
+    void shouldFailIfDataDoesNotFit(@TempDir final Path dir) throws IOException {
         final Path path = dir.resolve("my-file.csv");
 
-        try (CsvWriter writer = new CsvWriter(path, "column1", "column2")) {
-            writer.write("foo", "bar");
-            writer.write("foo2", "bar2", "baz2");
+        try (final CsvWriter writer = new CsvWriter(path, "column1", "column2")) {
+            assertThrows(IllegalArgumentException.class, () -> writer.write("foo2", "bar2", "baz2"));
         }
-
-        System.out.println();
     }
 }
