@@ -31,7 +31,6 @@ import java.util.Objects;
  *
  * @see StopAndWaitArqAck
  */
-@Deprecated
 public class StopAndWaitArqData extends DefaultByteBufHolder implements StopAndWaitArqMessage {
     private final boolean sequenceNo;
 
