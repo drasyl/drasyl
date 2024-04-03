@@ -82,7 +82,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_BIND_HOST = "drasyl.remote.bind-host";
     public static final String REMOTE_BIND_PORT = "drasyl.remote.bind-port";
     public static final String REMOTE_EXPOSE_ENABLED = "drasyl.remote.expose.enabled";
-    public static final String REMOTE_PING_MAX_INITIAL_DELAY = "drasyl.remote.ping.max-initial-delay";
     public static final String REMOTE_PING_INTERVAL = "drasyl.remote.ping.interval";
     public static final String REMOTE_PING_TIMEOUT = "drasyl.remote.ping.timeout";
     public static final String REMOTE_PING_COMMUNICATION_TIMEOUT = "drasyl.remote.ping.communication-timeout";
@@ -149,7 +148,6 @@ public abstract class DrasylConfig {
             builder.remoteBindHost(getInetAddress(config, REMOTE_BIND_HOST));
             builder.remoteBindPort(config.getInt(REMOTE_BIND_PORT));
             builder.remoteExposeEnabled(config.getBoolean(REMOTE_EXPOSE_ENABLED));
-            builder.remotePingMaxInitialDelay(config.getDuration(REMOTE_PING_MAX_INITIAL_DELAY));
             builder.remotePingInterval(config.getDuration(REMOTE_PING_INTERVAL));
             builder.remotePingTimeout(config.getDuration(REMOTE_PING_TIMEOUT));
             builder.remotePingCommunicationTimeout(config.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT));
@@ -722,8 +720,6 @@ public abstract class DrasylConfig {
 
     public abstract boolean isRemoteExposeEnabled();
 
-    public abstract Duration getRemotePingMaxInitialDelay();
-
     public abstract Duration getRemotePingInterval();
 
     public abstract Duration getRemotePingTimeout();
@@ -818,8 +814,6 @@ public abstract class DrasylConfig {
         public abstract Builder remoteEnabled(final boolean remoteEnabled);
 
         public abstract Builder remoteBindPort(final int remoteBindPort);
-
-        public abstract Builder remotePingMaxInitialDelay(final Duration remotePingMaxInitialDelay);
 
         public abstract Builder remotePingInterval(final Duration remotePingInterval);
 

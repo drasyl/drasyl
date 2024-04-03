@@ -23,47 +23,30 @@ package org.drasyl.cli.node;
 
 import com.fasterxml.jackson.core.type.TypeReference;
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import org.drasyl.channel.ConnectionChannelInitializer;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.cli.sdo.channel.SdoNodeChildChannelInitializer;
-import org.drasyl.cli.sdo.message.SdoMessage;
-import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.cli.util.IdentityPublicKeyMixin;
-import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
-import org.drasyl.node.channel.DrasylNodeChannelInitializer;
-import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.drasyl.util.Worm;
 import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 
 import java.io.File;
 import java.io.IOException;
@@ -140,7 +123,32 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
 
             final Queue<Event> events = new ArrayDeque<>();
             final CompletableFuture<Void> running = new CompletableFuture<>();
-            node = new MyDrasylNode(config, events, running);
+            node = new DrasylNode(config) {
+                @Override
+                public void onEvent(final @NonNull Event event) {
+                    LOG.info("Event received: {}", event);
+                    if (rc != null) {
+                        while (rcEventsBufferSize > 0 && events.size() >= rcEventsBufferSize) {
+                            events.poll();
+                        }
+                        events.add(event);
+                    }
+                    else {
+                        if (event instanceof NodeNormalTerminationEvent) {
+                            running.complete(null);
+                        }
+                        else if (event instanceof InboundExceptionEvent) {
+                            ((InboundExceptionEvent) event).getError().printStackTrace(System.err); // NOSONAR
+                        }
+                        else if (event instanceof NodeUnrecoverableErrorEvent) {
+                            running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
+                        }
+                        else if (event instanceof NodeOnlineEvent) {
+                            resolve(IdentityPublicKey.of("20dbdb6f281dbdef528baabd56ae48e616756e90ab791c2ee246cc5916505e7a"));
+                        }
+                    }
+                }
+            };
 
             if (rc != null) {
                 final NodeRcJsonRpc2OverTcpServerInitializer channelInitializer;
@@ -252,50 +260,5 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                 }
         )
         boolean rcTcpJsonHttp;
-    }
-
-    private class MyDrasylNode extends DrasylNode {
-        private final Queue<Event> events;
-        private final CompletableFuture<Void> running;
-
-        public MyDrasylNode(DrasylConfig config,
-                            Queue<Event> events,
-                            CompletableFuture<Void> running) throws DrasylException {
-            this.identity = DrasylNode.generateIdentity(config);
-
-            final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
-            final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
-            final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
-            bootstrap = new ServerBootstrap().group(parentGroup, childGroup)
-                    .localAddress(identity.getAddress())
-                    .channel(DrasylServerChannel.class)
-                    .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup))
-                    .childHandler(new SdoNodeChildChannelInitializer(System.out, System.err, Worm.of(), identity.getIdentityPublicKey()));
-
-            this.events = events;
-            this.running = running;
-        }
-
-        @Override
-        public void onEvent(final @NonNull Event event) {
-            LOG.info("Event received: {}", event);
-            if (rc != null) {
-                while (rcEventsBufferSize > 0 && events.size() >= rcEventsBufferSize) {
-                    events.poll();
-                }
-                events.add(event);
-            }
-            else {
-                if (event instanceof NodeNormalTerminationEvent) {
-                    running.complete(null);
-                }
-                else if (event instanceof InboundExceptionEvent) {
-                    ((InboundExceptionEvent) event).getError().printStackTrace(System.err); // NOSONAR
-                }
-                else if (event instanceof NodeUnrecoverableErrorEvent) {
-                    running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
-                }
-            }
-        }
     }
 }

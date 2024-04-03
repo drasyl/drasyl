@@ -94,8 +94,8 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 @SuppressWarnings({ "java:S107", "java:S118" })
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    protected Identity identity;
-    protected ServerBootstrap bootstrap;
+    protected final Identity identity;
+    protected final ServerBootstrap bootstrap;
     private final List<SocketAddress> sntpServers;
     private ChannelFuture channelFuture;
 
@@ -425,23 +425,23 @@ public abstract class DrasylNode {
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
 
-//            try {
-//                final Long offset;
-//                // check system time
-//                if (sntpServers.isEmpty()) {
-//                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
-//                }
-//                else {
-//                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
-//                }
-//
-//                if (offset != null && offset > 60_000) {
-//                    LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
-//                }
-//            }
-//            catch (final Exception e) {
-//                LOG.warn("Can not determine time offset:", e);
-//            }
+            try {
+                final Long offset;
+                // check system time
+                if (sntpServers.isEmpty()) {
+                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
+                }
+                else {
+                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
+                }
+
+                if (offset != null && offset > 60_000) {
+                    LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
+                }
+            }
+            catch (final Exception e) {
+                LOG.warn("Can not determine time offset:", e);
+            }
 
             channelFuture = bootstrap.bind();
             return FutureUtil.toFuture(channelFuture);

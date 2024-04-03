@@ -87,9 +87,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
         final ArmHeader arm = arm(ctx, agreement, byteBuf);
         byteBuf.release();
         out.add(arm);
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("[{}] Armed msg: {} ({}) to {} ({})", ctx.channel().id(), msg, System.identityHashCode(msg), arm, System.identityHashCode(arm));
-        }
+        LOG.trace("[{}] Armed msg: {}", ctx.channel()::id, () -> msg);
     }
 
     @Override
