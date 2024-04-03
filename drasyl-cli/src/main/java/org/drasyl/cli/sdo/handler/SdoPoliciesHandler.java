@@ -21,10 +21,6 @@
  */
 package org.drasyl.cli.sdo.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import io.netty.buffer.ByteBuf;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
@@ -47,7 +43,6 @@ import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.cli.sdo.handler.SdoNodeHandler.State.JOINED;
-import static org.drasyl.handler.codec.JacksonCodec.OBJECT_MAPPER;
 
 public class SdoPoliciesHandler extends ChannelInboundHandlerAdapter {
     public static final Logger LOG = LoggerFactory.getLogger(SdoPoliciesHandler.class);

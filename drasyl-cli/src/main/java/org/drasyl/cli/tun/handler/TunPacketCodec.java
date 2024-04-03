@@ -34,6 +34,7 @@ import java.util.List;
  */
 public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
     public static final int MAGIC_NUMBER = 899_812_335;
+
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final TunPacket packet,

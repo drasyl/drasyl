@@ -23,8 +23,6 @@ package org.drasyl.cli.sdo.config;
 
 import org.drasyl.handler.peers.Peer;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
@@ -33,11 +31,7 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 public class LuaNodeStateTable extends LuaTable {
-    private static final Logger LOG = LoggerFactory.getLogger(LuaNodeStateTable.class);
-
     public LuaNodeStateTable() {
         set("online", LuaValue.FALSE);
         set("policies", tableOf());
@@ -70,7 +64,7 @@ public class LuaNodeStateTable extends LuaTable {
             peersTable.set(LuaValue.valueOf(entry.getKey().toString()), new LuaPeerTable(entry.getValue()));
         }
         set("peers", peersTable);
-        
+
         // store
         final LuaTable storeTable = tableOf();
         for (final Entry<String, Object> entry : store.entrySet()) {

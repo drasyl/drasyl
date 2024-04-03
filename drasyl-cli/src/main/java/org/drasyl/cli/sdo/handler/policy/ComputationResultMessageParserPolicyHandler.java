@@ -1,13 +1,32 @@
+/*
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
 package org.drasyl.cli.sdo.handler.policy;
 
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.luaj.vm2.ast.Str;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -15,7 +34,6 @@ import java.util.List;
 import java.util.Map;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.sdo.handler.SdoPoliciesHandler.STORE;
 
 public class ComputationResultMessageParserPolicyHandler extends ChannelDuplexHandler {
@@ -62,12 +80,12 @@ public class ComputationResultMessageParserPolicyHandler extends ChannelDuplexHa
         if (msg instanceof Tun4Packet) {
             final Tun4Packet packet = (Tun4Packet) msg;
             final String packetContentString = packet.content().toString(UTF_8);
-            final int start_index = packetContentString.indexOf(RESULT_START);
-            final int end_index = packetContentString.indexOf(RESULT_END);
+            final int startIndex = packetContentString.indexOf(RESULT_START);
+            final int endIndex = packetContentString.indexOf(RESULT_END);
             //LOG.error("COMPUTING: {} -> {}: write: msg = {}; content = {}; hexDump = {}; string = {}", packet, packet.content(), ByteBufUtil.hexDump(packet.content()), packetContentString);
-            if (start_index != -1 && end_index != -1) {
+            if (startIndex != -1 && endIndex != -1) {
 //                LOG.error("COMPUTING: result");
-                final String resultString = packetContentString.substring(start_index + RESULT_START.length() + 1, end_index - 1);
+                final String resultString = packetContentString.substring(startIndex + RESULT_START.length() + 1, endIndex - 1);
                 final Map<String, String> result = new HashMap<>();
                 final String[] pairs = resultString.split(";");
                 for (final String pair : pairs) {

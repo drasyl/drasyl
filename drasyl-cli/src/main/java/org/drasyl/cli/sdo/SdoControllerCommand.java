@@ -40,14 +40,15 @@ import java.io.IOException;
 
 @Command(
         name = "controller",
-        header = "",
+        header = "Orchestrates SDO nodes to create desired overlays.",
         defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class SdoControllerCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(SdoControllerCommand.class);
+    @SuppressWarnings("unused")
     @Option(
             names = { "-c", "--config" },
-            description = "Loads the node configuration from specified file.",
+            description = "Loads the overlay configuration from specified file.",
             paramLabel = "<file>",
             defaultValue = "network.conf"
     )

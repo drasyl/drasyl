@@ -22,13 +22,11 @@
 package org.drasyl.cli.sdo.config;
 
 import org.drasyl.cli.util.LuaClones;
-import org.drasyl.cli.util.LuaHashCodes;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.SetUtil;
-import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaString;
@@ -46,11 +44,11 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
-import static org.drasyl.cli.sdo.config.LuaNetworkTable.RELAYS;
-import static org.drasyl.cli.sdo.config.LuaNetworkTable.CLIENT;
-
 public class LuaNodeTable extends LuaTable {
-    private static final Logger LOG = LoggerFactory.getLogger(LuaNodeTable.class);
+    static {
+        LoggerFactory.getLogger(LuaNodeTable.class);
+    }
+
     private final LuaNetworkTable network;
     private static final Set<DrasylAddress> chosenPeers = new HashSet<>();
     private static final Map<DrasylAddress, Set<DrasylAddress>> electedPeers = new HashMap<>();
@@ -81,11 +79,6 @@ public class LuaNodeTable extends LuaTable {
     @Override
     public String toString() {
         return "LuaNodeTable" + LuaStrings.toString(this);
-    }
-
-    @Override
-    public int hashCode() {
-        return LuaHashCodes.hash(this);
     }
 
     public LuaNodeStateTable state() {
@@ -126,7 +119,8 @@ public class LuaNodeTable extends LuaTable {
         if (get("tun_address") != NIL) {
             try {
                 return InetAddress.getByName(get("tun_address").checkstring().tojstring());
-            } catch (final UnknownHostException e) {
+            }
+            catch (final UnknownHostException e) {
                 throw new RuntimeException(e);
             }
         }
@@ -144,7 +138,8 @@ public class LuaNodeTable extends LuaTable {
                 routes.put(InetAddress.getByName(key.checkstring().tojstring()), IdentityPublicKey.of(value.checkstring().tojstring()));
             }
             return routes;
-        } catch (final UnknownHostException e) {
+        }
+        catch (final UnknownHostException e) {
             throw new RuntimeException(e);
         }
     }

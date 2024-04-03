@@ -37,12 +37,13 @@ import picocli.CommandLine.Option;
 
 @Command(
         name = "node",
-        header = "",
+        header = "Registers to a SDO controller to contribute in creation desired overlays.",
         defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class SdoNodeCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(SdoNodeCommand.class);
 
+    @SuppressWarnings("unused")
     @Option(
             names = { "-c", "--controller" },
             description = "Controller to connect to.",

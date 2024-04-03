@@ -56,7 +56,7 @@ import static org.drasyl.cli.sdo.handler.SdoControllerHandler.State.INITIALIZED;
 public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdoControllerHandler.class);
     private final NetworkConfig config;
-    private State state = null;
+    private State state;
     private ScheduledFuture<?> notifyListenerPromise;
 
     public SdoControllerHandler(final NetworkConfig config) {
@@ -79,7 +79,6 @@ public class SdoControllerHandler extends ChannelInboundHandlerAdapter {
     private void ensureHandlerInitialized(final ChannelHandlerContext ctx) {
         if (state == null) {
             state = INITIALIZED;
-            ctx.pipeline().addLast(new NetworkConfigHandler(config));
 
             System.out.println("------------------------------------------------------------------------------------------------");
             System.out.println("Controller listening on address " + ctx.channel().localAddress());

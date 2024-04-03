@@ -28,13 +28,12 @@ import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.config.NetworkConfig;
 import org.drasyl.cli.sdo.handler.SdoControllerHandler;
-import org.drasyl.handler.noop.NoopDiscardHandler;
+import org.drasyl.handler.ipc.FileListenerHandler;
+import org.drasyl.handler.ipc.FileNotifierHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
@@ -44,8 +43,6 @@ import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("java:S110")
 public class SdoControllerChannelInitializer extends AbstractChannelInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(SdoControllerChannelInitializer.class);
-    private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final NetworkConfig config;
@@ -63,7 +60,6 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
                                            final boolean protocolArmEnabled,
                                            final NetworkConfig config) {
         super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
-        this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.config = requireNonNull(config);
@@ -71,20 +67,12 @@ public class SdoControllerChannelInitializer extends AbstractChannelInitializer 
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-        p.addLast(new NoopDiscardHandler());
-
         super.initChannel(ch);
 
-//        final PeersHandler peersHandler = new PeersHandler();
-//        ch.pipeline().addLast(peersHandler);
-//        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
-
-        p.addLast(new SdoFileNotifierHandler());
-
+        final ChannelPipeline p = ch.pipeline();
+        p.addLast(new FileNotifierHandler());
         p.addLast(new SdoControllerHandler(config));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
-
-        p.addBefore(p.context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new SdoFileNotifiedHandler());
+        p.addBefore(p.context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new FileListenerHandler());
     }
 }

@@ -28,6 +28,8 @@ import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdo.handler.SdoNodeHandler;
 import org.drasyl.cli.sdo.handler.SdoPoliciesHandler;
+import org.drasyl.handler.ipc.FileListenerHandler;
+import org.drasyl.handler.ipc.FileNotifierHandler;
 import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
@@ -78,13 +80,13 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
         ch.pipeline().addLast(peersHandler);
         //ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
 
-        p.addLast(new SdoFileNotifierHandler());
+        p.addLast(new FileNotifierHandler());
 
         final SdoNodeHandler nodeHandler = new SdoNodeHandler(controller);
         p.addLast(nodeHandler);
         p.addLast(new SdoPoliciesHandler(controller, peersHandler, nodeHandler));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
 
-        p.addBefore(p.context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new SdoFileNotifiedHandler());
+        p.addBefore(p.context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new FileListenerHandler());
     }
 }

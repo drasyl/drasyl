@@ -56,11 +56,7 @@ public class ByteToRemoteMessageCodec extends MessageToMessageCodec<InetAddresse
         final RemoteMessage remoteMsg = msg.content();
         final ByteBuf buffer = ctx.alloc().buffer(remoteMsg.getLength());
         remoteMsg.writeTo(buffer);
-        final InetAddressedMessage<ByteBuf> encodedMsg = msg.replace(buffer);
-        out.add(encodedMsg);
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("Encode `{}` ({}) to `{}` ({})", msg, msg.content().getNonce(), encodedMsg, System.identityHashCode(encodedMsg));
-        }
+        out.add(msg.replace(buffer));
     }
 
     @Override
@@ -73,11 +69,7 @@ public class ByteToRemoteMessageCodec extends MessageToMessageCodec<InetAddresse
                           final InetAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws InvalidMessageFormatException {
         try {
-            InetAddressedMessage<PartialReadMessage> decodedMsg = msg.replace(PartialReadMessage.of(msg.content().retain()));
-            out.add(decodedMsg);
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("Decode `{}` ({}) to `{}` ({})", msg, System.identityHashCode(msg), decodedMsg, decodedMsg.content().getNonce());
-            }
+            out.add(msg.replace(PartialReadMessage.of(msg.content().retain())));
         }
         catch (final MagicNumberMissmatchException e) {
             ReferenceCountUtil.release(msg);

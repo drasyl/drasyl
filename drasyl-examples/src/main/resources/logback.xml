@@ -45,10 +45,4 @@
 
     <logger name="org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler" level="debug">
     </logger>
-
-    <logger name="org.drasyl.handler.path.EdgeRelayClientHandler" level="debug">
-    </logger>
-
-    <logger name="org.drasyl.handler.path.EdgeRelayServerHandler" level="debug">
-    </logger>
 </configuration>

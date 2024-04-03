@@ -21,7 +21,9 @@
  */
 package org.drasyl.cli.sdo.config;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.cli.sdo.handler.policy.DefaultRoutePolicyHandler;
@@ -61,7 +63,7 @@ public class DefaultRoutePolicy extends Policy {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DefaultRoutePolicy that = (DefaultRoutePolicy) o;
+        final DefaultRoutePolicy that = (DefaultRoutePolicy) o;
         return Objects.equals(defaultRoute, that.defaultRoute);
     }
 

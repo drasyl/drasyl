@@ -102,6 +102,7 @@
             <artifactId>awaitility</artifactId>
         </dependency>
 
+    <!-- SDO network model is defined in lua -->
     <dependency>
         <groupId>org.luaj</groupId>
         <artifactId>luaj-jse</artifactId>

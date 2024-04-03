@@ -31,7 +31,6 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
-import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
@@ -57,7 +56,7 @@ public class DirectPathHandler extends ChannelInboundHandlerAdapter {
     private final IdentityPublicKey peer;
     private final Duration duration;
     private ScheduledFuture<?> retryTask;
-    private boolean directPathEstablished = false;
+    private boolean directPathEstablished;
 
     public DirectPathHandler(final IdentityPublicKey peer, final Duration duration) {
         this.peer = requireNonNull(peer);

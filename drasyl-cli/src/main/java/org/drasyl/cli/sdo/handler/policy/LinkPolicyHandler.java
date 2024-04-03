@@ -42,7 +42,7 @@ public class LinkPolicyHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LinkPolicyHandler.class);
     private final LinkPolicy policy;
     private ScheduledFuture<?> retryTask;
-    private boolean directPathEstablished = false;
+    private boolean directPathEstablished;
     private boolean keepAlive = true;
 
     public LinkPolicyHandler(final LinkPolicy policy) {

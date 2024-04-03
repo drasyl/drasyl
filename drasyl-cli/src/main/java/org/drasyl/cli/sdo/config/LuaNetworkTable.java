@@ -63,6 +63,7 @@ import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 public class LuaNetworkTable extends LuaTable {
     static final DrasylAddress CLIENT;
     static final Set<DrasylAddress> RELAYS;
+
     static {
         CLIENT = IdentityPublicKey.of("fe8793d5e8f8a2dcdeada2065b9162596f947619723fe101b8db186b49d01b9b");
         RELAYS = Set.of(
@@ -93,7 +94,8 @@ public class LuaNetworkTable extends LuaTable {
     {
         try {
             writer = new CsvWriter(new File("results/" + System.getenv("EXPERIMENT_NAME") + "_relays.csv"), "time", "relay", "count");
-        } catch (IOException e) {
+        }
+        catch (final IOException e) {
             throw new RuntimeException(e);
         }
     }
@@ -185,7 +187,7 @@ public class LuaNetworkTable extends LuaTable {
         if (!super.equals(o)) {
             return false;
         }
-        LuaNetworkTable that = (LuaNetworkTable) o;
+        final LuaNetworkTable that = (LuaNetworkTable) o;
         return Objects.equals(nodes, that.nodes) && Objects.equals(links, that.links);
     }
 
@@ -199,7 +201,7 @@ public class LuaNetworkTable extends LuaTable {
             final int before = hashCode();
             networkListener.call(this);
             final int after = hashCode();
-            boolean networkChanged = before != after;
+            final boolean networkChanged = before != after;
 
             if (networkChanged) {
                 LOG.trace("Network has changed. Push new policies to all online nodes.");
@@ -238,8 +240,8 @@ public class LuaNetworkTable extends LuaTable {
             }
         }
 
-        LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS");
+        final LocalDateTime now = LocalDateTime.now();
+        final DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd'T'HH:mm:ss.SSSSSS");
         final String format = now.format(formatter);
         for (Map.Entry<DrasylAddress, Integer> entry : relayCounters.entrySet()) {
             writer.write(format, entry.getKey(), entry.getValue());
@@ -347,10 +349,10 @@ public class LuaNetworkTable extends LuaTable {
                 throw new LuaError("Node `" + node2String + "` does not exist.");
             }
 
-            Iterator<LuaLinkTable> iterator = LuaNetworkTable.this.links.iterator();
+            final Iterator<LuaLinkTable> iterator = LuaNetworkTable.this.links.iterator();
 
             while (iterator.hasNext()) {
-                LuaLinkTable link = iterator.next();
+                final LuaLinkTable link = iterator.next();
 
                 if (
                         (link.node1().equals(IdentityPublicKey.of(node1String.tojstring())) && link.node2().equals(IdentityPublicKey.of(node1String.tojstring()))) ||

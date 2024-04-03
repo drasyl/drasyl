@@ -21,7 +21,9 @@
  */
 package org.drasyl.cli.sdo.config;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.cli.sdo.handler.policy.LinkPolicyHandler;
@@ -61,7 +63,7 @@ public class LinkPolicy extends Policy {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        LinkPolicy that = (LinkPolicy) o;
+        final LinkPolicy that = (LinkPolicy) o;
         return Objects.equals(peer, that.peer);
     }
 

@@ -22,7 +22,6 @@
 package org.drasyl.cli.sdo.config;
 
 import org.drasyl.cli.util.LuaClones;
-import org.drasyl.cli.util.LuaHashCodes;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -31,16 +30,11 @@ import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.ZeroArgFunction;
 
-import java.util.Objects;
-
 public class LuaLinkTable extends LuaTable {
-    private final LuaNetworkTable network;
-
     public LuaLinkTable(final LuaNetworkTable network,
                         final LuaString node1,
                         final LuaString node2,
                         final LuaTable params) {
-        this.network = network;
         for (final LuaValue key : network.linkDefaults.keys()) {
             final LuaValue defaultValue = network.linkDefaults.get(key);
             set(key, LuaClones.clone(defaultValue));
@@ -90,7 +84,6 @@ public class LuaLinkTable extends LuaTable {
         else {
             return 31 * node2().hashCode() + node1().hashCode();
         }
-        //return LuaHashCodes.hash(this);
     }
 
     @Override

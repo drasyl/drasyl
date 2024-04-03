@@ -21,7 +21,9 @@
  */
 package org.drasyl.cli.sdo.message;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.cli.sdo.config.Policy;
 import org.drasyl.handler.peers.PeersList;
 

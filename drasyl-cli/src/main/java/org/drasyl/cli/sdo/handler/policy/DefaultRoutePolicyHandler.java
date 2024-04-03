@@ -27,15 +27,11 @@ import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.cli.sdo.config.DefaultRoutePolicy;
-import org.drasyl.cli.sdo.config.Policy;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.sdo.config.Policy.PolicyState.ABSENT;
 
 public class DefaultRoutePolicyHandler extends ChannelOutboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultRoutePolicyHandler.class);
     private final DefaultRoutePolicy policy;
 
     public DefaultRoutePolicyHandler(final DefaultRoutePolicy policy) {
