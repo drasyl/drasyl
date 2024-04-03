@@ -217,7 +217,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                 final InetAddressedMessage<RemoteMessage> addressedMsg,
                                 final InetSocketAddress inetAddress) {
         final RemoteMessage msg = addressedMsg.content();
-        LOG.error("Got RemoteMessage `{}` from `{}` for children peer `{}`. Resolve it to inet address `{}`.", msg::getNonce, msg::getSender, msg::getRecipient, () -> inetAddress);
+        LOG.trace("Got RemoteMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", msg::getNonce, msg::getRecipient, () -> inetAddress);
 
         // increment hop count every time a message is relayed
         if (hopLimit.compareTo(msg.getHopCount()) > 0) {
