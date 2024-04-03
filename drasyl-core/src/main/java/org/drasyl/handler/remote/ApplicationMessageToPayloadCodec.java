@@ -30,6 +30,8 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.List;
 
@@ -39,6 +41,7 @@ import static java.util.Objects.requireNonNull;
  * This codec converts {@link ApplicationMessage}s to the embedded payload and vice versa.
  */
 public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedEnvelope<ApplicationMessage, ?>, OverlayAddressedMessage<ByteBuf>> {
+    private static final Logger LOG = LoggerFactory.getLogger(ApplicationMessageToPayloadCodec.class);
     private final int networkId;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
@@ -66,7 +69,11 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
                           final OverlayAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws Exception {
         final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) msg.recipient(), myPublicKey, myProofOfWork, msg.content().retain());
-        out.add(msg.replace(wrappedMsg));
+        final OverlayAddressedMessage<ApplicationMessage> newMsg = msg.replace(wrappedMsg);
+        out.add(newMsg);
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Encode `{}` ({}) to `{}` ({})", msg, System.identityHashCode(msg), newMsg, wrappedMsg.getNonce());
+        }
     }
 
     @Override

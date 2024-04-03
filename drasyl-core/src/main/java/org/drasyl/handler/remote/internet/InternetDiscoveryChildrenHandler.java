@@ -36,7 +36,9 @@ import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.protocol.ArmedProtocolMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -226,7 +228,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (isRoutableOutboundMessage(msg)) {
-            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
+            final OverlayAddressedMessage<RemoteMessage> addressedMsg = (OverlayAddressedMessage<RemoteMessage>) msg;
             handleRoutableOutboundMessage(ctx, addressedMsg, promise);
         }
         else {
@@ -248,7 +250,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
-        LOG.debug("Start Heartbeat job.");
+        log().trace("Start Heartbeat job.");
         // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
@@ -260,7 +262,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     void stopHeartbeat() {
         if (heartbeatDisposable != null) {
-            LOG.debug("Stop Heartbeat job.");
+            log().debug("Stop Heartbeat job.");
             heartbeatDisposable.cancel(false);
             heartbeatDisposable = null;
         }
@@ -305,11 +307,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork);
         }
 
-        LOG.trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`.", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
+        log().trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`.", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
         ctx.write(new InetAddressedMessage<>(msg, inetAddress)).addListener(future -> {
             if (!future.isSuccess()) {
                 //noinspection unchecked
-                LOG.warn("Unable to send Hello `{}` for peer `{}` to address `{}`:", () -> msg, () -> publicKey, () -> inetAddress, future::cause);
+                log().warn("Unable to send Hello `{}` for peer `{}` to address `{}`:", () -> msg, () -> publicKey, () -> inetAddress, future::cause);
             }
         });
     }
@@ -333,7 +335,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                               final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
         final long rtt = currentTime.getAsLong() - msg.getTime();
-        LOG.trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
+        log().trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
 
         final SuperPeer superPeer = superPeers.get(publicKey);
         superPeer.acknowledgementReceived(rtt);
@@ -389,12 +391,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         if (!Objects.equals(bestSuperPeer, newBestSuperPeer)) {
             final IdentityPublicKey oldBestSuperPeer = bestSuperPeer;
             bestSuperPeer = newBestSuperPeer;
-            if (LOG.isTraceEnabled()) {
+            if (log().isTraceEnabled()) {
                 if (newBestSuperPeer != null) {
-                    LOG.trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
+                    log().trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
                 }
                 else {
-                    LOG.trace("All super peers stale!");
+                    log().trace("All super peers stale!");
                 }
             }
         }
@@ -407,21 +409,21 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private boolean isRoutableOutboundMessage(final Object msg) {
         return bestSuperPeer != null &&
                 msg instanceof OverlayAddressedMessage &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
+                (((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage || ((OverlayAddressedMessage<?>) msg).content() instanceof ArmedProtocolMessage);
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
     private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
-                                               final OverlayAddressedMessage<ApplicationMessage> msg,
+                                               final OverlayAddressedMessage<RemoteMessage> msg,
                                                final ChannelPromise promise) {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
         if (superPeer != null) {
-            LOG.trace("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
+            log().debug("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
             ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
         else {
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
-            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
+            log().debug("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }
     }
@@ -439,8 +441,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     @SuppressWarnings({ "unused", "java:S2325" })
     private void handleUnexpectedMessage(final ChannelHandlerContext ctx,
                                          final Object msg) {
-        LOG.warn("Got unexpected message `{}`. Drop it.", msg);
+        log().debug("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
+    }
+
+    protected Logger log() {
+        return LOG;
     }
 
     protected static class SuperPeer {

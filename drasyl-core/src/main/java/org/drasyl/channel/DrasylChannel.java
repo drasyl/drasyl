@@ -25,6 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
@@ -41,6 +42,7 @@ import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.Objects;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -165,11 +167,27 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
-                }
-            });
+            final OverlayAddressedMessage<Object> serverChannelMsg = new OverlayAddressedMessage<>(msg, remoteAddress, localAddress);
+            final int identityHashCode;
+            if (LOG.isTraceEnabled()) {
+                identityHashCode = System.identityHashCode(msg);
+                LOG.trace("Pass outbound message `{}` ({}) as `{}` ({}) to server channel.", msg, identityHashCode, serverChannelMsg, System.identityHashCode(serverChannelMsg));
+            }
+            else {
+                identityHashCode = 0;
+            }
+            final ChannelFuture writeFuture = parent().write(serverChannelMsg);
+            if (LOG.isWarnEnabled()) {
+                final String msgStr = Objects.toString(msg);
+                writeFuture.addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn("Outbound message `{}` ({}) written from channel `{}` to server channel failed:", () -> msgStr, () -> identityHashCode, () -> this, future::cause);
+                    }
+                    else {
+                        LOG.trace("Outbound message `{}` ({}) written from channel `{}` to server channel successfully written.", () -> msgStr, () -> identityHashCode, () -> this);
+                    }
+                });
+            }
             in.remove();
             wroteToParent = true;
         }
@@ -206,7 +224,7 @@ public class DrasylChannel extends AbstractChannel {
      * @return {@code true} if remote peer is reachable via a direct path.
      */
     public boolean isDirectPathPresent() {
-        return ((DrasylServerChannel) parent()).paths.get(remoteAddress) != null;
+        return ((DrasylServerChannel) parent()).isDirectPathPresent(remoteAddress);
     }
 
     private class DrasylChannelUnsafe extends AbstractUnsafe {

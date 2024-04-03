@@ -205,7 +205,7 @@ public class UdpServer extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             if (channel.isWritable()) {
-                LOG.trace("Write Datagram {}", msg);
+                LOG.trace("Write Datagram {} to {}", msg, ctx.channel().remoteAddress());
                 channel.write(msg).addListener(new PromiseNotifier<>(promise));
             }
             else {
@@ -213,12 +213,14 @@ public class UdpServer extends ChannelDuplexHandler {
             }
         }
         else {
+            LOG.error("Pass further to channel {}", msg);
             ctx.write(msg, promise);
         }
     }
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
+        LOG.trace("Flush channel.");
         channel.flush();
         ctx.flush();
     }

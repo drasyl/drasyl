@@ -190,6 +190,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
     }
 
+    public boolean isDirectPathPresent(final SocketAddress remoteAddress) {
+        return !paths.get(remoteAddress).isEmpty();
+    }
+
     public Promise<DrasylChannel> serve(final DrasylAddress peer) {
         return serve(peer, new DefaultPromise<>(eventLoop()));
     }

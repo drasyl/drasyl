@@ -52,15 +52,12 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int BIND_PORT = 22527;
     public static final int NETWORK_ID = 1;
     public static final Map<IdentityPublicKey, InetSocketAddress> SUPER_PEERS = Map.of(
-            IdentityPublicKey.of("c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d"), new InetSocketAddress("sp-fkb1.drasyl.org", 22527),
-            IdentityPublicKey.of("5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c"), new InetSocketAddress("sp-rjl1.drasyl.org", 22527),
-            IdentityPublicKey.of("bf3572dba7ebb6c5ccd037f3a978707b5d7c5a9b9b01b56b4b9bf059af56a4e0"), new InetSocketAddress("sp-nyc1.drasyl.org", 22527),
-            IdentityPublicKey.of("ab7a1654d463f9986530bed00569cc895697827b802153b8ef1598579713045f"), new InetSocketAddress("sp-sgp1.drasyl.org", 22527)
+            IdentityPublicKey.of("6419710a9a687126015c07e151c01f9093bcdfaacf9d33c0c1ac2d386b8348b4"), new InetSocketAddress("10.10.1.1", 22527)
     );
     public static final int PING_INTERVAL_MILLIS = 5_000;
     public static final int PING_TIMEOUT_MILLIS = 30_000;
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
-    public static final int MAX_PEERS = 100;
+    public static final int MAX_PEERS = 1000;
     protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     protected static final LoopbackHandler LOOPBACK_HANDLER = new LoopbackHandler();
     protected final Identity identity;

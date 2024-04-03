@@ -92,7 +92,7 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
             }
         }
         else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemoveChildrenAndPathEvent || evt instanceof RemovePathEvent) {
-            peers.remove(((PathEvent) evt).getAddress());
+            //peers.remove(((PathEvent) evt).getAddress());
         }
 
         ctx.fireUserEventTriggered(evt);

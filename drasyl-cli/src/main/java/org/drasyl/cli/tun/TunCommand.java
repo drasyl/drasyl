@@ -296,7 +296,7 @@ public class TunCommand extends ChannelOptions {
     /**
      * Assign IP address and subnet to the tun device.
      */
-    private class AddressAndSubnetHandler extends ChannelInboundHandlerAdapter {
+    public class AddressAndSubnetHandler extends ChannelInboundHandlerAdapter {
         private final Identity identity;
         private final Map<InetAddress, DrasylAddress> routes;
 
@@ -310,9 +310,9 @@ public class TunCommand extends ChannelOptions {
         public void channelActive(final ChannelHandlerContext ctx) throws IOException {
             ctx.fireChannelActive();
 
-            // configurate network device
+            // configure network device
             out.print("Created network device '" + ctx.channel().localAddress() + "'. Now assign address " + address.getHostAddress() + " with netmask " + subnet.netmaskLength() + " to it...");
-            configurateTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
+            configureTun((TunChannel) ctx.channel(), ctx.channel().localAddress().toString());
             out.println("done!");
 
             out.println("Network device is ready!");
@@ -324,8 +324,8 @@ public class TunCommand extends ChannelOptions {
             ctx.pipeline().remove(ctx.name());
         }
 
-        private void configurateTun(final TunChannel channel,
-                                    final String name) throws IOException {
+        private void configureTun(final TunChannel channel,
+                                  final String name) throws IOException {
             final String addressStr = address.getHostAddress();
             if (PlatformDependent.isOsx()) {
                 // macOS
