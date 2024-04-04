@@ -24,7 +24,6 @@ package org.drasyl.node;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
@@ -389,15 +388,8 @@ public abstract class DrasylNode {
                 final ChannelPromise combinedFuture = channel.newPromise();
                 executor.submit(() -> {
                     final ChannelFuture closeFuture = channel.close();
-                    closeFuture.addListener(new ChannelFutureListener() {
-                        @Override
-                        public void operationComplete(ChannelFuture future) throws Exception {
-                            System.out.println("close " + DrasylNode.this.identity.getIdentityPublicKey().toString());
-                        }
-                    });
                     final Future<?> noopFuture = executor.submit(() -> {
                         // NOOP
-                        System.out.println("noopFuture " + DrasylNode.this.identity.getIdentityPublicKey().toString());
                     });
                     combiner.add(closeFuture);
                     combiner.add(noopFuture);
