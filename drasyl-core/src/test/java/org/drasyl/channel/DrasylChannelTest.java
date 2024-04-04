@@ -68,8 +68,13 @@ class DrasylChannelTest {
     class DoDisconnect {
         @Test
         void shouldCloseChannelAndRemoveLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final EventLoop eventLoop,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise channelPromise) {
+            when(eventLoop.inEventLoop()).thenReturn(true);
+
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+            channel.unsafe().register(eventLoop, channelPromise);
 
             channel.doDisconnect();
 

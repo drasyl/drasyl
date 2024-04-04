@@ -125,6 +125,8 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doClose() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+
         localAddress = null;
 
         state = State.CLOSED;
@@ -133,7 +135,6 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     void readInbound() {
-        LOG.error("readInbound {} {}", this, inboundBuffer.isEmpty());
         assert eventLoop().inEventLoop();
         final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
         handle.reset(config());
@@ -162,6 +163,15 @@ public class DrasylChannel extends AbstractChannel {
         }
 
         readInbound();
+    }
+
+    public void finishRead() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+
+        if (readInProgress && !inboundBuffer.isEmpty()) {
+            readInProgress = false;
+            readInbound();
+        }
     }
 
     @Override
@@ -216,11 +226,9 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     private void releaseInboundBuffers() {
-        assert eventLoop() == null || eventLoop().inEventLoop();
         readInProgress = false;
-        final Queue<Object> inboundBuffer = this.inboundBuffer;
         Object msg;
-        while ((msg = inboundBuffer.poll()) != null) {
+        while ((msg = this.inboundBuffer.poll()) != null) {
             ReferenceCountUtil.release(msg);
         }
     }
