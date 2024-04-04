@@ -65,7 +65,6 @@ public class DrasylChannel extends AbstractChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    // To further optimize this we could write our own SPSC queue.
     final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
     private volatile State state;
     volatile boolean pendingWrites;
