@@ -49,6 +49,7 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  *  </pre>
  * </blockquote>
  */
+@Deprecated
 public class ChunkedMessageInput implements ChunkedInput<MessageChunk> {
     private final ChunkedInput<ByteBuf> input;
     private final byte id;

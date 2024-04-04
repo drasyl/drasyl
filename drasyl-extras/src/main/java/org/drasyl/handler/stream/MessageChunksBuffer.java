@@ -41,6 +41,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *
  * @see ChunkedMessageInput
  */
+@Deprecated
 public class MessageChunksBuffer extends MessageToMessageDecoder<MessageChunk> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageChunksBuffer.class);
     private final int maxContentLength;

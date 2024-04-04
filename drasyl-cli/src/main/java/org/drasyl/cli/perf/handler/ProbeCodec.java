@@ -47,7 +47,7 @@ public class ProbeCodec extends MessageToMessageCodec<ByteBuf, Probe> {
         final ByteBuf buf = ctx.alloc().buffer();
         buf.writeInt(MAGIC_NUMBER_PROBE);
         buf.writeLong(msg.getMessageNo());
-        buf.writeBytes(msg.getPayload());
+        buf.writeBytes(msg.content().retain());
         out.add(buf);
     }
 

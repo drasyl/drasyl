@@ -164,9 +164,14 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         this(requestedLocalPort, remotePort, config, null, null, null, null, null, false, false, null, null);
     }
 
+    public ConnectionHandler(final int requestedLocalPort,
+                             final int remotePort) {
+        this(requestedLocalPort, remotePort, ConnectionConfig.newBuilder().build());
+    }
+
     public ConnectionHandler(final int remotePort,
                              final ConnectionConfig config) {
-        this(0, remotePort, config, null, null, null, null, null, false, false, null, null);
+        this(0, remotePort, config);
     }
 
     public ConnectionHandler() {
@@ -362,6 +367,9 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: change the connection from passive to active,
                 LOG.trace("{} Handler is configured to perform passive OPEN process. Got OPEN call. Switch to active OPEN.", ctx.channel(), LISTEN);
 
+                tcb.ensureLocalPortIsSelected(requestedLocalPort);
+                tcb.remotePort(remotePort);
+
                 // RFC 9293: select an ISS.
                 tcb.selectIss();
 
@@ -426,7 +434,10 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LISTEN:
                 // RFC 9293: If the remote socket is specified, then change the connection from
                 // RFC 9293: passive to active,
-                LOG.trace("{} SEND user wall was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue data `{}` for transmission after connection has been established.", ctx.channel(), data);
+                LOG.trace("{} SEND user call was requested while we're in passive OPEN mode. Switch to active OPEN mode, initiate OPEN process, and enqueue {} bytes for transmission after connection has been established.", ctx.channel(), data.readableBytes());
+
+                tcb.ensureLocalPortIsSelected(requestedLocalPort);
+                tcb.remotePort(remotePort);
 
                 // RFC 9293: select an ISS.
                 tcb.selectIss();
@@ -1347,7 +1358,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (somethingWasAcked) {
             if (tcb.retransmissionQueue().isEmpty()) {
-                LOG.trace("{} All outstanding data has been acknowledged. Turn off the retransmission timer.", ctx.channel());
+                LOG.trace("{} All outstanding data has been acknowledged. Turn off the RETRANSMISSION timer.", ctx.channel());
                 cancelUserTimer(ctx);
                 // RFC 6298: (5.2) When all outstanding data has been acknowledged, turn off the
                 // RFC 6298:       retransmission timer.
@@ -2085,79 +2096,83 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         if (lessThan(tcb.sndUna(), seg.ack()) && lessThanOrEqualTo(seg.ack(), tcb.sndNxt())) {
             LOG.trace("{} Got `{}`. Advance SND.UNA.", ctx.channel(), seg);
             ackedBytes = tcb.sndUna(ctx, seg.ack());
-        }
 
-        // RFC 7323: Also compute a new estimate of round-trip time.
-        if (config.timestamps()) {
-            final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
-            if (tsOpt != null) {
-                final long rDash;
-                if (tcb.sndTsOk()) {
-                    // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
-                    final long segTsEcr = tsOpt.tsEcr;
+            // RFC 7323: Also compute a new estimate of round-trip time.
+            final int newRto;
+            if (config.timestamps()) {
+                final TimestampsOption tsOpt = (TimestampsOption) seg.options().get(TIMESTAMPS);
+                if (tsOpt != null) {
+                    final long rDash;
+                    if (tcb.sndTsOk()) {
+                        // RFC 7323: If Snd.TS.OK bit is on, use Snd.TSclock - SEG.TSecr;
+                        final long segTsEcr = tsOpt.tsEcr;
 
-                    // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
-                    rDash = config.clock().time() - segTsEcr;
+                        // RFC 6298: (2.3) When a subsequent RTT measurement R' is made,
+                        rDash = config.clock().time() - segTsEcr;
+                    }
+                    else {
+                        // RFC 7323: otherwise, use the elapsed time since the first segment in the
+                        // RFC 7323: retransmission queue was sent.
+                        rDash = config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime();
+                    }
+                    LOG.trace("{} RTT measurement: Subsequent RTT measurement R' made = {}ms.", ctx.channel(), rDash);
+
+                    // RFC 6298:       a host MUST set
+                    // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
+                    // RFC 6298:       SRTT <- (1 - alpha) * SRTT + alpha * R'
+                    // RFC 6298:       The value of SRTT used in the update to RTTVAR is its value before
+                    // RFC 6298:       updating SRTT itself using the second assignment. That is, updating
+                    // RFC 6298:       RTTVAR and SRTT MUST be computed in the above order.
+                    // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
+                    // RFC 6298:       suggested in [JK88]).
+                    // (replaced by RFC 7323)
+
+                    // RFC 7323: Taking multiple RTT samples per window would shorten the history calculated
+                    // RFC 7323: by the RTO mechanism in [RFC6298], and the below algorithm aims to maintain
+                    // RFC 7323: a similar history as originally intended by [RFC6298].
+
+                    // RFC 7323: It is roughly known how many samples a congestion window worth of data will
+                    // RFC 7323: yield, not accounting for ACK compression, and ACK losses. Such events will
+                    // RFC 7323: result in more history of the path being reflected in the final value for
+                    // RFC 7323: RTO, and are uncritical. This modification will ensure that a similar
+                    // RFC 7323: amount of time is taken into account for the RTO estimation, regardless of
+                    // RFC 7323: how many samples are taken per window:
+
+                    // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
+                    final long expectedSamples = max((long) Math.ceil((double) tcb.flightSize() / (tcb.smss() * 2)), 1L);
+                    // RFC 7323: alpha' = alpha / ExpectedSamples
+                    final double alphaDash = config.alpha() / expectedSamples;
+                    // RFC 7323: beta' = beta / ExpectedSamples
+                    final double betaDash = config.beta() / expectedSamples;
+                    // RFC 7323: Note that the factor 2 in ExpectedSamples is due to "Delayed ACKs".
+
+                    // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
+                    // RFC 7323: and beta' instead:
+                    // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
+                    tcb.rttVar(ctx, (float) ((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash)));
+                    // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
+                    // RFC 7323: (for each sample R')
+                    tcb.sRtt(ctx, (float) ((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash));
+
+                    // RFC 6298:       After the computation, a host MUST update
+                    // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
+                    newRto = (int) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar()));
+
                 }
                 else {
-                    // RFC 7323: otherwise, use the elapsed time since the first segment in the
-                    // RFC 7323: retransmission queue was sent.
-                    rDash = config.clock().time() - tcb.retransmissionQueue().firstSegmentSentTime();
+                    newRto = (int) config.rto().toMillis();
                 }
-                LOG.trace("{} RTT measurement: Subsequent RTT measurement R' made = {}ms.", ctx.channel(), rDash);
-
-                // RFC 6298:       a host MUST set
-                // RFC 6298:       RTTVAR <- (1 - beta) * RTTVAR + beta * |SRTT - R'|
-                // RFC 6298:       SRTT <- (1 - alpha) * SRTT + alpha * R'
-                // RFC 6298:       The value of SRTT used in the update to RTTVAR is its value before
-                // RFC 6298:       updating SRTT itself using the second assignment. That is, updating
-                // RFC 6298:       RTTVAR and SRTT MUST be computed in the above order.
-                // RFC 6298:       The above SHOULD be computed using alpha=1/8 and beta=1/4 (as
-                // RFC 6298:       suggested in [JK88]).
-                // (replaced by RFC 7323)
-
-                // RFC 7323: Taking multiple RTT samples per window would shorten the history calculated
-                // RFC 7323: by the RTO mechanism in [RFC6298], and the below algorithm aims to maintain
-                // RFC 7323: a similar history as originally intended by [RFC6298].
-
-                // RFC 7323: It is roughly known how many samples a congestion window worth of data will
-                // RFC 7323: yield, not accounting for ACK compression, and ACK losses. Such events will
-                // RFC 7323: result in more history of the path being reflected in the final value for
-                // RFC 7323: RTO, and are uncritical. This modification will ensure that a similar
-                // RFC 7323: amount of time is taken into account for the RTO estimation, regardless of
-                // RFC 7323: how many samples are taken per window:
-
-                // RFC 7323: ExpectedSamples = ceiling(FlightSize / (SMSS * 2))
-                final long expectedSamples = max((long) Math.ceil((double) tcb.flightSize() / (tcb.smss() * 2)), 1L);
-                // RFC 7323: alpha' = alpha / ExpectedSamples
-                final double alphaDash = config.alpha() / expectedSamples;
-                // RFC 7323: beta' = beta / ExpectedSamples
-                final double betaDash = config.beta() / expectedSamples;
-                // RFC 7323: Note that the factor 2 in ExpectedSamples is due to "Delayed ACKs".
-
-                // RFC 7323: Instead of using alpha and beta in the algorithm of [RFC6298], use alpha'
-                // RFC 7323: and beta' instead:
-                // RFC 7323: RTTVAR <- (1 - beta') * RTTVAR + beta' * |SRTT - R'|
-                tcb.rttVar(ctx, (float) ((1 - betaDash) * tcb.rttVar() + betaDash * Math.abs(tcb.sRtt() - rDash)));
-                // RFC 7323: SRTT <- (1 - alpha') * SRTT + alpha' * R'
-                tcb.sRtt(ctx, (float) ((1 - alphaDash) * tcb.sRtt() + alphaDash * rDash));
-                // RFC 7323: (for each sample R')
-
-                // RFC 6298:       After the computation, a host MUST update
-                // RFC 6298:       RTO <- SRTT + max (G, K*RTTVAR)
-                tcb.rto(ctx, (int) Math.ceil(tcb.sRtt() + max(config.clock().g(), config.k() * tcb.rttVar())));
             }
-        }
-        else {
-            // RFC 62982: Note that after retransmitting, once a new RTT measurement is obtained
-            // RFC 62982: (which can only happen when new data has been sent and acknowledged), the
-            // RFC 62982: computations outlined in Section 2 are performed, including the
-            // RFC 62982: computation of RTO, which may result in "collapsing" RTO back down after
-            // RFC 62982: it has been subject to exponential back off (rule 5.5).
-            if (ackedBytes > 0) {
-                LOG.trace("{} New data has been acked. Reset RTO to {}ms (\"collapsing\" RTO back down).", ctx.channel(), config.rto().toMillis());
-                tcb.rto(ctx, (int) config.rto().toMillis());
+            else {
+                // RFC 6298: Note that after retransmitting, once a new RTT measurement is obtained
+                // RFC 6298: (which can only happen when new data has been sent and acknowledged), the
+                // RFC 6298: computations outlined in Section 2 are performed, including the
+                // RFC 6298: computation of RTO, which may result in "collapsing" RTO back down after
+                // RFC 6298: it has been subject to exponential back off (rule 5.5).
+                newRto = (int) config.rto().toMillis();
             }
+
+            tcb.rto(ctx, newRto);
         }
 
         // RFC 9293: Any segments on the retransmission queue that are thereby entirely
@@ -2284,7 +2299,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
         if (isRfc9293Duplicate) {
             // RFC 9293: If the ACK is a duplicate (SEG.ACK =< SND.UNA), it can be ignored.
-            LOG.trace("{} As SEG `{}` does not acknowledge any new data, we can now stop processing this SEG.", ctx.channel(), seg);
+            LOG.trace("{} As SEG `{}` does not acknowledge any new data, we can now stop processing this SEG's acknowledgement.", ctx.channel(), seg);
             return false;
         }
         tcb.lastAdvertisedWindow(seg.wnd());

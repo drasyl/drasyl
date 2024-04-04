@@ -22,26 +22,18 @@ jobs:
       - uses: actions/checkout@v4.1.2
         with:
           fetch-depth: 0
+      # sign artefacts to check if signing works, otherwise we would only find out after merging with the master, which is too late
       - name: Set up JDK
         uses: actions/setup-java@v4.2.1
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
           cache: 'maven'
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: GPG_PASSPHRASE
       - name: Build with Maven
-        run: ./mvnw --batch-mode --update-snapshots -Dmaven.javadoc.skip=true -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 verify | tee build.output && exit ${PIPESTATUS[0]}
+        run: ./mvnw --batch-mode --update-snapshots -Dmaven.javadoc.skip=true -Dsurefire.rerunFailingTestsCount=2 -Dfailsafe.rerunFailingTestsCount=2 verify gpg:sign | tee build.output && exit ${PIPESTATUS[0]}
+        env:
+          GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
       - name: Checking for detected leak
         run: ./.github/scripts/check_leak.sh build.output
-#      - name: Cache SonarCloud packages
-#        uses: actions/cache@v1
-#        with:
-#          path: ~/.sonar/cache
-#          key: ${{ runner.os }}-sonar
-#          restore-keys: ${{ runner.os }}-sonar
-#        if: success() && matrix.java == '11'
-#      - name: Analyze with SonarQube
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
-#          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-#        run: ./mvnw --batch-mode org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
-#        if: success() && matrix.java == '11'

@@ -23,7 +23,6 @@ package org.drasyl.cli.perf.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.concurrent.Future;
 import org.drasyl.channel.ChannelDirectPathChanged;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.perf.message.Noop;
@@ -54,9 +53,7 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     @SuppressWarnings("java:S107")
     PerfSessionRequestorHandler(final PrintStream out,
                                 final SessionRequest request,
-                                final long requestTimeoutMillis,
                                 final boolean waitForDirectConnection,
-                                final Future<?> timeoutTask,
                                 final boolean sessionRequested,
                                 final boolean directConnectionRequested) {
         this.out = requireNonNull(out);
@@ -68,9 +65,8 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
 
     public PerfSessionRequestorHandler(final PrintStream out,
                                        final SessionRequest request,
-                                       final long requestTimeoutMillis,
                                        final boolean waitForDirectConnection) {
-        this(out, request, requestTimeoutMillis, waitForDirectConnection, null, false, false);
+        this(out, request, waitForDirectConnection, false, false);
     }
 
     @Override

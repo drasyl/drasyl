@@ -519,6 +519,156 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqClock(java.time.Duration)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqDeadPeerTimeout(java.time.Duration)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqEnabled(boolean)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqRetryTimeout(java.time.Duration)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqWindowSize(int)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageComposedMessageTransferTimeout(java.time.Duration)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageMaxContentLength(int)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageMtu(int)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_CLOCK",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_ENABLED",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_WINDOW_SIZE",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.field.removedWithConstant",
+          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_MTU",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqClock()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqDeadPeerTimeout()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqRetryTimeout()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageArqWindowSize()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageComposedMessageTransferTimeout()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageMaxContentLength()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageMtu()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method boolean org.drasyl.node.DrasylConfig::isRemoteMessageArqEnabled()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

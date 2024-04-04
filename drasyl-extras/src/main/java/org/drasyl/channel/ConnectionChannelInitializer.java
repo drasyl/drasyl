@@ -31,14 +31,10 @@ import org.drasyl.handler.connection.ConnectionException;
 import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
-
-import java.util.Arrays;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static java.util.Objects.requireNonNullElseGet;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.util.Preconditions.requireInRange;
 
@@ -54,28 +50,48 @@ import static org.drasyl.util.Preconditions.requireInRange;
 @UnstableApi
 public abstract class ConnectionChannelInitializer extends ChannelInitializer<DrasylChannel> {
     public static final int DEFAULT_SERVER_PORT = 21_037;
-    private final Boolean doServer;
-    private final int port;
+    private int localPort;
+    private int remotePort;
     protected final ConnectionConfig config;
+
+    protected ConnectionChannelInitializer(final int localPort,
+                                           final int remotePort,
+                                           final ConnectionConfig config) {
+        this.localPort = requireInRange(localPort, 0, MAX_PORT);
+        this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
+        this.config = requireNonNull(config);
+    }
+
+    protected ConnectionChannelInitializer(final int localPort,
+                                           final int remotePort) {
+        this(localPort, remotePort, ConnectionConfig.newBuilder().build());
+    }
 
     /**
      * @param doServer Determines the server behavior:<br>
      *                 <ul>
      *                 <li>{@code true} sets this channel to server mode, listening on the specified {@code port}.</li>
      *                 <li>{@code false} sets this channel to client mode, listening on a random port while assuming the peer listens on {@code port}.</li>
-     *                 <li>{@code null} decides the server/client role based on comparing local and remote public keys, with the "higher" key indicating a server.</li>
      *                 </ul>
      * @param port     Specifies the port number. In server mode, the channel listens on this port.
      *                 In client mode, the channel assumes the peer listens on this port.
      * @param config   Configuration settings for connections.
      */
-    protected ConnectionChannelInitializer(final Boolean doServer,
+    protected ConnectionChannelInitializer(final boolean doServer,
                                            final int port,
                                            final ConnectionConfig config) {
-
-        this.doServer = doServer;
-        this.port = requireInRange(port, 0, MAX_PORT);
-        this.config = requireNonNull(config);
+        if (doServer) {
+            // I'm the "server"
+            localPort = requireInRange(port, 0, MAX_PORT);
+            remotePort = 0;
+            this.config = config.toBuilder().activeOpen(false).build();
+        }
+        else {
+            // I'm the "client"
+            localPort = 0;
+            remotePort = requireInRange(port, 0, MAX_PORT);
+            this.config = config.toBuilder().activeOpen(true).build();
+        }
     }
 
     /**
@@ -98,26 +114,7 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new SegmentCodec());
-
-        final boolean iAmServer;
-        iAmServer = requireNonNullElseGet(doServer, () -> iAmServer(ch));
-
-        final int localPort;
-        final int remotePort;
-        if (iAmServer) {
-            // I'm the "server"
-            localPort = port;
-            remotePort = 0;
-        }
-        else {
-            // I'm the "client"
-            localPort = 0;
-            remotePort = port;
-        }
-
-        final ConnectionConfig overriddenConfig = config.toBuilder().activeOpen(!iAmServer).build();
-        p.addLast(new ConnectionHandler(localPort, remotePort, overriddenConfig));
-
+        p.addLast(new ConnectionHandler(localPort, remotePort, config));
         p.addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(final ChannelHandlerContext ctx,
@@ -145,10 +142,6 @@ public abstract class ConnectionChannelInitializer extends ChannelInitializer<Dr
                 }
             }
         });
-    }
-
-    private static boolean iAmServer(final DrasylChannel ch) {
-        return Integer.signum(Arrays.compareUnsigned(((DrasylAddress) ch.localAddress()).toByteArray(), ((DrasylAddress) ch.remoteAddress0()).toByteArray())) == -1;
     }
 
     @SuppressWarnings("java:S112")
