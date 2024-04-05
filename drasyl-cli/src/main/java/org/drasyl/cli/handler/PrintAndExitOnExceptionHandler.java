@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream printStream;
     private final Worm<Integer> exitCode;
+    private boolean closeCalled;
 
     public PrintAndExitOnExceptionHandler(final PrintStream printStream,
                                           final Worm<Integer> exitCode) {
@@ -50,9 +51,12 @@ public class PrintAndExitOnExceptionHandler extends ChannelInboundHandlerAdapter
                                 final Throwable cause) {
         if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
-            ctx.channel().close()
-                    .addListener(FIRE_EXCEPTION_ON_FAILURE)
-                    .addListener((ChannelFutureListener) future -> exitCode.trySet(1));
+            if (!closeCalled) {
+                closeCalled = true;
+                ctx.channel().close()
+                        .addListener(FIRE_EXCEPTION_ON_FAILURE)
+                        .addListener((ChannelFutureListener) future -> exitCode.trySet(1));
+            }
         }
     }
 }
