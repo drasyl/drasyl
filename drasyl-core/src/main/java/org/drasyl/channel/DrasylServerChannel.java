@@ -272,13 +272,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
             if (channel != null) {
                 // pass event to channel
-                channel.pipeline().fireChannelReadComplete();
-                if (channel.eventLoop() == ((DrasylServerChannel) ctx.channel()).eventLoop()) {
-                    channel.finishRead();
-                }
-                else {
-                    channel.eventLoop().execute(channel::finishRead);
-                }
+                channel.finishRead();
             }
         }
 
