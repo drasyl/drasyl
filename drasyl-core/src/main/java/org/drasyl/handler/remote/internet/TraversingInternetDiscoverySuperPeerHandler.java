@@ -98,7 +98,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
         else {
-            LOG.error("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
+            LOG.trace("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
         }
     }
 
