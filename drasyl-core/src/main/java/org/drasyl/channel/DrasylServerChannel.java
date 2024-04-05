@@ -259,21 +259,16 @@ public class DrasylServerChannel extends AbstractServerChannel {
         public void channelReadComplete(final ChannelHandlerContext ctx) {
             // pass channelReadComplete to all channels that have read something
             for (final IdentityPublicKey peer : fireReadCompleteChannels) {
-                fireChildChannelReadComplete(ctx, peer);
+                final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
+
+                if (channel != null) {
+                    // pass event to channel
+                    channel.finishRead();
+                }
             }
             fireReadCompleteChannels.clear();
 
             ctx.fireChannelReadComplete();
-        }
-
-        private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
-                                                  final IdentityPublicKey peer) {
-            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
-
-            if (channel != null) {
-                // pass event to channel
-                channel.finishRead();
-            }
         }
 
         @Override

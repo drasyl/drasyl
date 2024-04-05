@@ -72,21 +72,13 @@ public class DrasylChannel extends AbstractChannel {
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
     final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
-    private final Runnable readTask = new Runnable() {
-        @Override
-        public void run() {
-            // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
-            if (!inboundBuffer.isEmpty()) {
-                readInbound();
-            }
+    private final Runnable readTask = () -> {
+        // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
+        if (!inboundBuffer.isEmpty()) {
+            readInbound();
         }
     };
-    private final Runnable finishReadTask = new Runnable() {
-        @Override
-        public void run() {
-            finishRead0();
-        }
-    };
+    private final Runnable finishReadTask = this::finishRead0;
     private volatile State state;
     volatile boolean pendingWrites;
     private volatile DrasylAddress localAddress; // NOSONAR
@@ -157,7 +149,6 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     void readInbound() {
-        assert eventLoop().inEventLoop();
         final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
         handle.reset(config());
         final ChannelPipeline pipeline = pipeline();
@@ -170,6 +161,8 @@ public class DrasylChannel extends AbstractChannel {
             pipeline.fireChannelRead(received);
         } while (handle.continueReading());
         handle.readComplete();
+
+        // all messages read, fire channelReadComplete event
         pipeline.fireChannelReadComplete();
     }
 
@@ -180,6 +173,8 @@ public class DrasylChannel extends AbstractChannel {
         }
 
         if (inboundBuffer.isEmpty()) {
+            // set to true to make sure this read operation will be performed when something is
+            // written to the inbound buffer
             readInProgress = true;
             return;
         }
@@ -202,13 +197,17 @@ public class DrasylChannel extends AbstractChannel {
                 eventLoop().execute(readTask);
             }
             catch (final Throwable cause) {
-                LOG.warn("Closing DrasylChannel {} because execption occurred!", this, cause);
+                LOG.warn("Closing DrasylChannel {} because exception occurred!", this, cause);
                 close();
                 PlatformDependent.throwException(cause);
             }
         }
     }
 
+    /**
+     * This method must be called when all currently available data has been placed in the inbound
+     * buffer, meaning that the "reading" of the source is finished.
+     */
     public void finishRead() {
         // check whether the channel is currently writing; if so, we must schedule the event in the
         // event loop to maintain the read/write order.
