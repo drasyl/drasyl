@@ -188,9 +188,15 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                superPeer.close();
-                client1.close();
-                client2.close();
+                if (superPeer != null) {
+                    superPeer.close();
+                }
+                if (client1 != null) {
+                    client1.close();
+                }
+                if (client2 != null) {
+                    client2.close();
+                }
             }
 
             /**
@@ -317,8 +323,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -410,8 +420,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -502,8 +516,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -608,8 +626,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                superPeer.close();
-                client.close();
+                if (superPeer != null) {
+                    superPeer.close();
+                }
+                if (client != null) {
+                    client.close();
+                }
             }
 
             @Test
@@ -703,10 +725,18 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
-                node3.close();
-                node4.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
+                if (node3 != null) {
+                    node3.close();
+                }
+                if (node4 != null) {
+                    node4.close();
+                }
             }
 
             /**
@@ -820,8 +850,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -875,7 +909,9 @@ class DrasylNodeIT {
 
         @AfterEach
         void tearDown() {
-            node.close();
+            if (node != null) {
+                node.close();
+            }
         }
 
         /**
