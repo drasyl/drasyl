@@ -31,7 +31,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
@@ -246,7 +245,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    fireChildChannelRead(ctx, o, peer, true);
+                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
+                    channel.inboundBuffer.add(o);
                     fireReadCompleteChannels.add(peer);
                 }
                 catch (final ClassCastException e) {
@@ -264,29 +264,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
             fireReadCompleteChannels.clear();
 
             ctx.fireChannelReadComplete();
-        }
-
-        private void fireChildChannelRead(final ChannelHandlerContext ctx,
-                                          final Object o,
-                                          final IdentityPublicKey peer,
-                                          final boolean recreateClosedChannel) {
-            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
-
-            // pass event to channel
-            channel.eventLoop().execute(() -> {
-                if (channel.isActive()) {
-                    channel.inboundBuffer.add(o);
-                }
-                else if (ctx.channel().isOpen() && recreateClosedChannel) {
-                    // channel to which the message is to be passed to has been closed in the
-                    // meantime. give message chance to be consumed by recreate a new channel once
-                    ctx.executor().execute(() -> fireChildChannelRead(ctx, o, peer, false));
-                }
-                else {
-                    // drop message
-                    ReferenceCountUtil.release(o);
-                }
-            });
         }
 
         private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
