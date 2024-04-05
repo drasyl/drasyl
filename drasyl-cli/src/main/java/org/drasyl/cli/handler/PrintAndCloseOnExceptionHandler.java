@@ -35,6 +35,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class PrintAndCloseOnExceptionHandler extends ChannelInboundHandlerAdapter {
     private final PrintStream printStream;
+    private boolean closeCalled;
 
     public PrintAndCloseOnExceptionHandler(final PrintStream printStream) {
         this.printStream = requireNonNull(printStream);
@@ -45,7 +46,10 @@ public class PrintAndCloseOnExceptionHandler extends ChannelInboundHandlerAdapte
                                 final Throwable cause) {
         if (ctx.channel().isOpen()) {
             cause.printStackTrace(printStream);
-            ctx.channel().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
+            if (!closeCalled) {
+                closeCalled = true;
+                ctx.channel().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
+            }
         }
     }
 }
