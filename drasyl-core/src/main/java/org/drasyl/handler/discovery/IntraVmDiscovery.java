@@ -46,6 +46,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Object path = IntraVmDiscovery.class;
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
     private final int myNetworkId;
+    private boolean initialized;
 
     public IntraVmDiscovery(final int myNetworkId) {
         this.myNetworkId = myNetworkId;
@@ -77,15 +78,37 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive() && !initialized) {
+            initialized = true;
+            startDiscovery(ctx);
+        }
+    }
+
+    @Override
+    public void handlerRemoved(final ChannelHandlerContext ctx) {
+        if (initialized) {
+            initialized = false;
+            stopDiscovery(ctx);
+        }
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        startDiscovery(ctx);
+        if (!initialized) {
+            initialized = true;
+            startDiscovery(ctx);
+        }
 
         ctx.fireChannelActive();
     }
 
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
-        stopDiscovery(ctx);
+        if (initialized) {
+            initialized = false;
+            stopDiscovery(ctx);
+        }
 
         ctx.fireChannelInactive();
     }
