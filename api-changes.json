@@ -669,6 +669,22 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.exception.checkedRemoved",
+          "old": "method void io.netty.channel.ChannelHandlerAdapter::handlerAdded(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.discovery.IntraVmDiscovery",
+          "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerAdded(io.netty.channel.ChannelHandlerContext)",
+          "exception": "java.lang.Exception",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.exception.checkedRemoved",
+          "old": "method void io.netty.channel.ChannelHandlerAdapter::handlerRemoved(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.discovery.IntraVmDiscovery",
+          "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerRemoved(io.netty.channel.ChannelHandlerContext)",
+          "exception": "java.lang.Exception",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

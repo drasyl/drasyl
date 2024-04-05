@@ -59,7 +59,8 @@ class IntraVmDiscoveryTest {
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelActive();
 
@@ -78,7 +79,8 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelInactive();
 
@@ -100,7 +102,8 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, recipient), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            channel.pipeline().addLast(handler);
             try {
                 channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
@@ -117,17 +120,18 @@ class IntraVmDiscoveryTest {
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
-            final EmbeddedChannel pichanneleline = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            channel.pipeline().addLast(handler);
             try {
-                pichanneleline.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
+                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
 
-                final ReferenceCounted actual = pichanneleline.readOutbound();
+                final ReferenceCounted actual = channel.readOutbound();
                 assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
 
                 actual.release();
             }
             finally {
-                pichanneleline.close();
+                channel.close();
             }
         }
     }
