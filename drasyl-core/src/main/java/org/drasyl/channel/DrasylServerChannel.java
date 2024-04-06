@@ -31,10 +31,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
@@ -169,25 +166,24 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
         if (eventLoop().inEventLoop()) {
-            serve0(peer, promise);
+            promise.trySuccess(serve0(peer));
         }
         else {
-            eventLoop().execute(() -> serve0(peer, promise));
+            eventLoop().execute(() -> promise.trySuccess(serve0(peer)));
         }
 
         return promise;
     }
 
-    private void serve0(DrasylAddress peer, Promise<DrasylChannel> promise) {
-        if (!promise.isCancelled()) {
-            DrasylChannel channel = channels.get(peer);
-            if (channel == null) {
-                channel = newDrasylChannel(peer);
-                pipeline().fireChannelRead(channel);
-                pipeline().fireChannelReadComplete();
-            }
-            promise.trySuccess(channel);
+    private DrasylChannel serve0(final DrasylAddress peer) {
+        assert eventLoop().inEventLoop();
+        DrasylChannel channel = channels.get(peer);
+        if (channel == null) {
+            channel = newDrasylChannel(peer);
+            pipeline().fireChannelRead(channel);
+            pipeline().fireChannelReadComplete();
         }
+        return channel;
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer) {
@@ -249,7 +245,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    fireChildChannelRead(ctx, o, peer, true);
+                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
+                    channel.inboundBuffer.add(o);
                     fireReadCompleteChannels.add(peer);
                 }
                 catch (final ClassCastException e) {
@@ -262,52 +259,16 @@ public class DrasylServerChannel extends AbstractServerChannel {
         public void channelReadComplete(final ChannelHandlerContext ctx) {
             // pass channelReadComplete to all channels that have read something
             for (final IdentityPublicKey peer : fireReadCompleteChannels) {
-                fireChildChannelReadComplete(ctx, peer);
+                final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
+
+                if (channel != null) {
+                    // pass event to channel
+                    channel.finishRead();
+                }
             }
             fireReadCompleteChannels.clear();
 
             ctx.fireChannelReadComplete();
-        }
-
-        private void fireChildChannelRead(final ChannelHandlerContext ctx,
-                                          final Object o,
-                                          final IdentityPublicKey peer,
-                                          final boolean recreateClosedChannel) {
-            ((DrasylServerChannel) ctx.channel()).serve(peer).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                if (future.isSuccess()) {
-                    final DrasylChannel channel = future.getNow();
-
-                    // pass event to channel
-                    channel.eventLoop().execute(() -> {
-                        if (channel.isActive()) {
-                            channel.pipeline().fireChannelRead(o);
-                        }
-                        else if (ctx.channel().isOpen() && recreateClosedChannel) {
-                            // channel to which the message is to be passed to has been closed in the
-                            // meantime. give message chance to be consumed by recreate a new channel once
-                            ctx.executor().execute(() -> fireChildChannelRead(ctx, o, peer, false));
-                        }
-                        else {
-                            // drop message
-                            ReferenceCountUtil.release(o);
-                        }
-                    });
-                }
-            });
-        }
-
-        private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
-                                                  final IdentityPublicKey peer) {
-            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
-
-            if (channel != null) {
-                // pass event to channel
-                channel.eventLoop().execute(() -> {
-                    if (channel.isActive()) {
-                        channel.pipeline().fireChannelReadComplete();
-                    }
-                });
-            }
         }
 
         @Override

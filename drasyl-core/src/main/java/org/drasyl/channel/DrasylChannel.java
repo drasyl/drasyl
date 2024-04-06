@@ -27,10 +27,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.internal.InternalThreadLocalMap;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
@@ -41,6 +46,8 @@ import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -56,15 +63,29 @@ public class DrasylChannel extends AbstractChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
+    private static final int MAX_READER_STACK_DEPTH = 8;
+    private static final AtomicReferenceFieldUpdater<DrasylChannel, Future> FINISH_READ_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DrasylChannel.class, Future.class, "finishReadFuture");
 
     enum State {OPEN, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
+    final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    private final Runnable readTask = () -> {
+        // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
+        if (!inboundBuffer.isEmpty()) {
+            readInbound();
+        }
+    };
+    private final Runnable finishReadTask = this::finishRead0;
     private volatile State state;
     volatile boolean pendingWrites;
     private volatile DrasylAddress localAddress; // NOSONAR
     private final DrasylAddress remoteAddress;
+    private volatile boolean readInProgress;
+    private volatile boolean writeInProgress;
+    private volatile Future<?> finishReadFuture;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
@@ -118,25 +139,120 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doClose() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+
         localAddress = null;
 
         state = State.CLOSED;
+
+        releaseInboundBuffers();
+    }
+
+    void readInbound() {
+        final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
+        handle.reset(config());
+        final ChannelPipeline pipeline = pipeline();
+        do {
+            final Object received = inboundBuffer.poll();
+            if (received == null) {
+                break;
+            }
+            handle.incMessagesRead(1);
+            pipeline.fireChannelRead(received);
+        } while (handle.continueReading());
+        handle.readComplete();
+
+        // all messages read, fire channelReadComplete event
+        pipeline.fireChannelReadComplete();
     }
 
     @Override
     protected void doBeginRead() {
-        // NOOP
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
-    }
-
-    @Override
-    protected Object filterOutboundMessage(final Object msg) throws Exception {
-        if (msg instanceof ByteBuf) {
-            return super.filterOutboundMessage(msg);
+        if (readInProgress) {
+            return;
         }
 
-        throw new UnsupportedOperationException(
-                "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+        if (inboundBuffer.isEmpty()) {
+            // set to true to make sure this read operation will be performed when something is
+            // written to the inbound buffer
+            readInProgress = true;
+            return;
+        }
+
+        // check stack depth; this is relevant when multiple channels with the same event loop are
+        // heavily interacting with each other and, therefore pass messages to each other in one run
+        final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
+        final int stackDepth = threadLocals.localChannelReaderStackDepth();
+        if (stackDepth < MAX_READER_STACK_DEPTH) {
+            threadLocals.setLocalChannelReaderStackDepth(stackDepth + 1);
+            try {
+                readInbound();
+            }
+            finally {
+                threadLocals.setLocalChannelReaderStackDepth(stackDepth);
+            }
+        }
+        else {
+            try {
+                eventLoop().execute(readTask);
+            }
+            catch (final Throwable cause) {
+                LOG.warn("Closing DrasylChannel {} because exception occurred!", this, cause);
+                close();
+                PlatformDependent.throwException(cause);
+            }
+        }
+    }
+
+    /**
+     * This method must be called when all currently available data has been placed in the inbound
+     * buffer, meaning that the "reading" of the source is finished.
+     */
+    public void finishRead() {
+        // check whether the channel is currently writing; if so, we must schedule the event in the
+        // event loop to maintain the read/write order.
+        if (eventLoop().inEventLoop() && !writeInProgress) {
+            finishRead0();
+        }
+        else {
+            runFinishReadTask();
+        }
+    }
+
+    private void finishRead0() {
+        final Future<?> thisFinishReadFuture = this.finishReadFuture;
+        if (thisFinishReadFuture != null) {
+            if (!thisFinishReadFuture.isDone()) {
+                runFinishReadTask();
+                return;
+            }
+            else {
+                // lazy unset to make sure we don't prematurely unset it while scheduling a new task.
+                FINISH_READ_FUTURE_UPDATER.compareAndSet(this, thisFinishReadFuture, null);
+            }
+        }
+        // we should only set readInProgress to false if there is any data that was read as
+        // otherwise we may miss to forward data later on.
+        if (readInProgress && !inboundBuffer.isEmpty()) {
+            readInProgress = false;
+            readInbound();
+        }
+    }
+
+    private void runFinishReadTask() {
+        try {
+            if (writeInProgress) {
+                finishReadFuture = eventLoop().submit(finishReadTask);
+            }
+            else {
+                eventLoop().execute(finishReadTask);
+            }
+        }
+        catch (final Throwable cause) {
+            LOG.warn("Closing DrasylChannel {} because execption occurred!", this, cause);
+            close();
+            PlatformDependent.throwException(cause);
+        }
     }
 
     @SuppressWarnings("java:S135")
@@ -151,32 +267,61 @@ public class DrasylChannel extends AbstractChannel {
                 break;
         }
 
-        boolean wroteToParent = false;
-        pendingWrites = false;
-        while (true) {
-            final Object msg = in.current();
-            if (msg == null) {
-                break;
-            }
-
-            if (!parent().isWritable()) {
-                pendingWrites = true;
-                break;
-            }
-
-            ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
+        writeInProgress = true;
+        try {
+            // if we write directly to another DrasylChannel in the future, we will have to take
+            // another look at the LocalChannel implementation and how a closed target channel is
+            // handled there. This is currently irrelevant to us, as we only write to the
+            // DrasylServerChannel, which is always the last to be closed.
+            boolean wroteToParent = false;
+            pendingWrites = false;
+            while (true) {
+                final Object msg = in.current();
+                if (msg == null) {
+                    break;
                 }
-            });
-            in.remove();
-            wroteToParent = true;
+
+                if (!parent().isWritable()) {
+                    pendingWrites = true;
+                    break;
+                }
+
+                ReferenceCountUtil.retain(msg);
+                parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
+                    }
+                });
+                in.remove();
+                wroteToParent = true;
+            }
+
+            if (wroteToParent) {
+                // only pass flush event to parent channel if we actually have wrote something
+                parent().flush();
+            }
+        }
+        finally {
+            writeInProgress = false;
+        }
+    }
+
+    @Override
+    protected Object filterOutboundMessage(final Object msg) throws Exception {
+        if (msg instanceof ByteBuf) {
+            return super.filterOutboundMessage(msg);
         }
 
-        if (wroteToParent) {
-            // only pass flush event to parent channel if we actually have wrote something
-            parent().flush();
+        throw new UnsupportedOperationException(
+                "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+    }
+
+    private void releaseInboundBuffers() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+        readInProgress = false;
+        Object msg;
+        while ((msg = this.inboundBuffer.poll()) != null) {
+            ReferenceCountUtil.release(msg);
         }
     }
 
