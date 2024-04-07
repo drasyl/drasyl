@@ -127,8 +127,6 @@ class DrasylChannelTest {
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
                                                @Mock final Object msg,
                                                @Mock final ChannelPromise promise) throws Exception {
-            when(parent.isWritable()).thenReturn(true);
-
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.doRegister();
 
@@ -138,8 +136,8 @@ class DrasylChannelTest {
 
             channel.doWrite(in);
 
-            verify(channel.parent()).write(any());
-            verify(parent).flush();
+            verify(parent.outboundBuffer()).add(any());
+            verify(parent).finishChildWrite();
         }
     }
 

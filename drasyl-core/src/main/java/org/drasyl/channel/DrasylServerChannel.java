@@ -27,13 +27,16 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.DefaultPromise;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
+import io.netty.util.internal.PlatformDependent;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -53,8 +56,10 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.SocketAddress;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
 
@@ -70,14 +75,22 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
+    private static final AtomicReferenceFieldUpdater<DrasylServerChannel, Future> FINISH_WRITE_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishWriteFuture");
+
     enum State {OPEN, ACTIVE, CLOSED}
 
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private volatile State state;
     private final DefaultChannelConfig config = new DefaultChannelConfig(this);
     public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
     final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
+
+    private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
+    private volatile boolean readInProgress;
+    private final Runnable finishWriteTask = this::finishChildWrite0;
+    private volatile Future<?> finishWriteFuture;
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -190,6 +203,70 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return serve(peer, new DefaultPromise<>(eventLoop()));
     }
 
+    Queue<Object> outboundBuffer() {
+        return outboundBuffer;
+    }
+
+    void finishChildWrite() {
+        // check whether the channel is currently reading; if so, we must schedule the event in the
+        // event loop to maintain the read/write order.
+        if (eventLoop().inEventLoop() && !readInProgress) {
+            finishChildWrite0();
+        }
+        else {
+            runFinishChildWriteTask();
+        }
+    }
+
+    private void finishChildWrite0() {
+        final Future<?> thisFinishWriteFuture = this.finishWriteFuture;
+        if (thisFinishWriteFuture != null) {
+            if (!thisFinishWriteFuture.isDone()) {
+                runFinishChildWriteTask();
+                return;
+            }
+            else {
+                // lazy unset to make sure we don't prematurely unset it while scheduling a new task.
+                FINISH_WRITE_FUTURE_UPDATER.compareAndSet(this, thisFinishWriteFuture, null);
+            }
+        }
+        // we should only set readInProgress to false if there is any data that was read as
+        // otherwise we may miss to forward data later on.
+        if (!outboundBuffer.isEmpty()) {
+            writeOutbound();
+        }
+    }
+
+    private void runFinishChildWriteTask() {
+        try {
+            if (readInProgress) {
+                finishWriteFuture = eventLoop().submit(finishWriteTask);
+            }
+            else {
+                eventLoop().execute(finishWriteTask);
+            }
+        }
+        catch (final Throwable cause) {
+            LOG.warn("Closing DrasylServerChannel {} because execption occurred!", this, cause);
+            close();
+            PlatformDependent.throwException(cause);
+        }
+    }
+
+    void writeOutbound() {
+        final ChannelPipeline pipeline = pipeline();
+        do {
+            final Object toSend = outboundBuffer.poll();
+            if (toSend == null) {
+                break;
+            }
+            pipeline.write(toSend);
+        } while (true); // TODO: use isWritable?
+
+        // all messages written, fire flush event
+        pipeline.flush();
+    }
+
     /**
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.
@@ -241,11 +318,13 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 ctx.fireChannelRead(msg);
             }
             else if (ctx.channel().isOpen()) {
+                final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
+                serverChannel.readInProgress = true;
                 try {
                     final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
                     final Object o = childMsg.content();
                     final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).serve0(peer);
+                    final DrasylChannel channel = serverChannel.serve0(peer);
                     channel.inboundBuffer.add(o);
                     fireReadCompleteChannels.add(peer);
                 }
@@ -267,6 +346,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 }
             }
             fireReadCompleteChannels.clear();
+
+            final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
+            serverChannel.readInProgress = false;
 
             ctx.fireChannelReadComplete();
         }
