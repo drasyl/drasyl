@@ -275,30 +275,20 @@ public class DrasylChannel extends AbstractChannel {
             // DrasylServerChannel, which is always the last to be closed.
             boolean wroteToParent = false;
             pendingWrites = false;
+            final DrasylServerChannel serverChannel = (DrasylServerChannel) parent();
             while (true) {
                 final Object msg = in.current();
                 if (msg == null) {
                     break;
                 }
 
-                if (!parent().isWritable()) {
-                    pendingWrites = true;
-                    break;
-                }
-
-                ReferenceCountUtil.retain(msg);
-                parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
-                    if (!future.isSuccess()) {
-                        LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
-                    }
-                });
+                serverChannel.outboundBuffer.add(new OverlayAddressedMessage<>(ReferenceCountUtil.retain(msg), remoteAddress, localAddress));
                 in.remove();
                 wroteToParent = true;
             }
 
             if (wroteToParent) {
-                // only pass flush event to parent channel if we actually have wrote something
-                parent().flush();
+                serverChannel.finishChildWrite();
             }
         }
         finally {
