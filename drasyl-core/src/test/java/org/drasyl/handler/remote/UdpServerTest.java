@@ -117,8 +117,9 @@ class UdpServerTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            when(channel.isWritable()).thenReturn(true);
+        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg,
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final UdpServerToDrasylHandler udpServerToDrasylHandler) {
+            when(channel.pipeline().get(any(Class.class))).thenReturn(udpServerToDrasylHandler);
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
@@ -128,7 +129,7 @@ class UdpServerTest {
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(UdpServerTest.this.channel).write(any());
+                verify(udpServerToDrasylHandler.outboundBuffer()).add(any());
             }
             finally {
                 channel.close();
