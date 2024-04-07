@@ -34,6 +34,7 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.DrasylAddress;
@@ -73,10 +74,11 @@ public class RmiClientNode {
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22528) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22528, peersManager) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

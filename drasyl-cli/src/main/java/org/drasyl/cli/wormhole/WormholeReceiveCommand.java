@@ -84,7 +84,7 @@ public class WormholeReceiveCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new WormholeReceiveChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+        return new WormholeReceiveChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled, peersManager);
     }
 
     @Override

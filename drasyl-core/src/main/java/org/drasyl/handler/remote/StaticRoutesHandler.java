@@ -44,9 +44,12 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     private static final Object path = StaticRoutesHandler.class;
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
+    private final PeersManager peersManager;
 
-    public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
+    public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes,
+                               final PeersManager peersManager) {
         this.staticRoutes = requireNonNull(staticRoutes);
+        this.peersManager = requireNonNull(peersManager);
     }
 
     @SuppressWarnings({ "unchecked", "SuspiciousMethodCalls" })

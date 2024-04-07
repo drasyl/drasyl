@@ -375,7 +375,7 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // create drasyl channel
-            final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
+            final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled, peersManager);
             final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()

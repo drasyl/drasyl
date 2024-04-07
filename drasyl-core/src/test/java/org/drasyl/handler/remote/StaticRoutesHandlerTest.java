@@ -47,11 +47,14 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class StaticRoutesHandlerTest {
+    @Mock
+    private PeersManager peersManager;
+
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final InetSocketAddress address = new InetSocketAddress(22527);
 
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelActive();
@@ -66,7 +69,7 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddress address) {
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
             channel.userEvents().clear();
@@ -84,7 +87,7 @@ class StaticRoutesHandlerTest {
         final InetSocketAddress address = new InetSocketAddress(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
 
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
@@ -102,7 +105,7 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of());
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(), peersManager);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         try {
             channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));

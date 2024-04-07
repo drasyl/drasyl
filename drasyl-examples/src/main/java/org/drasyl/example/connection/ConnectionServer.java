@@ -39,6 +39,7 @@ import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionResetException;
 import org.drasyl.handler.connection.SegmentCodec;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -74,10 +75,11 @@ public class ConnectionServer {
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527))
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527, peersManager))
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {

@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
@@ -55,10 +56,11 @@ class WormholeSendChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream out,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
             when(ctx.channel()).thenReturn(channel);
 
-            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
+            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true, peersManager);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(8)).addLast(any());

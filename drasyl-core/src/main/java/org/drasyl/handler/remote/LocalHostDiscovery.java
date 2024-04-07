@@ -83,6 +83,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private final Duration leaseTime;
     private final Path path;
     private final int networkId;
+    private final PeersManager peersManager;
     private Future<?> watchDisposable;
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
@@ -90,7 +91,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     public LocalHostDiscovery(final int networkId,
                               final boolean watchEnabled,
                               final Duration leaseTime,
-                              final Path path) {
+                              final Path path,
+                              final PeersManager peersManager) {
         this(
                 file -> LocalHostPeerInformation.of(file).addresses(),
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
@@ -98,7 +100,9 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 watchEnabled,
                 leaseTime,
                 path,
-                networkId, null,
+                networkId,
+                peersManager,
+                null,
                 null
         );
     }
@@ -111,6 +115,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                        final Duration leaseTime,
                        final Path path,
                        final int networkId,
+                       final PeersManager peersManager,
                        final Future<?> watchDisposable,
                        final Future<?> postDisposable) {
         this.fileReader = requireNonNull(fileReader);
@@ -120,6 +125,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this.leaseTime = leaseTime;
         this.path = path;
         this.networkId = networkId;
+        this.peersManager = requireNonNull(peersManager);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
     }

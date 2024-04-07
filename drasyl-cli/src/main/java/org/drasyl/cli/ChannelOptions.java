@@ -27,6 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -100,6 +101,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             description = "Disables arming (authenticating/encrypting) of all protocol messages. Ensure other nodes have arming disabled as well."
     )
     protected boolean protocolArmDisabled;
+    protected PeersManager peersManager = new PeersManager();
 
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,

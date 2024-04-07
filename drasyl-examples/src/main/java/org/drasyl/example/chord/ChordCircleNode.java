@@ -38,6 +38,7 @@ import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.LocalChordNode;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.handler.rmi.RmiServerHandler;
@@ -85,10 +86,11 @@ public class ChordCircleNode {
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 50000 + (int) (myId % 10000)) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 50000 + (int) (myId % 10000), peersManager) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

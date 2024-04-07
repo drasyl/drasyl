@@ -29,6 +29,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -76,6 +77,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final IdentitySecretKey mySecretKey,
                                                final ProofOfWork myProofOfWork,
                                                final LongSupplier currentTime,
+                                               final PeersManager peersManager,
                                                final long initialPingDelayMillis,
                                                final long pingIntervalMillis,
                                                final long pingTimeoutMillis,
@@ -86,7 +88,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
         this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -110,6 +112,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      *                                       discarded without application traffic
      * @param maxPeers                       maximum number of peers to which a traversed connection
      *                                       should be maintained at the same time
+     * @param peersManager
      */
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
@@ -122,8 +125,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                       final long maxTimeOffsetMillis,
                                                       final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
                                                       final long pingCommunicationTimeoutMillis,
-                                                      final long maxPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
+                                                      final long maxPeers,
+                                                      final PeersManager peersManager) {
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses, peersManager);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = new HashMap<>();

@@ -40,6 +40,7 @@ import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
@@ -120,6 +121,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private final Identity identity;
     private final DrasylNode node;
     private final EventLoopGroup udpServerGroup;
+    private final PeersManager peersManager = new PeersManager();
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
                                               final Identity identity,
@@ -263,7 +265,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.getRemotePingTimeout().multipliedBy(2).toMillis(),
                         superPeerAddresses,
                         config.getRemotePingCommunicationTimeout().toMillis(),
-                        config.getRemotePingMaxPeers()));
+                        config.getRemotePingMaxPeers(), peersManager));
             }
             else {
                 ch.pipeline().addLast(new TraversingInternetDiscoverySuperPeerHandler(
@@ -296,13 +298,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.getNetworkId(),
                         config.isRemoteLocalHostDiscoveryWatchEnabled(),
                         config.getRemoteLocalHostDiscoveryLeaseTime(),
-                        config.getRemoteLocalHostDiscoveryPath()
+                        config.getRemoteLocalHostDiscoveryPath(),
+                        peersManager
                 ));
             }
 
             // route outbound messages to pre-configured ip addresses
             if (!config.getRemoteStaticRoutes().isEmpty()) {
-                ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
+                ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes(), peersManager));
             }
 
             // convert ByteBuf <-> ApplicationMessage

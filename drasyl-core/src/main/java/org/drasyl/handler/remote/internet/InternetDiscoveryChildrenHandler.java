@@ -33,6 +33,7 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -80,6 +81,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
     protected final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
+    protected final PeersManager peersManager;
     private final IdentitySecretKey mySecretKey;
     private final long initialPingDelayMillis;
     private final long pingIntervalMillis;
@@ -93,6 +95,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final IdentitySecretKey mySecretKey,
                                      final ProofOfWork myProofOfWork,
                                      final LongSupplier currentTime,
+                                     final PeersManager peersManager,
                                      final long initialPingDelayMillis,
                                      final long pingIntervalMillis,
                                      final long pingTimeoutMillis,
@@ -105,6 +108,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this.mySecretKey = requireNonNull(mySecretKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
+        this.peersManager = requireNonNull(peersManager);
         this.initialPingDelayMillis = requireNonNegative(initialPingDelayMillis);
         this.pingIntervalMillis = requirePositive(pingIntervalMillis);
         this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
@@ -124,13 +128,15 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
+                                            final PeersManager peersManager) {
         this(
                 myNetworkId,
                 myPublicKey,
                 mySecretKey,
                 myProofOfWork,
                 currentTime,
+                peersManager,
                 initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
@@ -150,7 +156,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
+                                            final PeersManager peersManager) {
         this(
                 myNetworkId,
                 myPublicKey,
@@ -161,7 +168,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
-                superPeerAddresses
+                superPeerAddresses,
+                peersManager
         );
     }
 
@@ -172,7 +180,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
+                                            final PeersManager peersManager) {
         this(
                 myNetworkId,
                 myIdentity.getIdentityPublicKey(),
@@ -182,7 +191,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
-                superPeerAddresses
+                superPeerAddresses,
+                peersManager
         );
     }
 

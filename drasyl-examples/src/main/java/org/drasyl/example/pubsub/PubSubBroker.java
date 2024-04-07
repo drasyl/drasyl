@@ -32,6 +32,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.pubsub.PubSubBrokerHandler;
 import org.drasyl.handler.pubsub.PubSubCodec;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -69,10 +70,11 @@ public class PubSubBroker {
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527) {
+                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527, peersManager) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

@@ -38,6 +38,7 @@ import org.drasyl.handler.dht.chord.ChordLookup;
 import org.drasyl.handler.dht.chord.ChordLookupHandler;
 import org.drasyl.handler.dht.chord.ChordResponse;
 import org.drasyl.handler.dht.chord.ChordUtil;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.Identity;
@@ -81,10 +82,11 @@ public class ChordLookupNode {
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new RelayOnlyDrasylServerChannelInitializer(identity, udpServerGroup) {
+                .handler(new RelayOnlyDrasylServerChannelInitializer(identity, udpServerGroup, peersManager) {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

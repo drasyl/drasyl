@@ -26,6 +26,7 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -45,8 +46,9 @@ public abstract class AbstractChannelInitializer extends TraversingDrasylServerC
                                          final int networkId,
                                          final long onlineTimeoutMillis,
                                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                         final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled);
+                                         final boolean protocolArmEnabled,
+                                         final PeersManager peersManager) {
+        super(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled, peersManager);
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
     }
 

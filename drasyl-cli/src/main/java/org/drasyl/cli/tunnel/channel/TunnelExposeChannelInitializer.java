@@ -29,6 +29,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.TunnelExposeCommand.Service;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
@@ -59,8 +60,9 @@ public class TunnelExposeChannelInitializer extends AbstractChannelInitializer {
                                           final PrintStream out,
                                           final PrintStream err,
                                           final Worm<Integer> exitCode,
-                                          final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+                                          final boolean protocolArmEnabled,
+                                          final PeersManager peersManager) {
+        super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, peersManager);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

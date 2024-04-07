@@ -97,7 +97,7 @@ public class TunnelConsumeCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new TunnelConsumeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+        return new TunnelConsumeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled, peersManager);
     }
 
     @Override
