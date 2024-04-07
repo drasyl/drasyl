@@ -282,7 +282,7 @@ public class DrasylChannel extends AbstractChannel {
                     break;
                 }
 
-                serverChannel.outboundBuffer.add(new OverlayAddressedMessage<>(ReferenceCountUtil.retain(msg), remoteAddress, localAddress));
+                serverChannel.outboundBuffer().add(new OverlayAddressedMessage<>(ReferenceCountUtil.retain(msg), remoteAddress, localAddress));
                 in.remove();
                 wroteToParent = true;
             }

@@ -86,7 +86,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     public final Map<SocketAddress, DrasylChannel> channels;
     private volatile DrasylAddress localAddress; // NOSONAR
     final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
-    final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
+
+    private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
     private volatile boolean readInProgress;
     private final Runnable finishWriteTask = this::finishChildWrite0;
     private volatile Future<?> finishWriteFuture;
@@ -202,6 +203,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return serve(peer, new DefaultPromise<>(eventLoop()));
     }
 
+    Queue<Object> outboundBuffer() {
+        return outboundBuffer;
+    }
+
     void finishChildWrite() {
         // check whether the channel is currently reading; if so, we must schedule the event in the
         // event loop to maintain the read/write order.
@@ -256,7 +261,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 break;
             }
             pipeline.write(toSend);
-        } while (isWritable());
+        } while (true); // TODO: use isWritable?
 
         // all messages written, fire flush event
         pipeline.flush();
