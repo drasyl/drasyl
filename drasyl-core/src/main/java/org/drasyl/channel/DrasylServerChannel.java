@@ -260,7 +260,11 @@ public class DrasylServerChannel extends AbstractServerChannel {
             if (toSend == null) {
                 break;
             }
-            pipeline.write(toSend);
+            pipeline.write(toSend).addListener(future -> {
+                if (!future.isSuccess()) {
+                    LOG.warn("Outbound message `{}` written to server channel failed:", () -> toSend, future::cause);
+                }
+            });
         } while (true); // TODO: use isWritable?
 
         // all messages written, fire flush event
