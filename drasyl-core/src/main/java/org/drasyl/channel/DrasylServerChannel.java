@@ -32,6 +32,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.Promise;
@@ -149,6 +150,15 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
             state = State.CLOSED;
         }
+
+        releaseOutboundBuffer();
+    }
+
+    private void releaseOutboundBuffer() {
+        Object msg;
+        while ((msg = outboundBuffer.poll()) != null) {
+            ReferenceCountUtil.release(msg);
+        }
     }
 
     @Override
@@ -247,7 +257,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
         }
         catch (final Throwable cause) {
-            LOG.warn("Closing DrasylServerChannel {} because execption occurred!", this, cause);
+            LOG.warn("Closing DrasylServerChannel {} because exception occurred!", this, cause);
             close();
             PlatformDependent.throwException(cause);
         }

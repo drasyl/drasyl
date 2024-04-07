@@ -145,7 +145,7 @@ public class DrasylChannel extends AbstractChannel {
 
         state = State.CLOSED;
 
-        releaseInboundBuffers();
+        releaseInboundBuffer();
     }
 
     void readInbound() {
@@ -306,11 +306,10 @@ public class DrasylChannel extends AbstractChannel {
                 "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
     }
 
-    private void releaseInboundBuffers() {
-        assert eventLoop() == null || eventLoop().inEventLoop();
+    private void releaseInboundBuffer() {
         readInProgress = false;
         Object msg;
-        while ((msg = this.inboundBuffer.poll()) != null) {
+        while ((msg = inboundBuffer.poll()) != null) {
             ReferenceCountUtil.release(msg);
         }
     }
