@@ -39,11 +39,14 @@ import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
+import java.util.Set;
 
+import static org.drasyl.handler.remote.StaticRoutesHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StaticRoutesHandlerTest {
@@ -69,6 +72,8 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddress address) {
+        when(peersManager.getPeers(PATH_ID)).thenReturn(Set.of(publicKey));
+
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
