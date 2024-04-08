@@ -29,6 +29,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -72,13 +73,13 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
-    private static final Object eventPath = LocalHostDiscovery.class;
+    static final Class<?> PATH_ID = LocalHostDiscovery.class;
+    static final short PATH_PRIORITY = 50;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".txt";
     private final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     private final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
-    private final Map<IdentityPublicKey, InetSocketAddress> routes;
     private final boolean watchEnabled;
     private final Duration leaseTime;
     private final Path path;
@@ -96,7 +97,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this(
                 file -> LocalHostPeerInformation.of(file).addresses(),
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
-                new HashMap<>(),
                 watchEnabled,
                 leaseTime,
                 path,
@@ -110,7 +110,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @SuppressWarnings({ "java:S107" })
     LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
                        final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
-                       final Map<IdentityPublicKey, InetSocketAddress> routes,
                        final boolean watchEnabled,
                        final Duration leaseTime,
                        final Path path,
@@ -120,7 +119,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                        final Future<?> postDisposable) {
         this.fileReader = requireNonNull(fileReader);
         this.fileWriter = requireNonNull(fileWriter);
-        this.routes = requireNonNull(routes);
         this.watchEnabled = watchEnabled;
         this.leaseTime = leaseTime;
         this.path = path;
@@ -138,7 +136,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
             final IdentityPublicKey recipient = (IdentityPublicKey) ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
 
-            final InetSocketAddress localAddress = routes.get(recipient);
+            final InetSocketAddress localAddress = peersManager.getPath(recipient, PATH_ID);
             if (localAddress != null) {
                 LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
@@ -202,8 +200,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        routes.keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath)));
-        routes.clear();
+        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
+        peersManager.removePaths(PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }
@@ -310,22 +308,21 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        for (final Iterator<IdentityPublicKey> i = routes.keySet().iterator();
+        for (final Iterator<DrasylAddress> i = peersManager.getPeers(PATH_ID).iterator();
              i.hasNext(); ) {
-            final IdentityPublicKey publicKey = i.next();
+            final DrasylAddress publicKey = i.next();
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath));
+                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, PATH_ID));
                 i.remove();
             }
         }
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
-            if (!routes.containsKey(publicKey)) {
-                routes.put(publicKey, address);
-                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, eventPath));
+            if (peersManager.addPath(publicKey, PATH_ID, address, PATH_PRIORITY)) {
+                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, PATH_ID));
             }
         }));
     }
