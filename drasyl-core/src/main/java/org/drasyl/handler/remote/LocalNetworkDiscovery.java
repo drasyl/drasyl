@@ -34,16 +34,13 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -65,44 +62,44 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * @see UdpMulticastServer
  * @see UdpBroadcastServer
  */
+@UnstableApi
 @SuppressWarnings("java:S110")
 public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
+    static final Class<?> PATH_ID = LocalNetworkDiscovery.class;
+    static final short PATH_PRIORITY = 90;
     private static final Object path = LocalNetworkDiscovery.class;
-    private final Map<DrasylAddress, Peer> peers;
     private final IdentityPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
     private final long pingIntervalMillis;
-    private final long pingTimeoutMillis;
     private final int networkId;
     private final InetSocketAddress recipient;
+    private final PeersManager peersManager;
     private Future<?> scheduledPingFuture;
 
-    LocalNetworkDiscovery(final Map<DrasylAddress, Peer> peers,
-                          final IdentityPublicKey myPublicKey,
+    LocalNetworkDiscovery(final IdentityPublicKey myPublicKey,
                           final ProofOfWork myProofOfWork,
                           final long pingIntervalMillis,
-                          final long pingTimeoutMillis,
                           final int networkId,
                           final InetSocketAddress recipient,
+                          final PeersManager peersManager,
                           final Future<?> scheduledPingFuture) {
-        this.peers = requireNonNull(peers);
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.pingIntervalMillis = requirePositive(pingIntervalMillis);
-        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.networkId = networkId;
         this.recipient = requireNonNull(recipient);
+        this.peersManager = requireNonNull(peersManager);
         this.scheduledPingFuture = scheduledPingFuture;
     }
 
     public LocalNetworkDiscovery(final int networkId,
                                  final long pingIntervalMillis,
-                                 final long pingTimeoutMillis,
                                  final IdentityPublicKey myPublicKey,
                                  final ProofOfWork myProofOfWork,
-                                 final InetSocketAddress recipient) {
-        this(new ConcurrentHashMap<>(), myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, networkId, recipient, null);
+                                 final InetSocketAddress recipient,
+                                 final PeersManager peersManager) {
+        this(myPublicKey, myProofOfWork, pingIntervalMillis, networkId, recipient, peersManager, null);
     }
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
@@ -123,8 +120,8 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     void clearRoutes(final ChannelHandlerContext ctx) {
-        peers.forEach(((publicKey, peer) -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path))));
-        peers.clear();
+        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
+        peersManager.removePaths(PATH_ID);
     }
 
     void doHeartbeat(final ChannelHandlerContext ctx) {
@@ -133,16 +130,16 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void removeStalePeers(final ChannelHandlerContext ctx) {
-        for (final Iterator<Entry<DrasylAddress, Peer>> it = peers.entrySet().iterator();
+        for (final Iterator<DrasylAddress> it = peersManager.getPeers(PATH_ID).iterator();
              it.hasNext(); ) {
-            final Entry<DrasylAddress, Peer> entry = it.next();
-            final DrasylAddress publicKey = entry.getKey();
-            final Peer peer = entry.getValue();
+            final DrasylAddress publicKey = it.next();
+            final boolean stale = peersManager.isStale(publicKey, PATH_ID);
 
-            if (peer.isStale()) {
-                LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundPingTime());
+            if (stale) {
+                final long lastInboundHelloTime = peersManager.lastInboundHelloTime(publicKey, PATH_ID);
+                LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
-                it.remove();
+                peersManager.removePath(publicKey, PATH_ID);
             }
         }
     }
@@ -167,9 +164,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
-            final Peer peer = peers.computeIfAbsent(msgSender, key -> new Peer(sender, pingTimeoutMillis));
-            peer.inboundPingOccurred();
-            ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
+            if (peersManager.addPath(msgSender, PATH_ID, sender, PATH_PRIORITY)) {
+                ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
+            }
+            peersManager.inboundHelloOccurred(msgSender, PATH_ID);
         }
 
         future.complete(null);
@@ -181,12 +179,12 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            final SocketAddress recipient = ((OverlayAddressedMessage<RemoteMessage>) msg).recipient();
+            final DrasylAddress recipient = ((OverlayAddressedMessage<RemoteMessage>) msg).recipient();
 
-            final Peer peer = peers.get(recipient);
-            if (peer != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<RemoteMessage>) msg).content().getNonce(), () -> recipient, peer::getAddress);
-                ctx.write(((OverlayAddressedMessage<RemoteMessage>) msg).resolve(peer.getAddress()), promise);
+            final InetSocketAddress endpoint = peersManager.getEndpoint(recipient, PATH_ID);
+            if (endpoint != null) {
+                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<RemoteMessage>) msg).content().getNonce(), () -> recipient, () -> endpoint);
+                ctx.write(((OverlayAddressedMessage<RemoteMessage>) msg).resolve(endpoint), promise);
             }
             else {
                 ctx.write(msg, promise);
@@ -220,39 +218,5 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
                 LOG.warn("Unable to send local network discovery message to `{}`", () -> recipient, future::cause);
             }
         });
-    }
-
-    static class Peer {
-        private final long pingTimeoutMillis;
-        private final InetSocketAddress address;
-        private long lastInboundPingTime;
-
-        Peer(final long pingTimeoutMillis,
-             final InetSocketAddress address,
-             final long lastInboundPingTime) {
-            this.pingTimeoutMillis = pingTimeoutMillis;
-            this.address = requireNonNull(address);
-            this.lastInboundPingTime = lastInboundPingTime;
-        }
-
-        Peer(final InetSocketAddress address, final long pingTimeoutMillis) {
-            this(pingTimeoutMillis, address, 0L);
-        }
-
-        public InetSocketAddress getAddress() {
-            return address;
-        }
-
-        public void inboundPingOccurred() {
-            lastInboundPingTime = System.currentTimeMillis();
-        }
-
-        public boolean isStale() {
-            return lastInboundPingTime < System.currentTimeMillis() - pingTimeoutMillis;
-        }
-
-        public long getLastInboundPingTime() {
-            return lastInboundPingTime;
-        }
     }
 }

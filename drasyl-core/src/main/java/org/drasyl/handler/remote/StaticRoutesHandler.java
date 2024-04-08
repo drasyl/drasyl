@@ -29,6 +29,7 @@ import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -40,10 +41,11 @@ import static java.util.Objects.requireNonNull;
 /**
  * This handler uses preconfigured static routes to deliver messages.
  */
+@UnstableApi
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     static final Class<?> PATH_ID = StaticRoutesHandler.class;
-    static final short PATH_PRIORITY = 20;
+    static final short PATH_PRIORITY = 70;
     private static final Object path = StaticRoutesHandler.class;
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
     private final PeersManager peersManager;
@@ -62,7 +64,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
         if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
             final DrasylAddress recipient = ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
 
-            final InetSocketAddress staticAddress = staticRoutes.get(recipient);
+            final InetSocketAddress staticAddress = peersManager.getEndpoint(recipient, PATH_ID);
             if (staticAddress != null) {
                 LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", (((OverlayAddressedMessage<ApplicationMessage>) msg).content()).getNonce(), recipient, staticAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(staticAddress), promise);
@@ -99,7 +101,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
+        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
         peersManager.removePaths(PATH_ID);
     }
 }

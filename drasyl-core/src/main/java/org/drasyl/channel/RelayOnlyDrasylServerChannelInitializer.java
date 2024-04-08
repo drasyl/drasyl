@@ -239,7 +239,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
             }
         }));
 
-        p.addLast(new UnconfirmedAddressResolveHandler());
+        p.addLast(new UnconfirmedAddressResolveHandler(peersManager));
         p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, peersManager));
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity));
         p.addLast(LOOPBACK_HANDLER);

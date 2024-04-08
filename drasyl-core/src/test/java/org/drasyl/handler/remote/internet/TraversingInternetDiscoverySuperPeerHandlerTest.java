@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
@@ -61,6 +62,8 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
     private LongSupplier currentTime;
     @Mock
     private HopCount hopLimit;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private PeersManager peersManager;
 
     @Test
     void shouldInitiateRendezvousWhenRelayingMessageBetweenTwoChildrenPeers(@Mock final IdentityPublicKey publicKeyA,
@@ -80,7 +83,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
         final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache = new HashSet<>();
 
-        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);
+        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, peersManager, hopLimit, childrenPeers, null, uniteAttemptsCache);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);

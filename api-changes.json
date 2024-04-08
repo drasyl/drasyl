@@ -685,6 +685,48 @@
           "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerRemoved(io.netty.channel.ChannelHandlerContext)",
           "exception": "java.lang.Exception",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.LocalHostDiscovery",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.LocalNetworkDiscovery",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.StaticRoutesHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

@@ -38,6 +38,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -63,10 +64,13 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *
  * @see TraversingInternetDiscoverySuperPeerHandler
  */
+@UnstableApi
 @SuppressWarnings("unchecked")
 public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscoveryChildrenHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoveryChildrenHandler.class);
     private static final Object PATH = TraversingInternetDiscoveryChildrenHandler.class;
+    static final Class<?> PATH_ID = TraversingInternetDiscoveryChildrenHandler.class;
+    static final short PATH_PRIORITY = 95;
     private final long pingCommunicationTimeoutMillis;
     private final long maxPeers;
     private final Map<DrasylAddress, TraversingPeer> traversingPeers;

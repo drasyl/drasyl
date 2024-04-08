@@ -37,6 +37,7 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -72,7 +73,7 @@ public class UnconfirmedAddressResolveHandlerBenchmark extends AbstractBenchmark
 
     @Setup
     public void setup() throws CryptoException, InvalidMessageFormatException {
-        handler = new UnconfirmedAddressResolveHandler();
+        handler = new UnconfirmedAddressResolveHandler(new PeersManager());
         ctx = new MyChannelHandlerContext();
         final ByteBuf payload = DEFAULT.buffer(MSG_LEN).writeBytes(randomBytes(MSG_LEN));
         final ApplicationMessage applicationMessage = ApplicationMessage.of(NETWORK_ID, ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), payload);

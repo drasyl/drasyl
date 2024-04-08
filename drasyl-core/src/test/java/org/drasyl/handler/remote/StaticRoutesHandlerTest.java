@@ -46,6 +46,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -91,6 +92,8 @@ class StaticRoutesHandlerTest {
     void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final InetSocketAddress address = new InetSocketAddress(22527);
         final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
+
+        when(peersManager.getEndpoint(any(), any())).thenReturn(address);
 
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);

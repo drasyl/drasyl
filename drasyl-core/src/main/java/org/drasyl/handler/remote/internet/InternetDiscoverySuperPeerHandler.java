@@ -31,6 +31,7 @@ import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -40,6 +41,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.SetUtil;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -62,10 +64,13 @@ import static org.drasyl.util.RandomUtil.randomLong;
  *
  * @see InternetDiscoveryChildrenHandler
  */
+@UnstableApi
 @SuppressWarnings("unchecked")
 public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoverySuperPeerHandler.class);
     private static final Object PATH = InternetDiscoverySuperPeerHandler.class;
+    static final Class<?> PATH_ID = InternetDiscoverySuperPeerHandler.class;
+    static final short PATH_PRIORITY = 100;
     protected final int myNetworkId;
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;
@@ -74,6 +79,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private final long pingTimeoutMillis;
     private final long maxTimeOffsetMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
+    protected final PeersManager peersManager;
     private final HopCount hopLimit;
     private final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
     Future<?> stalePeerCheckDisposable;
@@ -88,6 +94,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                       final long maxTimeOffsetMillis,
                                       final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                       final HopCount hopLimit,
+                                      final PeersManager peersManager,
                                       final Future<?> stalePeerCheckDisposable) {
         this.myNetworkId = myNetworkId;
         this.myPublicKey = requireNonNull(myPublicKey);
@@ -97,6 +104,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.childrenPeers = requireNonNull(childrenPeers);
+        this.peersManager = requireNonNull(peersManager);
         this.hopLimit = requireNonNull(hopLimit);
         this.stalePeerCheckDisposable = stalePeerCheckDisposable;
     }
@@ -107,7 +115,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                              final long pingIntervalMillis,
                                              final long pingTimeoutMillis,
                                              final long maxTimeOffsetMillis,
-                                             final HopCount hopLimit) {
+                                             final HopCount hopLimit,
+                                             final PeersManager peersManager) {
         this(
                 myNetworkId,
                 myPublicKey,
@@ -117,7 +126,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
                 new HashMap<>(),
-                hopLimit,
+                hopLimit, peersManager,
                 null
         );
     }

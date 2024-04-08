@@ -34,6 +34,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -70,11 +71,12 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * <p>
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
+@UnstableApi
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
     static final Class<?> PATH_ID = LocalHostDiscovery.class;
-    static final short PATH_PRIORITY = 50;
+    static final short PATH_PRIORITY = 80;
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".txt";
@@ -136,7 +138,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
             final IdentityPublicKey recipient = (IdentityPublicKey) ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
 
-            final InetSocketAddress localAddress = peersManager.getPath(recipient, PATH_ID);
+            final InetSocketAddress localAddress = peersManager.getEndpoint(recipient, PATH_ID);
             if (localAddress != null) {
                 LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
                 ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);

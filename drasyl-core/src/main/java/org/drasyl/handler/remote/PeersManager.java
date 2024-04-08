@@ -32,10 +32,20 @@ import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.Preconditions.requirePositive;
 
 public class PeersManager {
     private final Map<DrasylAddress, PeerPath> paths = new HashMap<>();
     private final SetMultimap<DrasylAddress, Class<?>> ids = new HashSetMultimap<>();
+    private final long helloTimeoutMillis;
+
+    public PeersManager(final long helloTimeoutMillis) {
+        this.helloTimeoutMillis = requirePositive(helloTimeoutMillis);
+    }
+
+    public PeersManager() {
+        this(30_000);
+    }
 
     public boolean addPath(final DrasylAddress peer,
                            final Class<?> id,
@@ -47,7 +57,7 @@ public class PeersManager {
 
         final PeerPath newPath = new PeerPath(id, endpoint, priority);
 
-        PeerPath head = paths.get(peer);
+        final PeerPath head = paths.get(peer);
         if (head == null || head.priority > newPath.priority) {
             // create head
             newPath.next = null;
@@ -111,16 +121,24 @@ public class PeersManager {
         }
     }
 
-    public InetSocketAddress getPath(final DrasylAddress peer, final Class<?> id) {
+    private PeerPath getPath(final DrasylAddress peer, final Class<?> id) {
         PeerPath current = paths.get(peer);
         while (current != null) {
             if (current.id == id) {
-                return current.endpoint;
+                return current;
             }
 
             current = current.next;
         }
 
+        return null;
+    }
+
+    public InetSocketAddress getEndpoint(final DrasylAddress peer, final Class<?> id) {
+        final PeerPath path = getPath(peer, id);
+        if (path != null) {
+            return path.endpoint;
+        }
         return null;
     }
 
@@ -134,11 +152,26 @@ public class PeersManager {
         return peers;
     }
 
+    public void inboundHelloOccurred(final DrasylAddress peer, final Class<?> id) {
+        final PeerPath path = getPath(peer, id);
+        path.inboundHelloOccurred();
+    }
+
+    public boolean isStale(final DrasylAddress peer, final Class<?> id) {
+        return lastInboundHelloTime(peer, id) < System.currentTimeMillis() - helloTimeoutMillis;
+    }
+
+    public long lastInboundHelloTime(final DrasylAddress peer, final Class<?> id) {
+        final PeerPath path = getPath(peer, id);
+        return path.lastInboundHelloTime;
+    }
+
     static class PeerPath {
         private final Class<?> id;
         private final InetSocketAddress endpoint;
         private final short priority;
         private PeerPath next;
+        private long lastInboundHelloTime;
 
         public PeerPath(final Class<?> id,
                         final InetSocketAddress endpoint,
@@ -156,6 +189,10 @@ public class PeersManager {
                     ", priority=" + priority +
                     ", next=" + next +
                     '}';
+        }
+
+        public void inboundHelloOccurred() {
+            lastInboundHelloTime = System.currentTimeMillis();
         }
     }
 }

@@ -44,6 +44,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.DnsResolver;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -68,11 +69,14 @@ import static org.drasyl.util.Preconditions.requirePositive;
  *
  * @see InternetDiscoverySuperPeerHandler
  */
+@UnstableApi
 @SuppressWarnings("unchecked")
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final long DEFAULT_CHILDREN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
+    static final Class<?> PATH_ID = InternetDiscoveryChildrenHandler.class;
+    static final short PATH_PRIORITY = 100;
     protected final int myNetworkId;
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;

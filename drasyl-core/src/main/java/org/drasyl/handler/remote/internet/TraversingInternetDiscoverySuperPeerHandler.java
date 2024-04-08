@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.internet;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
@@ -32,6 +33,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ExpiringSet;
 import org.drasyl.util.Pair;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,8 +50,11 @@ import static java.util.Objects.requireNonNull;
  *
  * @see TraversingInternetDiscoveryChildrenHandler
  */
+@UnstableApi
 public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscoverySuperPeerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoverySuperPeerHandler.class);
+    static final Class<?> PATH_ID = TraversingInternetDiscoverySuperPeerHandler.class;
+    static final short PATH_PRIORITY = 95;
     private final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")
@@ -60,11 +65,12 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                 final long pingIntervalMillis,
                                                 final long pingTimeoutMillis,
                                                 final long maxTimeOffsetMillis,
+                                                final PeersManager peersManager,
                                                 final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
                                                 final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
+        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, peersManager, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
 
@@ -75,9 +81,10 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
                                                        final long pingIntervalMillis,
                                                        final long pingTimeoutMillis,
                                                        final long maxTimeOffsetMillis,
+                                                       final PeersManager peersManager,
                                                        final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
+        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit, peersManager);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = new ExpiringSet<>(1_000, uniteMinIntervalMillis);
         }

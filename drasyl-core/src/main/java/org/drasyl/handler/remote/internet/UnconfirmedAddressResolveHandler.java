@@ -26,19 +26,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.Pair;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -48,20 +48,19 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @UnstableApi
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    private final Map<DrasylAddress, Pair<InetSocketAddress, Long>> addressCache;
-    private final int maximumCacheSize;
+    static final Class<?> PATH_ID = UnconfirmedAddressResolveHandler.class;
+    static final short PATH_PRIORITY = 110;
     private final long expireCacheAfter;
-    private long now;
+    private final PeersManager peersManager;
 
-    public UnconfirmedAddressResolveHandler() {
-        this(100, 60_000L);
+    public UnconfirmedAddressResolveHandler(final long expireCacheAfter,
+                                            final PeersManager peersManager) {
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
+        this.peersManager = requireNonNull(peersManager);
     }
 
-    public UnconfirmedAddressResolveHandler(final int maximumCacheSize,
-                                            final long expireCacheAfter) {
-        this.maximumCacheSize = requirePositive(maximumCacheSize);
-        this.expireCacheAfter = requirePositive(expireCacheAfter);
-        this.addressCache = new HashMap<>();
+    public UnconfirmedAddressResolveHandler(final PeersManager peersManager) {
+        this(60_000L, peersManager);
     }
 
     @Override
@@ -79,8 +78,13 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage && addressCache.size() < maximumCacheSize) {
-            addressCache.put(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender(), Pair.of(((InetAddressedMessage<?>) msg).sender(), now));
+        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+            final DrasylAddress peer = ((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender();
+            final InetSocketAddress endpoint = ((InetAddressedMessage<?>) msg).sender();
+            if (peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY)) {
+                ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, PATH_ID));
+            }
+            peersManager.inboundHelloOccurred(peer, PATH_ID); // consider every message as hello
         }
 
         // pass through
@@ -92,13 +96,13 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage) {
-            final Pair<InetSocketAddress, Long> pair = addressCache.get(((OverlayAddressedMessage<?>) msg).recipient());
+            final DrasylAddress peer = ((OverlayAddressedMessage<?>) msg).recipient();
+            final InetSocketAddress endpoint = peersManager.getEndpoint(peer, PATH_ID);
 
             // route to the unconfirmed address
-            if (pair != null) {
-                final InetSocketAddress address = pair.first();
-                LOG.trace("Message `{}` was resolved to unconfirmed address `{}`.", () -> msg, () -> address);
-                ctx.write(((OverlayAddressedMessage<?>) msg).resolve(address), promise);
+            if (endpoint != null) {
+                LOG.trace("Message `{}` was resolved to unconfirmed address `{}`.", () -> msg, () -> endpoint);
+                ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
                 return;
             }
         }
@@ -110,16 +114,19 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {
         // requesting the time triggers a system call and is therefore considered to be expensive.
         // This is why we cache the current time
-        now = System.currentTimeMillis();
 
         ctx.executor().schedule(() -> {
             // remove all entries from cache where we do not have received a message since "expireAfter"
-            final Iterator<Entry<DrasylAddress, Pair<InetSocketAddress, Long>>> iterator = addressCache.entrySet().iterator();
+            final Iterator<DrasylAddress> iterator = peersManager.getPeers(PATH_ID).iterator();
             while (iterator.hasNext()) {
-                final Entry<DrasylAddress, Pair<InetSocketAddress, Long>> entry = iterator.next();
-                final long lastTime = entry.getValue().second();
-                if (lastTime < now) {
-                    iterator.remove();
+                final DrasylAddress publicKey = iterator.next();
+                final boolean stale = peersManager.isStale(publicKey, PATH_ID);
+
+                if (stale) {
+                    final long lastInboundHelloTime = peersManager.lastInboundHelloTime(publicKey, PATH_ID);
+                    LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
+                    ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, PATH_ID));
+                    peersManager.removePath(publicKey, PATH_ID);
                 }
             }
 

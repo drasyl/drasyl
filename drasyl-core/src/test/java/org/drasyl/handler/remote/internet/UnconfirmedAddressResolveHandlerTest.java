@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.internet;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.junit.jupiter.api.Test;
@@ -34,6 +35,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -41,10 +46,12 @@ class UnconfirmedAddressResolveHandlerTest {
     @Test
     void shouldResolveOverlayAddressToInetAddressesDiscoveryThroughReceivedMessages(@Mock final RemoteMessage remoteMsg,
                                                                                     @Mock final DrasylAddress overlayAddress,
-                                                                                    @Mock final InetSocketAddress inetAddress) {
+                                                                                    @Mock final InetSocketAddress inetAddress,
+                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) PeersManager peersManager) {
         when(remoteMsg.getSender()).thenReturn(overlayAddress);
+        when(peersManager.getEndpoint(any(), any())).thenReturn(null);
 
-        final EmbeddedChannel channel = new EmbeddedChannel(new UnconfirmedAddressResolveHandler());
+        final EmbeddedChannel channel = new EmbeddedChannel(new UnconfirmedAddressResolveHandler(peersManager));
 
         // never received message from recipient -> overlay address cannot be resolved
         final OverlayAddressedMessage<RemoteMessage> msg1 = new OverlayAddressedMessage<>(remoteMsg, overlayAddress);
@@ -54,6 +61,9 @@ class UnconfirmedAddressResolveHandlerTest {
         // got message from recipient -> save inet address
         final InetAddressedMessage<RemoteMessage> msg2 = new InetAddressedMessage<>(remoteMsg, null, inetAddress);
         channel.writeInbound(msg2);
+
+        verify(peersManager).addPath(any(), any(), any(), anyShort());
+        when(peersManager.getEndpoint(any(), any())).thenReturn(inetAddress);
 
         // resolve overlay address to previously discovered inet address
         channel.writeOutbound(msg1);

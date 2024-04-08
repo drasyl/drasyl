@@ -121,7 +121,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     private final Identity identity;
     private final DrasylNode node;
     private final EventLoopGroup udpServerGroup;
-    private final PeersManager peersManager = new PeersManager();
+    private final PeersManager peersManager;
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
                                               final Identity identity,
@@ -131,6 +131,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);
         this.udpServerGroup = requireNonNull(udpServerGroup);
+        this.peersManager = new PeersManager(config.getRemotePingTimeout().toMillis());
     }
 
     private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
@@ -250,7 +251,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
 
         if (config.isRemoteEnabled()) {
-            ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
+            ch.pipeline().addLast(new UnconfirmedAddressResolveHandler(peersManager));
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
                 final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));
@@ -275,7 +276,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                         config.getRemotePingInterval().toMillis(),
                         config.getRemotePingTimeout().toMillis(),
                         config.getRemotePingTimeout().multipliedBy(2).toMillis(),
-                        HopCount.of(config.getRemoteMessageHopLimit()),
+                        peersManager, HopCount.of(config.getRemoteMessageHopLimit()),
                         config.getRemoteUniteMinInterval().toMillis()
                 ));
             }
@@ -285,10 +286,10 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ch.pipeline().addLast(new LocalNetworkDiscovery(
                         config.getNetworkId(),
                         config.getRemotePingInterval().toMillis(),
-                        config.getRemotePingTimeout().toMillis(),
                         identity.getIdentityPublicKey(),
                         identity.getProofOfWork(),
-                        MULTICAST_ADDRESS
+                        MULTICAST_ADDRESS,
+                        peersManager
                 ));
             }
 
