@@ -172,7 +172,7 @@ class WormholeCommandIT {
         receiverThread.start();
 
         // receive text
-        await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
+        await("receive text").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
 
         senderThread.join();
         receiverThread.join();
@@ -243,7 +243,7 @@ class WormholeCommandIT {
             receiverThread.start();
 
             // receive text
-            await().atMost(ofSeconds(25)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
+            await("receive text").atMost(ofSeconds(25)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
 
             senderThread.join(5_000);
             receiverThread.join(5_000);
