@@ -27,8 +27,10 @@ import org.drasyl.util.SetMultimap;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -40,6 +42,7 @@ public class PeersManager {
     private final Map<DrasylAddress, PeerPath> paths = new HashMap<>();
     private final SetMultimap<DrasylAddress, Class<?>> ids = new HashSetMultimap<>();
     private final long helloTimeoutMillis;
+    private DrasylAddress defaultPath;
 
     public PeersManager(final long helloTimeoutMillis) {
         this.helloTimeoutMillis = requirePositive(helloTimeoutMillis);
@@ -58,6 +61,17 @@ public class PeersManager {
         }
 
         if (!ids.put(peer, id)) {
+            // update endpoint?
+            PeerPath current = paths.get(peer);
+            while (current != null) {
+                if (current.id == id) {
+                    // FIXME: change only attribute or replace whole path? and return true?
+                    current.endpoint = endpoint;
+                    break;
+                }
+                current = current.next;
+            }
+
             return false;
         }
 
@@ -148,6 +162,14 @@ public class PeersManager {
         return null;
     }
 
+    public InetSocketAddress getEndpoint(final DrasylAddress peer) {
+        final PeerPath path = paths.get(peer);
+        if (path != null) {
+            return path.endpoint;
+        }
+        return null;
+    }
+
     public Set<DrasylAddress> getPeers(final Class<?> id) {
         final Set<DrasylAddress> peers = new HashSet<>();
         for (final DrasylAddress peer : ids.keySet()) {
@@ -182,6 +204,32 @@ public class PeersManager {
         return peer.lastApplicationMessageSentOrReceivedTime;
     }
 
+    public boolean hasDefaultPeer() {
+        return defaultPath != null;
+    }
+
+    public void setDefaultPath(final DrasylAddress defaultPath) {
+        this.defaultPath = requireNonNull(defaultPath);
+    }
+
+    public void unsetDefaultPath() {
+        defaultPath = null;
+    }
+
+    public DrasylAddress getDefaultPeer() {
+        return defaultPath;
+    }
+
+    public List<InetSocketAddress> getEndpoints(final DrasylAddress peer) {
+        final List<InetSocketAddress> endpoints = new ArrayList<>();
+        PeerPath current = paths.get(peer);
+        while (current != null) {
+            endpoints.add(current.endpoint);
+            current = current.next;
+        }
+        return endpoints;
+    }
+
     static class Peer {
         private long lastApplicationMessageSentOrReceivedTime;
 
@@ -192,7 +240,7 @@ public class PeersManager {
 
     static class PeerPath {
         private final Class<?> id;
-        private final InetSocketAddress endpoint;
+        private InetSocketAddress endpoint;
         private final short priority;
         private PeerPath next;
         private long lastHelloMessageReceivedTime;

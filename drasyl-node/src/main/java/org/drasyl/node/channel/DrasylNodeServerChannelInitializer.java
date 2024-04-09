@@ -24,6 +24,8 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
@@ -31,6 +33,7 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
@@ -308,6 +311,29 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes(), peersManager));
             }
+
+            // FIXME: temporary
+            ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+                @Override
+                public void write(final ChannelHandlerContext ctx,
+                                  final Object msg,
+                                  final ChannelPromise promise) {
+                    if (msg instanceof OverlayAddressedMessage) {
+                        final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
+                        peersManager.applicationMessageSentOrReceived(recipient);
+                        InetSocketAddress endpoint = peersManager.getEndpoint(recipient);
+                        if (endpoint == null) {
+                            endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
+                        }
+                        if (endpoint != null) {
+                            ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
+                        }
+                    }
+                    else {
+                        ctx.write(msg, promise);
+                    }
+                }
+            });
 
             // convert ByteBuf <-> ApplicationMessage
             ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));

@@ -88,7 +88,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private final long initialPingDelayMillis;
     private final long pingIntervalMillis;
     Future<?> heartbeatDisposable;
-    private IdentityPublicKey bestSuperPeer;
     protected InetSocketAddress bindAddress;
 
     @SuppressWarnings("java:S107")
@@ -103,8 +102,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final long pingTimeoutMillis,
                                      final long maxTimeOffsetMillis,
                                      final Map<IdentityPublicKey, SuperPeer> superPeers,
-                                     final Future<?> heartbeatDisposable,
-                                     final IdentityPublicKey bestSuperPeer) {
+                                     final Future<?> heartbeatDisposable) {
         this.myNetworkId = myNetworkId;
         this.myPublicKey = requireNonNull(myPublicKey);
         this.mySecretKey = requireNonNull(mySecretKey);
@@ -117,7 +115,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.superPeers = requireNonNull(superPeers);
         this.heartbeatDisposable = heartbeatDisposable;
-        this.bestSuperPeer = bestSuperPeer;
     }
 
     @SuppressWarnings("java:S107")
@@ -144,7 +141,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
                 superPeerAddresses.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, pingTimeoutMillis, e.getValue()))),
-                null,
                 null
         );
     }
@@ -286,9 +282,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
-            // FIXME: in peersManager berücksichtigen
             final InetSocketAddress resolvedAddress = superPeer.resolveInetAddress();
-
             writeHelloMessage(ctx, publicKey, resolvedAddress, privateInetAddresses);
         }));
         ctx.flush();
@@ -351,8 +345,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         superPeer.acknowledgementReceived(rtt);
 
         // we don't have a super peer yet, so this is now our best one
-        if (bestSuperPeer == null) {
-            bestSuperPeer = (IdentityPublicKey) publicKey;
+        if (!peersManager.hasDefaultPeer()) {
+            peersManager.setDefaultPath(publicKey);
         }
 
         if (peersManager.addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
@@ -396,9 +390,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             }
         }
 
-        if (!Objects.equals(bestSuperPeer, newBestSuperPeer)) {
-            final IdentityPublicKey oldBestSuperPeer = bestSuperPeer;
-            bestSuperPeer = newBestSuperPeer;
+        if (!Objects.equals(peersManager.getDefaultPeer(), newBestSuperPeer)) {
+            final DrasylAddress oldBestSuperPeer = peersManager.getDefaultPeer();
+            if (newBestSuperPeer != null) {
+                peersManager.setDefaultPath(newBestSuperPeer);
+            }
+            else {
+                peersManager.unsetDefaultPath();
+            }
             if (LOG.isTraceEnabled()) {
                 if (newBestSuperPeer != null) {
                     LOG.trace("New best super peer ({}ms RTT)! Replace `{}` with `{}`", bestRtt, oldBestSuperPeer, newBestSuperPeer);
@@ -415,7 +414,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     private boolean isRoutableOutboundMessage(final Object msg) {
-        return bestSuperPeer != null &&
+        return peersManager.hasDefaultPeer() &&
                 msg instanceof OverlayAddressedMessage &&
                 ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
     }
@@ -431,9 +430,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             ctx.write(msg.resolve(inetAddress), promise);
         }
         else {
-            // FIXME: bestSuperPeer vllt. als default gateway hinterlegen???
-            final InetSocketAddress inetAddress = peersManager.getEndpoint(bestSuperPeer, PATH_ID);
-            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
+            final InetSocketAddress inetAddress = peersManager.getEndpoint(peersManager.getDefaultPeer(), PATH_ID);
+            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), peersManager.getDefaultPeer(), inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }
     }

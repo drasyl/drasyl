@@ -82,7 +82,7 @@ class InternetDiscoveryChildrenHandlerTest {
 
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
 
         // channel active
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -112,7 +112,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -123,15 +123,18 @@ class InternetDiscoveryChildrenHandlerTest {
 
     @Test
     void shouldRouteOutboundApplicationMessageAddressedToSuperPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
+                                                                              @Mock final IdentityPublicKey superPeerKey,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                               @Mock final ApplicationMessage applicationMsg,
                                                                               @Mock final InetSocketAddress inetAddress) {
-        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(inetAddress);
-        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
+        when(peersManager.getEndpoint(myPublicKey, PATH_ID)).thenReturn(inetAddress);
+        when(peersManager.hasDefaultPeer()).thenReturn(true);
+        when(peersManager.getDefaultPeer()).thenReturn(superPeerKey);
+        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(myPublicKey, superPeer);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeOutbound(msg);
@@ -145,12 +148,14 @@ class InternetDiscoveryChildrenHandlerTest {
                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                                 @Mock final InetSocketAddress inetAddress) {
+        when(peersManager.hasDefaultPeer()).thenReturn(true);
         when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(inetAddress);
+        when(peersManager.getDefaultPeer()).thenReturn(publicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, publicKey);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeOutbound(msg);

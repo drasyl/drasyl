@@ -92,7 +92,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, bestSuperPeer);
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable);
         this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -351,7 +351,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                                final ChannelPromise promise,
                                                                final OverlayAddressedMessage<ApplicationMessage> addressedMsg) {
         final DrasylAddress address = addressedMsg.content().getRecipient();
-        final TraversingPeer traversingPeer = traversingPeers.get(address);
         final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
         peersManager.applicationMessageSentOrReceived(address); // FIXME: das muss zukünftig bei Übergabe DatagramChannel <- DrasylChannel gemacht werden
 
