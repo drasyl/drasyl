@@ -30,6 +30,7 @@ import io.netty.channel.EventLoop;
 import org.drasyl.channel.DrasylChannel.State;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,12 +52,15 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylChannelTest {
+    private int networkId = 0;
+
     @Nested
     class DoRegister {
         @Test
         void shouldActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                   @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork) {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
 
             channel.doRegister();
 
@@ -69,11 +73,12 @@ class DrasylChannelTest {
         @Test
         void shouldCloseChannelAndRemoveLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final EventLoop eventLoop,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise channelPromise) {
             when(eventLoop.inEventLoop()).thenReturn(true);
 
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
             channel.unsafe().register(eventLoop, channelPromise);
 
             channel.doDisconnect();
@@ -88,11 +93,12 @@ class DrasylChannelTest {
         @Test
         void shouldCloseChannelAndRemoveLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final EventLoop eventLoop,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise promise) {
             when(eventLoop.inEventLoop()).thenReturn(true);
 
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
             channel.unsafe().register(eventLoop, promise);
 
             channel.doClose();
@@ -107,8 +113,9 @@ class DrasylChannelTest {
         @Test
         void shouldThrowExceptionIfChannelIsNotBound(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, localAddress, remoteAddress);
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork) {
+            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, localAddress, remoteAddress, networkId, proofOfWork);
 
             assertThrows(NotYetConnectedException.class, () -> channel.doWrite(null));
         }
@@ -116,18 +123,23 @@ class DrasylChannelTest {
         @Test
         void shouldThrowExceptionIfChannelIsAlreadyClosed(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, localAddress, remoteAddress);
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork) {
+            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, localAddress, remoteAddress, networkId, proofOfWork);
 
             assertThrows(ClosedChannelException.class, () -> channel.doWrite(null));
         }
 
         @Test
         void shouldWriteMessageToParentChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey localAddress,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork,
                                                @Mock final Object msg,
                                                @Mock final ChannelPromise promise) throws Exception {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+            when(parent.localAddress0()).thenReturn(localAddress);
+
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
             channel.doRegister();
 
             final ChannelOutboundBuffer in = channel.unsafe().outboundBuffer();
@@ -145,16 +157,18 @@ class DrasylChannelTest {
     class FilterOutboundMessage {
         @Test
         void shouldRejectNonByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork) {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
 
             assertThrows(UnsupportedOperationException.class, () -> channel.filterOutboundMessage("Hello World"));
         }
 
         @Test
         void shouldAcceptByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                        @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) throws Exception {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+                                        @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                        @Mock(answer = RETURNS_DEEP_STUBS) final ProofOfWork proofOfWork) throws Exception {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, networkId, proofOfWork);
 
             final ByteBuf buffer = Unpooled.buffer();
             assertEquals(buffer, channel.filterOutboundMessage(buffer));

@@ -37,7 +37,8 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.internal.InternalThreadLocalMap;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
-import org.drasyl.identity.DrasylAddress;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.identity.*;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -48,6 +49,8 @@ import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -83,6 +86,8 @@ public class DrasylChannel extends AbstractChannel {
     volatile boolean pendingWrites;
     private volatile DrasylAddress localAddress; // NOSONAR
     private final DrasylAddress remoteAddress;
+    private final int networkId;
+    private final ProofOfWork proofOfWork;
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
     private volatile Future<?> finishReadFuture;
@@ -91,15 +96,22 @@ public class DrasylChannel extends AbstractChannel {
     DrasylChannel(final Channel parent,
                   final State state,
                   final DrasylAddress localAddress,
-                  final DrasylAddress remoteAddress) {
+                  final DrasylAddress remoteAddress,
+                  final int networkId,
+                  final ProofOfWork proofOfWork) {
         super(parent);
         this.state = state;
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
+        this.networkId = networkId;
+        this.proofOfWork = requireNonNull(proofOfWork);
     }
 
-    DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
-        this(parent, null, parent.localAddress0(), remoteAddress);
+    DrasylChannel(final DrasylServerChannel parent,
+                  final DrasylAddress remoteAddress,
+                  final int networkId,
+                  final ProofOfWork proofOfWork) {
+        this(parent, null, parent.localAddress0(), remoteAddress, networkId, proofOfWork);
     }
 
     @Override
@@ -277,12 +289,14 @@ public class DrasylChannel extends AbstractChannel {
             pendingWrites = false;
             final DrasylServerChannel serverChannel = (DrasylServerChannel) parent();
             while (true) {
-                final Object msg = in.current();
-                if (msg == null) {
+                final ByteBuf buf = (ByteBuf) in.current();
+                if (buf == null) {
                     break;
                 }
 
-                serverChannel.outboundBuffer().add(new OverlayAddressedMessage<>(ReferenceCountUtil.retain(msg), remoteAddress, localAddress));
+                final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, (IdentityPublicKey) localAddress, proofOfWork, buf.retain());
+                final OverlayAddressedMessage<Object> overlayMsg = new OverlayAddressedMessage<>(appMsg, remoteAddress, localAddress);
+                serverChannel.outboundBuffer().add(overlayMsg);
                 in.remove();
                 wroteToParent = true;
             }

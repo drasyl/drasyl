@@ -39,7 +39,6 @@ import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
 import org.drasyl.handler.remote.OtherNetworkFilter;
@@ -251,6 +250,9 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     private void discoveryStage(final DrasylServerChannel ch) {
+        ch.networkId = config.getNetworkId();
+        ch.proofOfWork = identity.getProofOfWork();
+
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
 
         if (config.isRemoteEnabled()) {
@@ -334,9 +336,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                     }
                 }
             });
-
-            // convert ByteBuf <-> ApplicationMessage
-            ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
         }
 
         // discover nodes running within the same jvm

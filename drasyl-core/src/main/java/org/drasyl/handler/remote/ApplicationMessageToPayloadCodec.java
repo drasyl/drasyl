@@ -38,6 +38,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * This codec converts {@link ApplicationMessage}s to the embedded payload and vice versa.
  */
+@Deprecated
 public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedEnvelope<ApplicationMessage, ?>, OverlayAddressedMessage<ByteBuf>> {
     private final int networkId;
     private final IdentityPublicKey myPublicKey;

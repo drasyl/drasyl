@@ -29,6 +29,7 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -45,9 +46,11 @@ import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
@@ -79,6 +82,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private static final AtomicReferenceFieldUpdater<DrasylServerChannel, Future> FINISH_WRITE_FUTURE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishWriteFuture");
+    public int networkId;
+    public ProofOfWork proofOfWork;
 
     enum State {OPEN, ACTIVE, CLOSED}
 
@@ -184,7 +189,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     protected DrasylChannel newDrasylChannel(final DrasylAddress peer) {
-        return new DrasylChannel(this, peer);
+        return new DrasylChannel(this, peer, networkId, proofOfWork);
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
@@ -335,9 +340,17 @@ public class DrasylServerChannel extends AbstractServerChannel {
                 final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
                 serverChannel.readInProgress = true;
                 try {
-                    final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
-                    final Object o = childMsg.content();
-                    final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
+                    final DefaultAddressedEnvelope childMsg = (DefaultAddressedEnvelope) msg;
+                    Object o = childMsg.content();
+                    final IdentityPublicKey peer;
+                    if (o instanceof ApplicationMessage) {
+                        peer = (IdentityPublicKey) ((ApplicationMessage) o).getSender();
+                        o = ((ApplicationMessage) o).getPayload();
+                    }
+                    else {
+                        peer = (IdentityPublicKey) childMsg.sender();
+                    }
+
                     final DrasylChannel channel = serverChannel.serve0(peer);
                     channel.inboundBuffer.add(o);
                     fireReadCompleteChannels.add(peer);

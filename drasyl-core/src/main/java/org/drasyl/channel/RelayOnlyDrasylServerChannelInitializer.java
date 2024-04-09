@@ -28,8 +28,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.handler.LoopbackHandler;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.UdpServer;
@@ -67,7 +65,6 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public static final int MAX_TIME_OFFSET_MILLIS = 60_000;
     public static final int MAX_PEERS = 100;
     protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
-    protected static final LoopbackHandler LOOPBACK_HANDLER = new LoopbackHandler();
     protected final Identity identity;
     protected final InetSocketAddress bindAddress;
     protected final int networkId;
@@ -226,6 +223,9 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
+        ch.networkId = networkId;
+        ch.proofOfWork = identity.getProofOfWork();
+
         final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx) {
@@ -267,7 +267,5 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                 }
             }
         });
-        p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity));
-        p.addLast(LOOPBACK_HANDLER);
     }
 }

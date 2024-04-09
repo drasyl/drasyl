@@ -31,6 +31,7 @@ import org.drasyl.identity.DrasylAddress;
 /**
  * Converts outbound messages addresses to us into inbound messages.
  */
+@Deprecated
 @Sharable
 public class LoopbackHandler extends ChannelOutboundHandlerAdapter {
     @Override
