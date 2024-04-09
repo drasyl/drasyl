@@ -26,6 +26,7 @@ import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 
 import java.net.InetSocketAddress;
+import java.nio.channels.UnresolvedAddressException;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -51,6 +52,10 @@ public class PeersManager {
                            final Class<?> id,
                            final InetSocketAddress endpoint,
                            final short priority) {
+        if (endpoint.isUnresolved()) {
+            throw new UnresolvedAddressException();
+        }
+
         if (!ids.put(peer, id)) {
             return false;
         }
@@ -184,7 +189,7 @@ public class PeersManager {
         @Override
         public String toString() {
             return "PeerPath{" +
-                    ", id=" + id +
+                    "id=" + id +
                     ", endpoint=" + endpoint +
                     ", priority=" + priority +
                     ", next=" + next +

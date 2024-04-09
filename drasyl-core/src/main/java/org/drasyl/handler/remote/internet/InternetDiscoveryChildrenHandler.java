@@ -434,6 +434,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
         else {
+            // FIXME: wie behandeln wir diese default route?
             final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
             LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
