@@ -151,6 +151,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             handleHelloMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else if (isApplicationMessageForMe(msg)) {
+            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
             final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
             handleApplicationMessage(ctx, addressedMsg);
         }

@@ -84,6 +84,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
             AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishWriteFuture");
     public int networkId;
     public ProofOfWork proofOfWork;
+    public Channel udpChannel;
 
     enum State {OPEN, ACTIVE, CLOSED}
 

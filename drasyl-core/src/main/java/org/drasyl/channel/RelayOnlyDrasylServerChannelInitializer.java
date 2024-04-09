@@ -21,6 +21,7 @@
  */
 package org.drasyl.channel;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
@@ -259,7 +260,14 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                         endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
                     }
                     if (endpoint != null) {
-                        ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
+                        ch.udpChannel.writeAndFlush(((OverlayAddressedMessage<?>) msg).resolve(endpoint)).addListener((ChannelFutureListener) future -> ctx.executor().execute(() -> {
+                            if (future.isSuccess()) {
+                                promise.setSuccess();
+                            }
+                            else {
+                                promise.setFailure(future.cause());
+                            }
+                        }));
                     }
                 }
                 else {

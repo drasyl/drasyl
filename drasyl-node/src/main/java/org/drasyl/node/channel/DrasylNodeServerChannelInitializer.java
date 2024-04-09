@@ -21,6 +21,7 @@
  */
 package org.drasyl.node.channel;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -313,35 +314,42 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes(), peersManager));
             }
-
-            // FIXME: temporary
-            ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
-                @Override
-                public void write(final ChannelHandlerContext ctx,
-                                  final Object msg,
-                                  final ChannelPromise promise) {
-                    if (msg instanceof OverlayAddressedMessage) {
-                        final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
-                        peersManager.applicationMessageSentOrReceived(recipient);
-                        InetSocketAddress endpoint = peersManager.getEndpoint(recipient);
-                        if (endpoint == null) {
-                            endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
-                        }
-                        if (endpoint != null) {
-                            ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
-                        }
-                    }
-                    else {
-                        ctx.write(msg, promise);
-                    }
-                }
-            });
         }
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
             ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId()));
         }
+
+        // FIXME: temporary
+        ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void write(final ChannelHandlerContext ctx,
+                              final Object msg,
+                              final ChannelPromise promise) {
+                if (msg instanceof OverlayAddressedMessage) {
+                    final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
+                    peersManager.applicationMessageSentOrReceived(recipient);
+                    InetSocketAddress endpoint = peersManager.getEndpoint(recipient);
+                    if (endpoint == null) {
+                        endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
+                    }
+                    if (endpoint != null) {
+                        ch.udpChannel.writeAndFlush(((OverlayAddressedMessage<?>) msg).resolve(endpoint)).addListener((ChannelFutureListener) future -> ctx.executor().execute(() -> {
+                           if (future.isSuccess()) {
+                               promise.setSuccess();
+                           }
+                           else {
+                               promise.setFailure(future.cause());
+                           }
+                        }));
+                    }
+                }
+                else {
+                    ctx.write(msg, promise);
+                }
+            }
+        });
     }
 
     /**

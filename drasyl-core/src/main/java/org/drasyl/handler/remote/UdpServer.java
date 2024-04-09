@@ -33,6 +33,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -264,6 +265,9 @@ public class UdpServer extends ChannelDuplexHandler {
                 myChannel.closeFuture().addListener(new UdpServerCloseListener());
                 final InetSocketAddress socketAddress = (InetSocketAddress) myChannel.localAddress();
                 LOG.info("Server started and listening at udp:/{}.", socketAddress);
+
+                final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) ctx.channel();
+                drasylServerChannel.udpChannel = future.channel();
 
                 UdpServer.this.channel = myChannel;
                 ctx.fireUserEventTriggered(new UdpServerBound(socketAddress));

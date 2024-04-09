@@ -77,6 +77,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
         if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             final DrasylAddress peer = ((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender();
             final InetSocketAddress endpoint = ((InetAddressedMessage<?>) msg).sender();
+            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
             peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
             // FIXME: wird zukünftig mit application nachrichten nicht mehr funktionieren, wenn dies nicht mehr hier vorbei geht
             peersManager.helloMessageReceived(peer, PATH_ID); // consider every message as hello. this is fine here

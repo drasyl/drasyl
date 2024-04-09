@@ -155,6 +155,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
         else {
+            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
             if (isApplicationMessageFromTraversingPeer(msg)) {
                 peersManager.applicationMessageSentOrReceived(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender()); // FIXME: das muss zukünftig bei Übergabe DatagramChannel -> DrasylChannel gemacht werden
             }
