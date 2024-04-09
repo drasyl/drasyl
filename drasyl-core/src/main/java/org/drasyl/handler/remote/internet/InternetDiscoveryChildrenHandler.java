@@ -214,11 +214,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
             handleAcknowledgementMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
-        else if (isApplicationMessageForMe(msg)) {
-            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
-            final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
-            handleApplicationMessage(ctx, addressedMsg);
-        }
         else if (isUnexpectedMessage(msg)) {
             handleUnexpectedMessage(ctx, msg);
         }
@@ -348,12 +343,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
                 myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
-    }
-
-    @SuppressWarnings("java:S2325")
-    private void handleApplicationMessage(final ChannelHandlerContext ctx,
-                                          final InetAddressedMessage<ApplicationMessage> addressedMsg) {
-        ctx.fireChannelRead(addressedMsg);
     }
 
     private void determineBestSuperPeer(final ChannelHandlerContext ctx) {

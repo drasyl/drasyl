@@ -97,8 +97,9 @@ public class UdpServer extends ChannelDuplexHandler {
 
     public UdpServer(final Bootstrap bootstrap,
                      final EventLoopGroup group,
-                     final InetSocketAddress bindAddress) {
-        this(bootstrap, group, bindAddress, UdpServerChannelInitializer::new);
+                     final InetSocketAddress bindAddress,
+                     final PeersManager peersManager) {
+        this(bootstrap, group, bindAddress, ctx -> new UdpServerChannelInitializer(ctx, peersManager));
     }
 
     /**
@@ -112,12 +113,14 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindAddress the address the UDP server will bind to
+     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindAddress  the address the UDP server will bind to
+     * @param peersManager
      */
     public UdpServer(final EventLoopGroup group,
-                     final InetSocketAddress bindAddress) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress);
+                     final InetSocketAddress bindAddress,
+                     final PeersManager peersManager) {
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress, peersManager);
     }
 
     /**
@@ -133,36 +136,42 @@ public class UdpServer extends ChannelDuplexHandler {
     }
 
     /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
+     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindHost     the host the UDP server will bind to
+     * @param bindPort     the port the UDP server will bind to
+     * @param peersManager
      */
     public UdpServer(final EventLoopGroup group,
                      final InetAddress bindHost,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindHost, bindPort));
+                     final int bindPort,
+                     final PeersManager peersManager) {
+        this(group, new InetSocketAddress(bindHost, bindPort), peersManager);
     }
 
     /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
+     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindHost     the host the UDP server will bind to
+     * @param bindPort     the port the UDP server will bind to
+     * @param peersManager
      */
     public UdpServer(final EventLoopGroup group,
                      final String bindHost,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindHost, bindPort));
+                     final int bindPort,
+                     final PeersManager peersManager) {
+        this(group, new InetSocketAddress(bindHost, bindPort), peersManager);
     }
 
     /**
      * Create UDP server that will bind to host {@code 0.0.0.0} and port {@code bindPort}.
      *
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindPort the port the UDP server will bind to
+     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
+     * @param bindPort     the port the UDP server will bind to
+     * @param peersManager
      */
     public UdpServer(final EventLoopGroup group,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindPort));
+                     final int bindPort,
+                     final PeersManager peersManager) {
+        this(group, new InetSocketAddress(bindPort), peersManager);
     }
 
     @SuppressWarnings("java:S1905")

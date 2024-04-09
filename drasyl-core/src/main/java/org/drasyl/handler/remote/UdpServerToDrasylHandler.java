@@ -25,13 +25,19 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.SocketAddress;
+import java.util.Map;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
@@ -45,20 +51,40 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final ChannelHandlerContext drasylCtx;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
+    private final PeersManager peersManager;
 
-    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
+    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx, final PeersManager peersManager) {
         this.drasylCtx = requireNonNull(drasylCtx);
+        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         LOG.trace("Read Datagram {}", msg);
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && drasylCtx.channel().localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
-            // FIXME: in den richtigen drasylchannel schieben!!!
-            System.out.println();
+            final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
+            peersManager.applicationMessageSentOrReceived(appMsg.getSender());
+            final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) drasylCtx.channel();
+            final Map<SocketAddress, DrasylChannel> drasylChannels = drasylServerChannel.channels;
+            final DrasylChannel drasylChannel = drasylChannels.get(appMsg.getSender());
+            if (drasylChannel != null) {
+                drasylChannel.inboundBuffer.add(appMsg.getPayload());
+                drasylChannel.finishRead();
+            }
+            else {
+                drasylServerChannel.serve(appMsg.getSender()).addListener(new GenericFutureListener<Future<? super DrasylChannel>>() {
+                    @Override
+                    public void operationComplete(Future<? super DrasylChannel> future) throws Exception {
+                        final DrasylChannel drasylChannel = (DrasylChannel) future.get();
+                        drasylChannel.inboundBuffer.add(appMsg.getPayload());
+                        drasylChannel.finishRead();
+                    }
+                });
+            }
         }
-        drasylCtx.fireChannelRead(msg);
-        // FIXME: write to correct DrasylChannel (check for app, check for me as recipient)
+        else {
+            drasylCtx.fireChannelRead(msg);
+        }
     }
 
     @Override

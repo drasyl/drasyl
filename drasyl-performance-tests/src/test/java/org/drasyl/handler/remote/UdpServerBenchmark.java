@@ -69,7 +69,8 @@ public class UdpServerBenchmark extends AbstractBenchmark {
 
             identity2 = IdentityTestUtil.ID_2;
 
-            final UdpServer handler = new UdpServer(new NioEventLoopGroup(1), InetAddress.getLocalHost(), 0);
+            PeersManager peersManager = null;
+            final UdpServer handler = new UdpServer(new NioEventLoopGroup(1), InetAddress.getLocalHost(), 0, peersManager);
 
             channel = new UserEventAwareEmbeddedChannel(
                     handler,

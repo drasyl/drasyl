@@ -229,7 +229,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx) {
+        p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx, peersManager) {
             @Override
             protected void lastStage(final DatagramChannel ch) {
                 ch.pipeline().addLast(new OtherNetworkFilter(networkId));

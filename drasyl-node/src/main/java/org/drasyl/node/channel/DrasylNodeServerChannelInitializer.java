@@ -188,7 +188,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
         if (config.isRemoteExposeEnabled()) {
             // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx) {
+            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx, peersManager) {
                 @Override
                 protected void lastStage(final DatagramChannel ch) {
                     ch.pipeline().addLast(new PortMapper());
@@ -200,7 +200,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         }
         else {
             // use default datagram channel
-            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx) {
+            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx, peersManager) {
                 @Override
                 protected void lastStage(final DatagramChannel ch) {
                     ch.pipeline().addLast(UNARMED_MESSAGE_DECODER);

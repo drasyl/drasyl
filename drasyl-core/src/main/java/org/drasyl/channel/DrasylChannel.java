@@ -74,7 +74,7 @@ public class DrasylChannel extends AbstractChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    public final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
         if (!inboundBuffer.isEmpty()) {

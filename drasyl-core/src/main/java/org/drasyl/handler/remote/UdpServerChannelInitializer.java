@@ -32,9 +32,11 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChannel> {
     private final ChannelHandlerContext drasylCtx;
+    private final PeersManager peersManager;
 
-    public UdpServerChannelInitializer(final ChannelHandlerContext drasylCtx) {
+    public UdpServerChannelInitializer(final ChannelHandlerContext drasylCtx, final PeersManager peersManager) {
         this.drasylCtx = requireNonNull(drasylCtx);
+        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
@@ -48,6 +50,6 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
     }
 
     protected void lastStage(final DatagramChannel ch) {
-        ch.pipeline().addLast(new UdpServerToDrasylHandler(drasylCtx));
+        ch.pipeline().addLast(new UdpServerToDrasylHandler(drasylCtx, peersManager));
     }
 }

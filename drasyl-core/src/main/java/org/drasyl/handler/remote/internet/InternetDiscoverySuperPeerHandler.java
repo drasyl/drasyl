@@ -150,11 +150,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
             handleHelloMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
-        else if (isApplicationMessageForMe(msg)) {
-            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
-            final InetAddressedMessage<ApplicationMessage> addressedMsg = (InetAddressedMessage<ApplicationMessage>) msg;
-            handleApplicationMessage(ctx, addressedMsg);
-        }
         else if (isRoutableInboundMessage(msg)) {
             final InetAddressedMessage<RemoteMessage> addressedMsg = (InetAddressedMessage<RemoteMessage>) msg;
             handleRoutableInboundMessage(ctx, addressedMsg);
@@ -275,12 +270,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
                 myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
-    }
-
-    @SuppressWarnings("java:S2325")
-    private void handleApplicationMessage(final ChannelHandlerContext ctx,
-                                          final InetAddressedMessage<ApplicationMessage> addressedMsg) {
-        ctx.fireChannelRead(addressedMsg);
     }
 
     @SuppressWarnings({ "java:S1067", "java:S2325" })
