@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -244,6 +245,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                    @Mock final ChildrenPeer childrenPeer,
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                    @Mock final InetSocketAddress childrenInetAddress) {
+        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(childrenInetAddress);
         when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);

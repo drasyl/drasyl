@@ -352,8 +352,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                                final OverlayAddressedMessage<ApplicationMessage> addressedMsg) {
         final DrasylAddress address = addressedMsg.content().getRecipient();
         final TraversingPeer traversingPeer = traversingPeers.get(address);
-        // FIXME: peersManager
-        final InetSocketAddress inetAddress = traversingPeer.primaryAddress();
+        final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
         traversingPeer.applicationTrafficSentOrReceived();
 
         LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);

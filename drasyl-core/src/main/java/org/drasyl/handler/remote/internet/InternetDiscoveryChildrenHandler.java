@@ -425,16 +425,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                                final OverlayAddressedMessage<ApplicationMessage> msg,
                                                final ChannelPromise promise) {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
-        // FIXME: peersManager
         if (superPeer != null) {
-            final InetSocketAddress endpoint = peersManager.getEndpoint(msg.recipient(), PATH_ID);
+            final InetSocketAddress inetAddress = peersManager.getEndpoint(msg.recipient(), PATH_ID);
             LOG.trace("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
-            ctx.write(msg.resolve(superPeer.inetAddress()), promise);
+            ctx.write(msg.resolve(inetAddress), promise);
         }
         else {
-            // FIXME: wie behandeln wir diese default route?
-            // FIXME: peersManager
-            final InetSocketAddress inetAddress = superPeers.get(bestSuperPeer).inetAddress();
+            // FIXME: bestSuperPeer vllt. als default gateway hinterlegen???
+            final InetSocketAddress inetAddress = peersManager.getEndpoint(bestSuperPeer, PATH_ID);
             LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), bestSuperPeer, inetAddress);
             ctx.write(msg.resolve(inetAddress), promise);
         }

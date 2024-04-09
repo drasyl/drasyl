@@ -50,6 +50,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
+import static org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -190,6 +191,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
         when(traversingPeer.primaryAddress()).thenReturn(traversingPeerInetAddress);
         when(traversingPeer.isReachable()).thenReturn(true);
+        when(peersManager.getEndpoint(traversingPeerPublicKey, PATH_ID)).thenReturn(traversingPeerInetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);

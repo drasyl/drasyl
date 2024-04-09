@@ -45,6 +45,7 @@ import java.util.Map;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -125,6 +126,7 @@ class InternetDiscoveryChildrenHandlerTest {
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                               @Mock final ApplicationMessage applicationMsg,
                                                                               @Mock final InetSocketAddress inetAddress) {
+        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(inetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);
@@ -143,6 +145,7 @@ class InternetDiscoveryChildrenHandlerTest {
                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                                 @Mock final InetSocketAddress inetAddress) {
+        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(inetAddress);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
         when(superPeer.inetAddress()).thenReturn(inetAddress);

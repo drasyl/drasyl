@@ -213,8 +213,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                                final OverlayAddressedMessage<ApplicationMessage> addressedMsg,
                                                final ChannelPromise promise) {
         final DrasylAddress address = addressedMsg.content().getRecipient();
-        // FIXME: peersManager
-        final InetSocketAddress inetAddress = childrenPeers.get(address).publicInetAddress();
+        final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
 
         LOG.trace("Got ApplicationMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
