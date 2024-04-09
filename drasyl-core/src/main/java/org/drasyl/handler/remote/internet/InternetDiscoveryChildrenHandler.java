@@ -286,6 +286,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         // ping super peers
         superPeers.forEach(((publicKey, superPeer) -> {
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
+            // FIXME: in peersManager berücksichtigen
             final InetSocketAddress resolvedAddress = superPeer.resolveInetAddress();
 
             writeHelloMessage(ctx, publicKey, resolvedAddress, privateInetAddresses);
@@ -426,6 +427,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final SuperPeer superPeer = superPeers.get(msg.recipient());
         // FIXME: peersManager
         if (superPeer != null) {
+            final InetSocketAddress endpoint = peersManager.getEndpoint(msg.recipient(), PATH_ID);
             LOG.trace("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
             ctx.write(msg.resolve(superPeer.inetAddress()), promise);
         }
