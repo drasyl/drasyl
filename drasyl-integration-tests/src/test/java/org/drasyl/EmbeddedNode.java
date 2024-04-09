@@ -1,23 +1,20 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024.
  *
- * Permission is hereby granted, free of charge, to any person obtaining a copy
- * of this software and associated documentation files (the "Software"), to deal
- * in the Software without restriction, including without limitation the rights
- * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
- * copies of the Software, and to permit persons to whom the Software is
- * furnished to do so, subject to the following conditions:
+ * This file is part of drasyl.
  *
- * The above copyright notice and this permission notice shall be included in all
- * copies or substantial portions of the Software.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
- * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
- * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
- * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
- * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
- * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
- * OR OTHER DEALINGS IN THE SOFTWARE.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.drasyl;
 
@@ -25,7 +22,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
@@ -38,6 +34,7 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -110,7 +107,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         if (!started) {
             started = true;
             start();
-            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
+            await("NodeUpEvent").untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
         }
         return this;
     }
@@ -121,12 +118,12 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             started = false;
             shutdown().toCompletableFuture().join();
             // shutdown() future is completed before channelInactive has passed the pipeline...
-            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
+            await("NodeNormalTerminationEvent").untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
         }
     }
 
     public int getPort() {
-        await().atMost(ofSeconds(5_000)).until(() -> port != 0);
+        await("port != 0").atMost(ofSeconds(5_000)).until(() -> port != 0);
         return port;
     }
 
