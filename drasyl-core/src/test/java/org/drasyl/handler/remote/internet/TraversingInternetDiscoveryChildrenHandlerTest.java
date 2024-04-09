@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -147,6 +148,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                               @Mock final TraversingPeer traversingPeer) {
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
+        when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);

@@ -272,9 +272,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        final AddPathEvent event = AddPathEvent.of(publicKey, inetAddress, PATH, rtt);
-        if (pathEventFilter.add(event)) {
-            ctx.fireUserEventTriggered(event);
+        if (peersManager.addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
+            ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, inetAddress, PATH, rtt));
         }
         else {
             ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
@@ -298,9 +297,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (traversingPeer.isStale()) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                final RemovePathEvent event = RemovePathEvent.of(address, PATH);
-                if (pathEventFilter.add(event)) {
-                    ctx.fireUserEventTriggered(event);
+                if (peersManager.removePath(address, PATH_ID)) {
+                    ctx.fireUserEventTriggered(RemovePathEvent.of(address, PATH));
                 }
             }
             else {

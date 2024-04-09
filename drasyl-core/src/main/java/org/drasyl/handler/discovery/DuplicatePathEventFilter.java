@@ -33,6 +33,7 @@ import static java.util.Objects.requireNonNull;
  * This class can be used to filter equal events for a given peer (identifies by {@link
  * PathEvent#getAddress()}).
  */
+@Deprecated
 public class DuplicatePathEventFilter {
     private final Map<DrasylAddress, PathEvent> pathEvents;
 

@@ -30,7 +30,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.remote.PeersManager;
@@ -84,7 +83,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final long pingTimeoutMillis;
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
-    protected final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
     protected final PeersManager peersManager;
     private final IdentitySecretKey mySecretKey;
     private final long initialPingDelayMillis;

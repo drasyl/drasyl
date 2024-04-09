@@ -266,7 +266,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
                 final RemoveChildrenAndPathEvent event = RemoveChildrenAndPathEvent.of(address, PATH);
-                if (pathEventFilter.add(event)) {
+                boolean a = pathEventFilter.add(event);
+                if (a) {
                     ctx.fireUserEventTriggered(event);
                 }
             }
