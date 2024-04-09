@@ -196,7 +196,9 @@ public class UdpServer extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             final UdpServerToDrasylHandler handler = channel.pipeline().get(UdpServerToDrasylHandler.class);
-            handler.outboundBuffer().add(msg);
+            if (handler != null) {
+                handler.outboundBuffer().add(msg);
+            }
         }
         else {
             ctx.write(msg, promise);
@@ -206,7 +208,9 @@ public class UdpServer extends ChannelDuplexHandler {
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
         final UdpServerToDrasylHandler handler = channel.pipeline().get(UdpServerToDrasylHandler.class);
-        handler.finishWrite(channel.pipeline().context(UdpServerToDrasylHandler.class));
+        if (handler != null) {
+            handler.finishWrite(channel.pipeline().context(UdpServerToDrasylHandler.class));
+        }
 
         ctx.flush();
     }
