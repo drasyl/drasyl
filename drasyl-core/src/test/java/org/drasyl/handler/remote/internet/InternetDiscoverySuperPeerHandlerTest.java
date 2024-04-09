@@ -58,6 +58,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -79,6 +80,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
+        when(peersManager.removePath(any(), any())).thenReturn(true);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, peersManager, null);
 
@@ -108,6 +110,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getRecipient()).thenReturn(myPublicKey);
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
+        when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, peersManager, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);

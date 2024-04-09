@@ -29,7 +29,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.DuplicatePathEventFilter;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -81,7 +80,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     protected final PeersManager peersManager;
     private final HopCount hopLimit;
-    private final DuplicatePathEventFilter pathEventFilter = new DuplicatePathEventFilter();
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
@@ -265,10 +263,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (childrenPeer.isStale()) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                final RemoveChildrenAndPathEvent event = RemoveChildrenAndPathEvent.of(address, PATH);
-                boolean a = pathEventFilter.add(event);
-                if (a) {
-                    ctx.fireUserEventTriggered(event);
+                if (peersManager.removePath(address, PATH_ID)) {
+                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH));
                 }
             }
         }
@@ -290,9 +286,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
-        final AddPathAndChildrenEvent event = AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH);
-        if (pathEventFilter.add(event)) {
-            ctx.fireUserEventTriggered(event);
+        if (peersManager.addPath(msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY)) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH));
         }
 
         // reply with Acknowledgement
