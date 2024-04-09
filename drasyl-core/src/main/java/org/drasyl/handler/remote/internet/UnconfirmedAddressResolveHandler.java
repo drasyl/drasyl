@@ -26,8 +26,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -81,10 +79,8 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
         if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             final DrasylAddress peer = ((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender();
             final InetSocketAddress endpoint = ((InetAddressedMessage<?>) msg).sender();
-            if (peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY)) {
-                ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, PATH_ID));
-            }
-            peersManager.inboundHelloOccurred(peer, PATH_ID); // consider every message as hello
+            peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
+            peersManager.inboundHelloOccurred(peer, PATH_ID); // consider every message as hello. this is fine here
         }
 
         // pass through
@@ -125,7 +121,6 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 if (stale) {
                     final long lastInboundHelloTime = peersManager.lastInboundHelloTime(publicKey, PATH_ID);
                     LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
-                    ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, PATH_ID));
                     peersManager.removePath(publicKey, PATH_ID);
                 }
             }
