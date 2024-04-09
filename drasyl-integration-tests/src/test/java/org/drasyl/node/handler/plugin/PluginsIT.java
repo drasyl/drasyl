@@ -81,8 +81,8 @@ class PluginsIT {
     void pluginShouldBeLoadedAndAlsoCorrespondingHandlers() {
         node.awaitStarted();
 
-        await().untilAsserted(() -> assertEquals(event1, node.readEvent()));
-        await().untilAsserted(() -> assertEquals(event2, node.readEvent()));
+        await("event1").untilAsserted(() -> assertEquals(event1, node.readEvent()));
+        await("event2").untilAsserted(() -> assertEquals(event2, node.readEvent()));
     }
 
     public static class TestPlugin implements DrasylPlugin {

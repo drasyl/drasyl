@@ -180,10 +180,10 @@ class DrasylNodeIT {
                 client2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
 
-                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #3").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent# #4").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -240,8 +240,8 @@ class DrasylNodeIT {
             void shuttingDownNodeShouldCloseConnections() {
                 superPeer.shutdown();
 
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(NodeOfflineEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(NodeOfflineEvent.class)));
+                await("NodeOfflineEvent #1").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(NodeOfflineEvent.class)));
+                await("NodeOfflineEvent #2").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(NodeOfflineEvent.class)));
             }
 
             @Test
@@ -250,12 +250,12 @@ class DrasylNodeIT {
                 // should trigger direct connection establishment between both peers
                 client1.send(client2.identity().getAddress(), "Ping");
 
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 // should tear down direct connection on inactivity
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerRelayEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerRelayEvent.class)));
+                await("PeerDirectEvent #3").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerRelayEvent.class)));
+                await("PeerDirectEvent #4").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerRelayEvent.class)));
             }
         }
 
@@ -317,8 +317,8 @@ class DrasylNodeIT {
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -415,7 +415,7 @@ class DrasylNodeIT {
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -510,8 +510,8 @@ class DrasylNodeIT {
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
@@ -636,8 +636,8 @@ class DrasylNodeIT {
 
             @Test
             void correctPeerEventsShouldBeEmitted() {
-                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").atMost(ofSeconds(999)).untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").atMost(ofSeconds(999)).untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
     }
@@ -865,8 +865,8 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 assertBidirectionalMessageDelivery(node1, node2, "Hallo Welt");
             }
@@ -994,15 +994,15 @@ class DrasylNodeIT {
         void shouldEmitErrorEventAndCompleteNotExceptionallyIfStartFailed() throws DrasylException, IOException {
             try (final DatagramSocket socket = new DatagramSocket(0)) {
                 socket.setReuseAddress(false);
-                await().untilAsserted(socket::isBound);
+                await("socket::isBound").untilAsserted(socket::isBound);
                 final DrasylConfig config = configBuilder
                         .remoteBindPort(socket.getLocalPort())
                         .build();
                 final EmbeddedNode node = new EmbeddedNode(config);
                 node.start();
 
-                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
-                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
+                await("NodeUpEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
+                await("NodeUnrecoverableErrorEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
                 assertNull(node.readEvent());
             }
         }
@@ -1012,7 +1012,7 @@ class DrasylNodeIT {
                                        final EmbeddedNode recipient,
                                        final Object msg) {
         sender.send(recipient.identity().getAddress(), msg).toCompletableFuture().join();
-        await().untilAsserted(() -> {
+        await("assertMessageDelivery").untilAsserted(() -> {
             final Event event = recipient.readEvent();
             assertNotNull(event, String.format("expected message from <%s> to <%s> with payload <%s>", sender, recipient, msg));
             assertThat(event, instanceOf(MessageEvent.class));

@@ -25,7 +25,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
@@ -38,6 +37,7 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUpEvent;
+import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -110,7 +110,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         if (!started) {
             started = true;
             start();
-            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
+            await("NodeUpEvent").untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeUpEvent.class)));
         }
         return this;
     }
@@ -121,12 +121,12 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             started = false;
             shutdown().toCompletableFuture().join();
             // shutdown() future is completed before channelInactive has passed the pipeline...
-            await().untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
+            await("NodeNormalTerminationEvent").untilAsserted(() -> assertThat(readEvent(), instanceOf(NodeNormalTerminationEvent.class)));
         }
     }
 
     public int getPort() {
-        await().atMost(ofSeconds(5_000)).until(() -> port != 0);
+        await("port != 0").atMost(ofSeconds(5_000)).until(() -> port != 0);
         return port;
     }
 

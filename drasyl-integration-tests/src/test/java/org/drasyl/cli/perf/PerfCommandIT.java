@@ -138,7 +138,7 @@ class PerfCommandIT {
         serverThread.start();
 
         // get server address
-        final IdentityPublicKey serverAddress = await().atMost(ofSeconds(30)).until(() -> {
+        final IdentityPublicKey serverAddress = await("server address").atMost(ofSeconds(30)).until(() -> {
             final Matcher matcher = ADDRESS_PATTERN.matcher(serverOut.toString());
             if (matcher.find()) {
                 return new IdentityPublicKeyConverter().convert(matcher.group(1));
@@ -175,7 +175,7 @@ class PerfCommandIT {
         clientThread.start();
 
         // receive text
-        await().atMost(ofSeconds(30)).untilAsserted(() -> {
+        await("receive text").atMost(ofSeconds(30)).untilAsserted(() -> {
             assertThat(clientOut.toString(), containsString("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"));
             assertThat(clientOut.toString(), containsString("Sender:"));
             assertThat(clientOut.toString(), containsString("Receiver:"));
