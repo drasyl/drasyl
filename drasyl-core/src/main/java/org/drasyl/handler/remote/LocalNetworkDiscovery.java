@@ -136,7 +136,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             final boolean stale = peersManager.isStale(publicKey, PATH_ID);
 
             if (stale) {
-                final long lastInboundHelloTime = peersManager.lastInboundHelloTime(publicKey, PATH_ID);
+                final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
                 peersManager.removePath(publicKey, PATH_ID);
@@ -167,7 +167,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             if (peersManager.addPath(msgSender, PATH_ID, sender, PATH_PRIORITY)) {
                 ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
             }
-            peersManager.inboundHelloOccurred(msgSender, PATH_ID);
+            peersManager.helloMessageReceived(msgSender, PATH_ID);
         }
 
         future.complete(null);

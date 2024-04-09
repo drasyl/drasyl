@@ -36,6 +36,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class PeersManager {
+    private final Map<DrasylAddress, Peer> peers = new HashMap<>();
     private final Map<DrasylAddress, PeerPath> paths = new HashMap<>();
     private final SetMultimap<DrasylAddress, Class<?>> ids = new HashSetMultimap<>();
     private final long helloTimeoutMillis;
@@ -157,18 +158,36 @@ public class PeersManager {
         return peers;
     }
 
-    public void inboundHelloOccurred(final DrasylAddress peer, final Class<?> id) {
+    public void helloMessageReceived(final DrasylAddress peer, final Class<?> id) {
         final PeerPath path = getPath(peer, id);
-        path.inboundHelloOccurred();
+        path.helloMessageReceived();
+    }
+
+    public void applicationMessageSentOrReceived(final DrasylAddress peerKey) {
+        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer());
+        peer.applicationMessageSentOrReceived();
     }
 
     public boolean isStale(final DrasylAddress peer, final Class<?> id) {
-        return lastInboundHelloTime(peer, id) < System.currentTimeMillis() - helloTimeoutMillis;
+        return lastHelloMessageReceivedTime(peer, id) < System.currentTimeMillis() - helloTimeoutMillis;
     }
 
-    public long lastInboundHelloTime(final DrasylAddress peer, final Class<?> id) {
+    public long lastHelloMessageReceivedTime(final DrasylAddress peer, final Class<?> id) {
         final PeerPath path = getPath(peer, id);
-        return path.lastInboundHelloTime;
+        return path.lastHelloMessageReceivedTime;
+    }
+
+    public long lastApplicationMessageSentOrReceivedTime(final DrasylAddress peerKey) {
+        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer());
+        return peer.lastApplicationMessageSentOrReceivedTime;
+    }
+
+    static class Peer {
+        private long lastApplicationMessageSentOrReceivedTime;
+
+        public void applicationMessageSentOrReceived() {
+            lastApplicationMessageSentOrReceivedTime = System.currentTimeMillis();
+        }
     }
 
     static class PeerPath {
@@ -176,7 +195,7 @@ public class PeersManager {
         private final InetSocketAddress endpoint;
         private final short priority;
         private PeerPath next;
-        private long lastInboundHelloTime;
+        private long lastHelloMessageReceivedTime;
 
         public PeerPath(final Class<?> id,
                         final InetSocketAddress endpoint,
@@ -196,8 +215,8 @@ public class PeersManager {
                     '}';
         }
 
-        public void inboundHelloOccurred() {
-            lastInboundHelloTime = System.currentTimeMillis();
+        public void helloMessageReceived() {
+            lastHelloMessageReceivedTime = System.currentTimeMillis();
         }
     }
 }

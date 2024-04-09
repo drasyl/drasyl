@@ -159,7 +159,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
                 final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
-                traversingPeer.applicationTrafficSentOrReceived();
+                peersManager.applicationMessageSentOrReceived(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender()); // FIXME: das muss zukünftig bei Übergabe DatagramChannel -> DrasylChannel gemacht werden
             }
 
             super.channelRead(ctx, msg);
@@ -200,13 +200,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             final TraversingPeer existingTraversingPeer = traversingPeers.get(address);
-            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints);
+            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints, address, peersManager);
 
             if (!Objects.equals(existingTraversingPeer, newTraversingPeer)) {
                 // new peer or endpoints have changes -> send Hello
                 LOG.debug("Try to reach peer `{}` at endpoints `{}`", address, endpoints);
                 traversingPeers.put(address, newTraversingPeer);
-                newTraversingPeer.applicationTrafficSentOrReceived();
+                peersManager.applicationMessageSentOrReceived(address);
                 newTraversingPeer.helloSent();
                 for (final InetSocketAddress inetAddress : newTraversingPeer.inetAddressCandidates()) {
                     writeHelloMessage(ctx, address, inetAddress, null);
@@ -245,8 +245,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
 
         if (!traversingPeer.isReachable() && traversingPeer.addInetAddressCandidate(inetAddress)) {
-            // send Discovery immediately to speed up traversal
-            traversingPeer.applicationTrafficSentOrReceived();
+            // send Hello immediately to speed up traversal
+            peersManager.applicationMessageSentOrReceived(msg.getSender());
             traversingPeer.helloSent();
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -353,7 +353,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final DrasylAddress address = addressedMsg.content().getRecipient();
         final TraversingPeer traversingPeer = traversingPeers.get(address);
         final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
-        traversingPeer.applicationTrafficSentOrReceived();
+        peersManager.applicationMessageSentOrReceived(address); // FIXME: das muss zukünftig bei Übergabe DatagramChannel <- DrasylChannel gemacht werden
 
         LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
         ctx.write(addressedMsg.resolve(inetAddress), promise);
@@ -365,7 +365,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         private final long pingCommunicationTimeoutMillis;
         long firstHelloTime;
         long lastAcknowledgementTime;
-        long lastApplicationTime;
+        private final DrasylAddress address;
+        private final PeersManager peersManager;
         private final Set<InetSocketAddress> inetAddressCandidates;
         private InetSocketAddress primaryInetAddress;
 
@@ -375,21 +376,25 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                        final Set<InetSocketAddress> inetAddressCandidates,
                        final long firstHelloTime,
                        final long lastAcknowledgementTime,
-                       final long lastApplicationTime) {
+                       final DrasylAddress address,
+                       final PeersManager peersManager) {
             this.currentTime = requireNonNull(currentTime);
             this.pingTimeoutMillis = pingTimeoutMillis;
             this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
             this.inetAddressCandidates = requireNonNull(inetAddressCandidates);
             this.firstHelloTime = firstHelloTime;
             this.lastAcknowledgementTime = lastAcknowledgementTime;
-            this.lastApplicationTime = lastApplicationTime;
+            this.address = requireNonNull(address);
+            this.peersManager = requireNonNull(peersManager);
         }
 
         TraversingPeer(final LongSupplier currentTime,
                        final long pingTimeoutMillis,
                        final long pingCommunicationTimeoutMillis,
-                       final Set<InetSocketAddress> inetAddressCandidates) {
-            this(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddressCandidates, 0L, 0L, 0L);
+                       final Set<InetSocketAddress> inetAddressCandidates,
+                       final DrasylAddress address,
+                       final PeersManager peersManager) {
+            this(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, inetAddressCandidates, 0L, 0L, address, peersManager);
         }
 
         public boolean addInetAddressCandidate(final InetSocketAddress inetAddress) {
@@ -413,15 +418,11 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         public void acknowledgementReceived(final InetSocketAddress inetAddress) {
             if (primaryInetAddress == null) {
                 // we got our first ack. drop all others candidates
-                LOG.trace("Got our first Acknowledgement for traversing peer from `{}`. Drop all other candiates.", inetAddress);
+                LOG.trace("Got our first Acknowledgement for traversing peer from `{}`. Drop all other candidates.", inetAddress);
                 primaryInetAddress = inetAddress;
                 inetAddressCandidates.retainAll(Set.of(primaryInetAddress));
             }
             this.lastAcknowledgementTime = currentTime.getAsLong();
-        }
-
-        public void applicationTrafficSentOrReceived() {
-            this.lastApplicationTime = currentTime.getAsLong();
         }
 
         /**
@@ -437,7 +438,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
          * within the last {@link #pingCommunicationTimeoutMillis}.
          */
         public boolean hasApplicationTraffic() {
-            return lastApplicationTime >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
+            return peersManager.lastApplicationMessageSentOrReceivedTime(address) >= currentTime.getAsLong() - pingCommunicationTimeoutMillis;
         }
 
         /**

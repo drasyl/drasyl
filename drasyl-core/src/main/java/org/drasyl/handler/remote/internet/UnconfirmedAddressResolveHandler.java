@@ -80,7 +80,8 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
             final DrasylAddress peer = ((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender();
             final InetSocketAddress endpoint = ((InetAddressedMessage<?>) msg).sender();
             peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
-            peersManager.inboundHelloOccurred(peer, PATH_ID); // consider every message as hello. this is fine here
+            // FIXME: wird zukünftig mit application nachrichten nicht mehr funktionieren, wenn dies nicht mehr hier vorbei geht
+            peersManager.helloMessageReceived(peer, PATH_ID); // consider every message as hello. this is fine here
         }
 
         // pass through
@@ -119,7 +120,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 final boolean stale = peersManager.isStale(publicKey, PATH_ID);
 
                 if (stale) {
-                    final long lastInboundHelloTime = peersManager.lastInboundHelloTime(publicKey, PATH_ID);
+                    final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
                     LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
                     peersManager.removePath(publicKey, PATH_ID);
                 }

@@ -246,7 +246,6 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                    @Mock final InetSocketAddress childrenInetAddress) {
         when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(childrenInetAddress);
-        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
