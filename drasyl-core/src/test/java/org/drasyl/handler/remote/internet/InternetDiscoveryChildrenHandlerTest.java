@@ -53,7 +53,9 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -106,6 +108,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getTime()).thenReturn(1L);
         when(currentTime.getAsLong()).thenReturn(2L);
+        when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, null);

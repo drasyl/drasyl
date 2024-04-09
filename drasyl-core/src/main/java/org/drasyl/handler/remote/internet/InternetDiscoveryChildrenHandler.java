@@ -266,8 +266,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
         for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
             final IdentityPublicKey publicKey = entry.getKey();
-            final RemoveSuperPeerAndPathEvent event = RemoveSuperPeerAndPathEvent.of(publicKey, PATH);
-            pathEventFilter.add(event);
+            peersManager.removePath(publicKey, PATH_ID);
         }
         heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, pingIntervalMillis, MILLISECONDS);
     }
@@ -357,9 +356,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             bestSuperPeer = (IdentityPublicKey) publicKey;
         }
 
-        final AddPathAndSuperPeerEvent event = AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH, rtt);
-        if (pathEventFilter.add(event)) {
-            ctx.fireUserEventTriggered(event);
+        if (peersManager.addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
+            ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH, rtt));
         }
         else {
             ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
@@ -393,9 +391,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 }
             }
             else {
-                final RemoveSuperPeerAndPathEvent event = RemoveSuperPeerAndPathEvent.of(publicKey, PATH);
-                if (pathEventFilter.add(event)) {
-                    ctx.fireUserEventTriggered(event);
+                if (peersManager.removePath(publicKey, PATH_ID)) {
+                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH));
                 }
             }
         }

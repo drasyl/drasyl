@@ -64,8 +64,8 @@ public class PeersManager {
 
         final PeerPath head = paths.get(peer);
         if (head == null || head.priority > newPath.priority) {
-            // create head
-            newPath.next = null;
+            // replace head
+            newPath.next = head;
             paths.put(peer, newPath);
         }
         else {
