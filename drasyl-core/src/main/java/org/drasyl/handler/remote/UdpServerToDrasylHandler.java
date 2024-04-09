@@ -26,6 +26,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -51,7 +53,12 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         LOG.trace("Read Datagram {}", msg);
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && drasylCtx.channel().localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
+            // FIXME: in den richtigen drasylchannel schieben!!!
+            System.out.println();
+        }
         drasylCtx.fireChannelRead(msg);
+        // FIXME: write to correct DrasylChannel (check for app, check for me as recipient)
     }
 
     @Override
