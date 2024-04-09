@@ -23,12 +23,9 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
@@ -128,29 +125,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         this.peersManager = requireNonNull(peersManager);
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) throws Exception {
-        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
-            final IdentityPublicKey recipient = (IdentityPublicKey) ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
-
-            final InetSocketAddress localAddress = peersManager.getEndpoint(recipient, PATH_ID);
-            if (localAddress != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
-                ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
-            }
-            else {
-                // pass through message
-                ctx.write(msg, promise);
-            }
-        }
-        else {
-            super.write(ctx, msg, promise);
-        }
     }
 
     private void startDiscovery(final ChannelHandlerContext ctx,

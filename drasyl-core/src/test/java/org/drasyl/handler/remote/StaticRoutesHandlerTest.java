@@ -22,20 +22,14 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.ReferenceCounted;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -44,9 +38,6 @@ import java.util.Set;
 import static org.drasyl.handler.remote.StaticRoutesHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -82,46 +73,6 @@ class StaticRoutesHandlerTest {
             channel.pipeline().fireChannelInactive();
 
             assertThat(channel.readEvent(), instanceOf(RemovePathEvent.class));
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final InetSocketAddress address = new InetSocketAddress(22527);
-        final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
-
-        when(peersManager.getEndpoint(any(), any())).thenReturn(address);
-
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        try {
-            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
-
-            final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new InetAddressedMessage<>(message, address), actual);
-
-            actual.release();
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
-                                                         @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(), peersManager);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        try {
-            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
-
-            final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new OverlayAddressedMessage<>(message, publicKey), actual);
-
-            actual.release();
         }
         finally {
             channel.close();

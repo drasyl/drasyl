@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.remote.PeersManager;
@@ -50,7 +49,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.function.LongSupplier;
 
-import static org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -179,30 +177,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(peersManager).applicationMessageSentOrReceived(any());
-    }
-
-    @Test
-    void shouldRouteRoutableOutboundMessageAddressedToTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                     @Mock final IdentityPublicKey publicKey,
-                                                                     @Mock final IdentityPublicKey traversingPeerPublicKey,
-                                                                     @Mock final TraversingPeer traversingPeer,
-                                                                     @Mock final InetSocketAddress traversingPeerInetAddress) {
-        when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
-        when(traversingPeer.isReachable()).thenReturn(true);
-        when(peersManager.getEndpoint(traversingPeerPublicKey, PATH_ID)).thenReturn(traversingPeerInetAddress);
-        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
-        final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
-        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
-
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-
-        channel.writeOutbound(msg);
-
-        final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
-        assertSame(applicationMsg, routedMsg.content());
-        assertSame(traversingPeerInetAddress, routedMsg.recipient());
         verify(peersManager).applicationMessageSentOrReceived(any());
     }
 

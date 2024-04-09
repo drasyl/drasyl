@@ -22,7 +22,6 @@
 package org.drasyl.handler.remote.internet;
 
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
@@ -49,7 +48,6 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -238,26 +236,6 @@ class InternetDiscoverySuperPeerHandlerTest {
 
         assertNull(channel.readOutbound());
         verify(applicationMsg).release();
-    }
-
-    @Test
-    void shouldRouteOutboundRoutableMessageAddressedToChildrenPeer(@Mock final IdentityPublicKey publicKey,
-                                                                   @Mock final ChildrenPeer childrenPeer,
-                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(childrenInetAddress);
-        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
-        when(applicationMsg.getRecipient()).thenReturn(publicKey);
-        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
-
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, peersManager, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-
-        channel.writeOutbound(msg);
-
-        final InetAddressedMessage<RemoteMessage> routedMsg = channel.readOutbound();
-        assertSame(applicationMsg, routedMsg.content());
-        assertSame(childrenInetAddress, routedMsg.recipient());
     }
 
     @Nested

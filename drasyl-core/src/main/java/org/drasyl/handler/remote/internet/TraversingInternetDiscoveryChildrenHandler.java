@@ -22,10 +22,8 @@
 package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
@@ -158,26 +156,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         }
         else {
             if (isApplicationMessageFromTraversingPeer(msg)) {
-                final TraversingPeer traversingPeer = traversingPeers.get(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender());
                 peersManager.applicationMessageSentOrReceived(((InetAddressedMessage<ApplicationMessage>) msg).content().getSender()); // FIXME: das muss zukünftig bei Übergabe DatagramChannel -> DrasylChannel gemacht werden
             }
 
             super.channelRead(ctx, msg);
-        }
-    }
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (isRoutableOutboundMessageToTraversingPeer(msg)) {
-            // for one of my traversing peers -> route
-            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
-            handleRoutableOutboundMessageToTraversingPeer(ctx, promise, addressedMsg);
-        }
-        else {
-            // unknown message type/no traversing recipient -> pass through
-            super.write(ctx, msg, promise);
         }
     }
 
@@ -330,32 +312,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
                 traversingPeers.containsKey(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getSender());
-    }
-
-    /*
-     * Routing
-     */
-
-    private boolean isRoutableOutboundMessageToTraversingPeer(final Object msg) {
-        if (msg instanceof OverlayAddressedMessage<?> &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
-            final TraversingPeer traversingPeer = traversingPeers.get(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
-            return traversingPeer != null && traversingPeer.isReachable();
-        }
-        else {
-            return false;
-        }
-    }
-
-    private void handleRoutableOutboundMessageToTraversingPeer(final ChannelHandlerContext ctx,
-                                                               final ChannelPromise promise,
-                                                               final OverlayAddressedMessage<ApplicationMessage> addressedMsg) {
-        final DrasylAddress address = addressedMsg.content().getRecipient();
-        final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
-        peersManager.applicationMessageSentOrReceived(address); // FIXME: das muss zukünftig bei Übergabe DatagramChannel <- DrasylChannel gemacht werden
-
-        LOG.trace("Got ApplicationMessage `{}` for traversing peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
-        ctx.write(addressedMsg.resolve(inetAddress), promise);
     }
 
     static class TraversingPeer {

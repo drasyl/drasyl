@@ -24,11 +24,9 @@ package org.drasyl.handler.remote.internet;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
@@ -230,20 +228,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (isRoutableOutboundMessage(msg)) {
-            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
-            handleRoutableOutboundMessage(ctx, addressedMsg, promise);
-        }
-        else {
-            // pass through
-            ctx.write(msg, promise);
-        }
-    }
-
-    @Override
     public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) {
         if (evt instanceof UdpServerBound) {
             bindAddress = ((UdpServerBound) evt).getBindAddress();
@@ -406,33 +390,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                     LOG.trace("All super peers stale!");
                 }
             }
-        }
-    }
-
-    /*
-     * Routing
-     */
-
-    private boolean isRoutableOutboundMessage(final Object msg) {
-        return peersManager.hasDefaultPeer() &&
-                msg instanceof OverlayAddressedMessage &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
-    }
-
-    @SuppressWarnings("SuspiciousMethodCalls")
-    private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
-                                               final OverlayAddressedMessage<ApplicationMessage> msg,
-                                               final ChannelPromise promise) {
-        final SuperPeer superPeer = superPeers.get(msg.recipient());
-        if (superPeer != null) {
-            final InetSocketAddress inetAddress = peersManager.getEndpoint(msg.recipient(), PATH_ID);
-            LOG.trace("Message `{}` is addressed to one of our super peers. Route message for super peer `{}` to well-known address `{}`.", msg.content().getNonce(), msg.recipient(), superPeer.inetAddress());
-            ctx.write(msg.resolve(inetAddress), promise);
-        }
-        else {
-            final InetSocketAddress inetAddress = peersManager.getEndpoint(peersManager.getDefaultPeer(), PATH_ID);
-            LOG.trace("No direct connection to message recipient. Use super peer as default gateway. Relay message `{}` for peer `{}` to super peer `{}` via well-known address `{}`.", msg.content().getNonce(), msg.recipient(), peersManager.getDefaultPeer(), inetAddress);
-            ctx.write(msg.resolve(inetAddress), promise);
         }
     }
 

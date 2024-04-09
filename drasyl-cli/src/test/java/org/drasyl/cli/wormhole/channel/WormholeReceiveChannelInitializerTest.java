@@ -64,7 +64,7 @@ class WormholeReceiveChannelInitializerTest {
             final ChannelInboundHandler handler = new WormholeReceiveChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), err, exitCode, sender, true, peersManager);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(8)).addLast(any());
+            verify(channel.pipeline(), times(8 + 1)).addLast(any()); // FIXME: change later
         }
     }
 }

@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
@@ -211,43 +210,6 @@ class LocalNetworkDiscoveryTest {
             finally {
                 channel.close();
             }
-        }
-    }
-
-    @SuppressWarnings({ "SuspiciousMethodCalls" })
-    @Test
-    void shouldRouteOutboundMessageWhenRouteIsPresent(@Mock final IdentityPublicKey recipient,
-                                                      @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-        when(peersManager.getEndpoint(any(), any())).thenReturn(new InetSocketAddress(12345));
-
-        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, 0, MULTICAST_ADDRESS, peersManager, pingDisposable);
-        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
-
-        channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
-
-        final ReferenceCounted actual = channel.readOutbound();
-        assertEquals(new InetAddressedMessage<>(message, new InetSocketAddress(12345)), actual);
-
-        actual.release();
-    }
-
-    @Test
-    void shouldPassThroughMessageWhenRouteIsAbsent(@Mock final IdentityPublicKey recipient,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-        when(peersManager.getEndpoint(any(), any())).thenReturn(null);
-
-        final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity.getIdentityPublicKey(), identity.getProofOfWork(), pingInterval, 0, MULTICAST_ADDRESS, peersManager, pingDisposable);
-        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
-        try {
-            channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
-
-            final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
-
-            actual.release();
-        }
-        finally {
-            channel.close();
         }
     }
 }

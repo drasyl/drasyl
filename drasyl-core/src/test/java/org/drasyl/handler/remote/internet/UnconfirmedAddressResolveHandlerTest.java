@@ -63,10 +63,5 @@ class UnconfirmedAddressResolveHandlerTest {
         channel.writeInbound(msg2);
 
         verify(peersManager).addPath(any(), any(), any(), anyShort());
-        when(peersManager.getEndpoint(any(), any())).thenReturn(inetAddress);
-
-        // resolve overlay address to previously discovered inet address
-        channel.writeOutbound(msg1);
-        assertEquals(new InetAddressedMessage<>(remoteMsg, inetAddress), channel.readOutbound());
     }
 }

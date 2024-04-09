@@ -21,8 +21,11 @@
  */
 package org.drasyl.channel;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.handler.LoopbackHandler;
@@ -35,6 +38,7 @@ import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
@@ -241,6 +245,28 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
 
         p.addLast(new UnconfirmedAddressResolveHandler(peersManager));
         p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, peersManager));
+        // FIXME: temporary
+        ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
+            @Override
+            public void write(final ChannelHandlerContext ctx,
+                              final Object msg,
+                              final ChannelPromise promise) {
+                if (msg instanceof OverlayAddressedMessage) {
+                    final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
+                    peersManager.applicationMessageSentOrReceived(recipient);
+                    InetSocketAddress endpoint = peersManager.getEndpoint(recipient);
+                    if (endpoint == null) {
+                        endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
+                    }
+                    if (endpoint != null) {
+                        ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
+                    }
+                }
+                else {
+                    ctx.write(msg, promise);
+                }
+            }
+        });
         p.addLast(new ApplicationMessageToPayloadCodec(networkId, identity));
         p.addLast(LOOPBACK_HANDLER);
     }

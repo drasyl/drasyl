@@ -23,13 +23,11 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
@@ -45,13 +43,11 @@ import java.util.Map;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -119,49 +115,6 @@ class InternetDiscoveryChildrenHandlerTest {
 
         verify(superPeer).acknowledgementReceived(anyLong());
         assertThat(channel.readEvent(), instanceOf(AddPathAndSuperPeerEvent.class));
-    }
-
-    @Test
-    void shouldRouteOutboundApplicationMessageAddressedToSuperPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
-                                                                              @Mock final IdentityPublicKey superPeerKey,
-                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
-                                                                              @Mock final ApplicationMessage applicationMsg,
-                                                                              @Mock final InetSocketAddress inetAddress) {
-        when(peersManager.getEndpoint(myPublicKey, PATH_ID)).thenReturn(inetAddress);
-        when(peersManager.hasDefaultPeer()).thenReturn(true);
-        when(peersManager.getDefaultPeer()).thenReturn(superPeerKey);
-        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(myPublicKey, superPeer);
-        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
-        when(superPeer.inetAddress()).thenReturn(inetAddress);
-
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-
-        channel.writeOutbound(msg);
-
-        final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
-        assertSame(inetAddress, routedMsg.recipient());
-    }
-
-    @Test
-    void shouldRouteOutboundApplicationMessageAddressedToUnknownPeerToSuperPeer(@Mock final IdentityPublicKey publicKey,
-                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
-                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                                @Mock final InetSocketAddress inetAddress) {
-        when(peersManager.hasDefaultPeer()).thenReturn(true);
-        when(peersManager.getEndpoint(publicKey, PATH_ID)).thenReturn(inetAddress);
-        when(peersManager.getDefaultPeer()).thenReturn(publicKey);
-        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
-        final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, myPublicKey);
-        when(superPeer.inetAddress()).thenReturn(inetAddress);
-
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-
-        channel.writeOutbound(msg);
-
-        final InetAddressedMessage<ApplicationMessage> routedMsg = channel.readOutbound();
-        assertSame(inetAddress, routedMsg.recipient());
     }
 
     @Nested

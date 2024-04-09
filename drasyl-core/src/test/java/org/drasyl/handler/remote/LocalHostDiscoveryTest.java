@@ -23,17 +23,13 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingFunction;
 import org.junit.jupiter.api.Nested;
@@ -67,8 +63,6 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.remote.LocalHostDiscovery.PATH_ID;
 import static org.drasyl.handler.remote.LocalHostDiscovery.PATH_PRIORITY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -218,50 +212,6 @@ class LocalHostDiscoveryTest {
             verify(watchDisposable).cancel(false);
             verify(postDisposable).cancel(false);
             verify(peersManager).removePaths(PATH_ID);
-        }
-    }
-
-    @Nested
-    class MessagePassing {
-        @Test
-        void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final InetSocketAddress address = new InetSocketAddress(22527);
-            final IdentityPublicKey recipient = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
-            routes.put(recipient, address);
-            when(identity.getIdentityPublicKey()).thenReturn(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"));
-            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(1));
-
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
-            try {
-                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
-
-                final ReferenceCounted actual = channel.readOutbound();
-                assertNotNull(actual);
-
-                actual.release();
-            }
-            finally {
-                channel.close();
-            }
-        }
-
-        @Test
-        void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey recipient,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
-            try {
-                channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));
-
-                final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new OverlayAddressedMessage<>(message, recipient), actual);
-
-                actual.release();
-            }
-            finally {
-                channel.close();
-            }
         }
     }
 

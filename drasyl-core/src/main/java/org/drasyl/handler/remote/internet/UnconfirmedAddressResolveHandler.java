@@ -23,9 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -86,26 +84,6 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
 
         // pass through
         ctx.fireChannelRead(msg);
-    }
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage) {
-            final DrasylAddress peer = ((OverlayAddressedMessage<?>) msg).recipient();
-            final InetSocketAddress endpoint = peersManager.getEndpoint(peer, PATH_ID);
-
-            // route to the unconfirmed address
-            if (endpoint != null) {
-                LOG.trace("Message `{}` was resolved to unconfirmed address `{}`.", () -> msg, () -> endpoint);
-                ctx.write(((OverlayAddressedMessage<?>) msg).resolve(endpoint), promise);
-                return;
-            }
-        }
-
-        // pass through
-        ctx.write(msg, promise);
     }
 
     private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {

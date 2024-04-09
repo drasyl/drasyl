@@ -23,11 +23,8 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -54,29 +51,6 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
                                final PeersManager peersManager) {
         this.staticRoutes = requireNonNull(staticRoutes);
         this.peersManager = requireNonNull(peersManager);
-    }
-
-    @SuppressWarnings({ "unchecked", "SuspiciousMethodCalls" })
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
-            final DrasylAddress recipient = ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
-
-            final InetSocketAddress staticAddress = peersManager.getEndpoint(recipient, PATH_ID);
-            if (staticAddress != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", (((OverlayAddressedMessage<ApplicationMessage>) msg).content()).getNonce(), recipient, staticAddress);
-                ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(staticAddress), promise);
-            }
-            else {
-                // pass through message
-                ctx.write(msg, promise);
-            }
-        }
-        else {
-            ctx.write(msg, promise);
-        }
     }
 
     @Override

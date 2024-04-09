@@ -23,10 +23,8 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -171,28 +169,6 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         }
 
         future.complete(null);
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            final DrasylAddress recipient = ((OverlayAddressedMessage<RemoteMessage>) msg).recipient();
-
-            final InetSocketAddress endpoint = peersManager.getEndpoint(recipient, PATH_ID);
-            if (endpoint != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<RemoteMessage>) msg).content().getNonce(), () -> recipient, () -> endpoint);
-                ctx.write(((OverlayAddressedMessage<RemoteMessage>) msg).resolve(endpoint), promise);
-            }
-            else {
-                ctx.write(msg, promise);
-            }
-        }
-        else {
-            ctx.write(msg, promise);
-        }
     }
 
     @Override

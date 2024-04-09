@@ -63,7 +63,7 @@ class PerfServerChannelInitializerTest {
             final ChannelInboundHandler handler = new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, true, peersManager);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(8)).addLast(any());
+            verify(channel.pipeline(), times(8 + 1)).addLast(any()); // FIXME: change later
         }
     }
 }

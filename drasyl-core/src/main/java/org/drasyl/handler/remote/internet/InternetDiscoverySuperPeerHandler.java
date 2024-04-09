@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.InetAddressedMessage;
@@ -168,21 +167,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
     }
 
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (isRoutableOutboundMessage(msg)) {
-            // for one of my children -> route
-            final OverlayAddressedMessage<ApplicationMessage> addressedMsg = (OverlayAddressedMessage<ApplicationMessage>) msg;
-            handleRoutableOutboundMessage(ctx, addressedMsg, promise);
-        }
-        else {
-            // unknown message type/recipient -> pass through
-            ctx.write(msg, promise);
-        }
-    }
-
     /*
      * Routing/Relaying
      */
@@ -207,16 +191,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         return msg instanceof OverlayAddressedMessage<?> &&
                 ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
                 childrenPeers.containsKey(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
-    }
-
-    private void handleRoutableOutboundMessage(final ChannelHandlerContext ctx,
-                                               final OverlayAddressedMessage<ApplicationMessage> addressedMsg,
-                                               final ChannelPromise promise) {
-        final DrasylAddress address = addressedMsg.content().getRecipient();
-        final InetSocketAddress inetAddress = peersManager.getEndpoint(address, PATH_ID);
-
-        LOG.trace("Got ApplicationMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", addressedMsg.content().getNonce(), address, inetAddress);
-        ctx.write(addressedMsg.resolve(inetAddress), promise);
     }
 
     @SuppressWarnings("java:S2325")
