@@ -38,6 +38,8 @@ import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -59,11 +61,13 @@ class WormholeSendChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
             when(ctx.channel()).thenReturn(channel);
+            when(channel.config().getOption(NETWORK_ID)).thenReturn(0);
+            when(channel.config().getOption(PEERS_MANAGER)).thenReturn(peersManager);
 
-            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true, peersManager);
+            final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(6 + 1)).addLast(any()); // FIXME: change later
+            verify(channel.pipeline(), times(6)).addLast(any());
         }
     }
 }

@@ -40,15 +40,11 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
 import org.openjdk.jmh.annotations.Measurement;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.annotations.Warmup;
 
 import java.net.InetSocketAddress;
@@ -79,13 +75,6 @@ public class UnconfirmedAddressResolveHandlerBenchmark extends AbstractBenchmark
         final ApplicationMessage applicationMessage = ApplicationMessage.of(NETWORK_ID, ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork(), payload);
         sender = new InetSocketAddress(123);
         msg = new InetAddressedMessage<>(applicationMessage, sender);
-    }
-
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void channelRead() {
-        handler.channelRead(ctx, msg);
     }
 
     private static class MyChannelHandlerContext implements ChannelHandlerContext {

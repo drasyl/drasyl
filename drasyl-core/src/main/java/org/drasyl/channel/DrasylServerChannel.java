@@ -33,6 +33,7 @@ import io.netty.channel.DefaultAddressedEnvelope;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Future;
@@ -50,7 +51,6 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
@@ -66,6 +66,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
@@ -82,16 +83,14 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private static final AtomicReferenceFieldUpdater<DrasylServerChannel, Future> FINISH_WRITE_FUTURE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishWriteFuture");
-    public int networkId;
-    public ProofOfWork proofOfWork;
-    public Channel udpChannel;
+    public DatagramChannel udpChannel;
 
     enum State {OPEN, ACTIVE, CLOSED}
 
     private volatile State state;
-    private final DefaultChannelConfig config = new DefaultChannelConfig(this);
+    private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);
     public final Map<SocketAddress, DrasylChannel> channels;
-    private volatile DrasylAddress localAddress; // NOSONAR
+    private volatile Identity identity; // NOSONAR
     final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
 
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
@@ -102,10 +101,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
                         final Map<SocketAddress, DrasylChannel> channels,
-                        final DrasylAddress localAddress) {
+                        final Identity identity) {
         this.state = requireNonNull(state);
-        this.channels = channels;
-        this.localAddress = localAddress;
+        this.channels = requireNonNull(channels);
+        this.identity = identity;
     }
 
     @SuppressWarnings("unused")
@@ -120,16 +119,21 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     @Override
     protected DrasylAddress localAddress0() {
-        return localAddress;
+        if (identity != null) {
+            return identity.getAddress();
+        }
+        else {
+            return null;
+        }
     }
 
     @Override
-    protected void doBind(final SocketAddress localAddress) {
-        if (!(localAddress instanceof DrasylAddress)) {
-            throw new IllegalArgumentException("Unsupported address type! Expected `" + DrasylAddress.class.getSimpleName() + "`, but got `" + localAddress.getClass().getSimpleName() + "`.");
+    protected void doBind(final SocketAddress identity) {
+        if (!(identity instanceof Identity)) {
+            throw new IllegalArgumentException("Unsupported address type! Expected `" + Identity.class.getSimpleName() + "`, but got `" + identity.getClass().getSimpleName() + "`.");
         }
 
-        this.localAddress = (DrasylAddress) localAddress;
+        this.identity = (Identity) identity;
         state = State.ACTIVE;
     }
 
@@ -151,8 +155,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doClose() {
         if (state != State.CLOSED) {
             // Update the internal state before the closeFuture<?> is notified.
-            if (localAddress != null) {
-                localAddress = null;
+            if (identity != null) {
+                identity = null;
             }
             state = State.CLOSED;
         }
@@ -190,7 +194,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     protected DrasylChannel newDrasylChannel(final DrasylAddress peer) {
-        return new DrasylChannel(this, peer, networkId, proofOfWork);
+        return new DrasylChannel(this, peer, identity.getProofOfWork(), config().getOption(PEERS_MANAGER), udpChannel);
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {

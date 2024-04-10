@@ -94,7 +94,7 @@ public class EchoServerBootstrap {
                     });
 
             try {
-                final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+                final Channel ch = b.bind(identity).syncUninterruptibly().channel();
                 System.out.println("EchoServer listening on address " + ch.localAddress());
                 ch.closeFuture().awaitUninterruptibly();
             }

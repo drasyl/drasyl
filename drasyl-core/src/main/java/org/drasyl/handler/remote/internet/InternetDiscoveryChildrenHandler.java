@@ -57,6 +57,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -81,12 +82,12 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected final long pingTimeoutMillis;
     protected final long maxTimeOffsetMillis;
     protected final Map<IdentityPublicKey, SuperPeer> superPeers;
-    protected final PeersManager peersManager;
     private final IdentitySecretKey mySecretKey;
     private final long initialPingDelayMillis;
     private final long pingIntervalMillis;
     Future<?> heartbeatDisposable;
     protected InetSocketAddress bindAddress;
+    PeersManager peersManager;
 
     @SuppressWarnings("java:S107")
     InternetDiscoveryChildrenHandler(final int myNetworkId,
@@ -94,25 +95,25 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                      final IdentitySecretKey mySecretKey,
                                      final ProofOfWork myProofOfWork,
                                      final LongSupplier currentTime,
-                                     final PeersManager peersManager,
                                      final long initialPingDelayMillis,
                                      final long pingIntervalMillis,
                                      final long pingTimeoutMillis,
                                      final long maxTimeOffsetMillis,
                                      final Map<IdentityPublicKey, SuperPeer> superPeers,
-                                     final Future<?> heartbeatDisposable) {
+                                     final Future<?> heartbeatDisposable,
+                                     final PeersManager peersManager) {
         this.myNetworkId = myNetworkId;
         this.myPublicKey = requireNonNull(myPublicKey);
         this.mySecretKey = requireNonNull(mySecretKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
-        this.peersManager = requireNonNull(peersManager);
         this.initialPingDelayMillis = requireNonNegative(initialPingDelayMillis);
         this.pingIntervalMillis = requirePositive(pingIntervalMillis);
         this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
         this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.superPeers = requireNonNull(superPeers);
         this.heartbeatDisposable = heartbeatDisposable;
+        this.peersManager = peersManager;
     }
 
     @SuppressWarnings("java:S107")
@@ -125,22 +126,20 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
-                                            final PeersManager peersManager) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
         this(
                 myNetworkId,
                 myPublicKey,
                 mySecretKey,
                 myProofOfWork,
                 currentTime,
-                peersManager,
                 initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
                 superPeerAddresses.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, pingTimeoutMillis, e.getValue()))),
-                null
-        );
+                null,
+                null);
     }
 
     @SuppressWarnings("java:S107")
@@ -152,8 +151,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
-                                            final PeersManager peersManager) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
         this(
                 myNetworkId,
                 myPublicKey,
@@ -164,8 +162,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
-                superPeerAddresses,
-                peersManager
+                superPeerAddresses
         );
     }
 
@@ -176,8 +173,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                             final long pingIntervalMillis,
                                             final long pingTimeoutMillis,
                                             final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
-                                            final PeersManager peersManager) {
+                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
         this(
                 myNetworkId,
                 myIdentity.getIdentityPublicKey(),
@@ -187,8 +183,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
-                superPeerAddresses,
-                peersManager
+                superPeerAddresses
         );
     }
 
@@ -198,6 +193,9 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        if (peersManager == null) {
+            peersManager = ctx.channel().config().getOption(PEERS_MANAGER);
+        }
         startHeartbeat(ctx);
         ctx.fireChannelActive();
     }

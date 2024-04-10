@@ -166,21 +166,6 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldPassThroughInboundApplicationMessageAddressedToMe(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
-                                                                 @Mock final InetSocketAddress inetAddress) {
-        final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>();
-        when(applicationMsg.getRecipient()).thenReturn(myPublicKey);
-        final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
-
-        final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, childrenPeers, hopLimit, peersManager, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-
-        channel.writeInbound(msg);
-
-        assertSame(msg, channel.readInbound());
-    }
-
-    @Test
     void shouldRelayInboundRoutableMessageAddressedToChildrenPeer(@Mock final IdentityPublicKey publicKey,
                                                                   @Mock final ChildrenPeer childrenPeer,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,

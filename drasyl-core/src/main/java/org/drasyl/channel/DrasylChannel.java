@@ -32,17 +32,22 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.RecvByteBufAllocator;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.InternalThreadLocalMap;
 import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.identity.*;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
@@ -51,6 +56,7 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -86,8 +92,9 @@ public class DrasylChannel extends AbstractChannel {
     volatile boolean pendingWrites;
     private volatile DrasylAddress localAddress; // NOSONAR
     private final DrasylAddress remoteAddress;
-    private final int networkId;
     private final ProofOfWork proofOfWork;
+    private final PeersManager peersManager;
+    private final DatagramChannel udpChannel;
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
     private volatile Future<?> finishReadFuture;
@@ -97,21 +104,24 @@ public class DrasylChannel extends AbstractChannel {
                   final State state,
                   final DrasylAddress localAddress,
                   final DrasylAddress remoteAddress,
-                  final int networkId,
-                  final ProofOfWork proofOfWork) {
+                  final ProofOfWork proofOfWork,
+                  final PeersManager peersManager,
+                  final DatagramChannel udpChannel) {
         super(parent);
         this.state = state;
         this.localAddress = localAddress;
         this.remoteAddress = remoteAddress;
-        this.networkId = networkId;
         this.proofOfWork = requireNonNull(proofOfWork);
+        this.peersManager = requireNonNull(peersManager);
+        this.udpChannel = requireNonNull(udpChannel);
     }
 
     DrasylChannel(final DrasylServerChannel parent,
                   final DrasylAddress remoteAddress,
-                  final int networkId,
-                  final ProofOfWork proofOfWork) {
-        this(parent, null, parent.localAddress0(), remoteAddress, networkId, proofOfWork);
+                  final ProofOfWork proofOfWork,
+                  final PeersManager peersManager,
+                  final DatagramChannel udpChannel) {
+        this(parent, null, parent.localAddress0(), remoteAddress, proofOfWork, peersManager, udpChannel);
     }
 
     @Override
@@ -287,22 +297,35 @@ public class DrasylChannel extends AbstractChannel {
             // DrasylServerChannel, which is always the last to be closed.
             boolean wroteToParent = false;
             pendingWrites = false;
-            final DrasylServerChannel serverChannel = (DrasylServerChannel) parent();
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
                 if (buf == null) {
                     break;
                 }
 
-                final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, (IdentityPublicKey) localAddress, proofOfWork, buf.retain());
-                final OverlayAddressedMessage<Object> overlayMsg = new OverlayAddressedMessage<>(appMsg, remoteAddress, localAddress);
-                serverChannel.outboundBuffer().add(overlayMsg);
+                // map remoteAddress to udp endpoint
+                peersManager.applicationMessageSentOrReceived(remoteAddress);
+                InetSocketAddress endpoint = peersManager.getEndpoint(remoteAddress);
+                if (endpoint == null) {
+                    endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
+                }
+                if (endpoint != null) {
+                    // convert to remote message
+                    final int networkId = parent().config().getOption(NETWORK_ID);
+                    final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, (IdentityPublicKey) localAddress, proofOfWork, buf.retain());
+                    final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
+                    udpChannel.write(inetMsg); // FIXME: use outbound buffer
+                }
+                else {
+                    LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
+                }
+
                 in.remove();
                 wroteToParent = true;
             }
 
             if (wroteToParent) {
-                serverChannel.finishChildWrite();
+                udpChannel.flush(); // FIXME: use outbound buffer
             }
         }
         finally {

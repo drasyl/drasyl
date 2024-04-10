@@ -31,6 +31,7 @@ import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -41,6 +42,7 @@ import java.util.Map;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
@@ -51,20 +53,25 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final ChannelHandlerContext drasylCtx;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
-    private final PeersManager peersManager;
 
-    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx, final PeersManager peersManager) {
+    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
         this.drasylCtx = requireNonNull(drasylCtx);
-        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) drasylCtx.channel();
+        final PeersManager peersManager = drasylServerChannel.config().getOption(PEERS_MANAGER);
+
         LOG.trace("Read Datagram {}", msg);
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && drasylCtx.channel().localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && drasylServerChannel.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
             peersManager.applicationMessageSentOrReceived(appMsg.getSender());
-            final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) drasylCtx.channel();
+
+            // FIXME: aus UnconfirmedAddressResolveHandler kopiert
+            peersManager.addPath(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
+            peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
+
             final Map<SocketAddress, DrasylChannel> drasylChannels = drasylServerChannel.channels;
             final DrasylChannel drasylChannel = drasylChannels.get(appMsg.getSender());
             if (drasylChannel != null) {

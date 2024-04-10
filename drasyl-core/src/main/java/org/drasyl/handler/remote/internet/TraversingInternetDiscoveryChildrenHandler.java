@@ -53,6 +53,7 @@ import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -86,11 +87,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long maxTimeOffsetMillis,
                                                final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
-                                               final IdentityPublicKey bestSuperPeer,
                                                final long pingCommunicationTimeoutMillis,
                                                final long maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable);
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, peersManager);
         this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -114,7 +114,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
      *                                       discarded without application traffic
      * @param maxPeers                       maximum number of peers to which a traversed connection
      *                                       should be maintained at the same time
-     * @param peersManager
      */
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
@@ -127,9 +126,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                       final long maxTimeOffsetMillis,
                                                       final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
                                                       final long pingCommunicationTimeoutMillis,
-                                                      final long maxPeers,
-                                                      final PeersManager peersManager) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses, peersManager);
+                                                      final long maxPeers) {
+        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
         this.maxPeers = requireNonNegative(maxPeers);
         this.traversingPeers = new HashMap<>();
@@ -224,7 +222,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (!traversingPeer.isReachable() && traversingPeer.addInetAddressCandidate(inetAddress)) {
             // send Hello immediately to speed up traversal
-            peersManager.applicationMessageSentOrReceived(msg.getSender());
+            ctx.channel().config().getOption(PEERS_MANAGER).applicationMessageSentOrReceived(msg.getSender());
             traversingPeer.helloSent();
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -275,7 +273,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (traversingPeer.isStale()) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (peersManager.removePath(address, PATH_ID)) {
+                if (ctx.channel().config().getOption(PEERS_MANAGER).removePath(address, PATH_ID)) {
                     ctx.fireUserEventTriggered(RemovePathEvent.of(address, PATH));
                 }
             }

@@ -100,7 +100,7 @@ public class TunnelExposeCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new TunnelExposeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, service, password, out, err, exitCode, !protocolArmDisabled, peersManager);
+        return new TunnelExposeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, service, password, out, err, exitCode, !protocolArmDisabled);
     }
 
     @Override

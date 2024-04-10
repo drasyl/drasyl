@@ -124,7 +124,7 @@ public class RmiClientNode {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
             Runtime.getRuntime().addShutdownHook(new Thread(ch::close));
             ch.closeFuture().awaitUninterruptibly();
         }

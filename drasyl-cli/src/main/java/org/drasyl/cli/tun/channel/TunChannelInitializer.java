@@ -28,7 +28,6 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -52,16 +51,14 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
     public TunChannelInitializer(final Identity identity,
                                  final EventLoopGroup udpServerGroup,
                                  final InetSocketAddress bindAddress,
-                                 final int networkId,
                                  final long onlineTimeoutMillis,
                                  final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                  final PrintStream err,
                                  final Worm<Integer> exitCode,
                                  final Channel tun,
                                  final Set<DrasylAddress> remoteAddress,
-                                 final boolean protocolArmEnabled,
-                                 final PeersManager peersManager) {
-        super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled, peersManager);
+                                 final boolean protocolArmEnabled) {
+        super(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, protocolArmEnabled);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.tun = requireNonNull(tun);

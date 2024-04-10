@@ -118,7 +118,7 @@ public class PubSubSubscriber {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
 
             // begin to take user input
             final Scanner userInput = new Scanner(System.in);

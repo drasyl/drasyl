@@ -63,6 +63,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -155,7 +156,13 @@ public abstract class DrasylNode {
         final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
         final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
         final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
-        bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
+        bootstrap = new ServerBootstrap()
+                .group(parentGroup, childGroup)
+                .localAddress(identity)
+                .channel(DrasylServerChannel.class)
+                .option(NETWORK_ID, config.getNetworkId())
+                .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup))
+                .childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);

@@ -49,7 +49,9 @@ public class PeersManager {
     }
 
     public PeersManager() {
-        this(30_000);
+        this(
+                30_000 // config.getRemotePingTimeout().toMillis() -> DrasylServerChannel option?
+        );
     }
 
     public boolean addPath(final DrasylAddress peer,

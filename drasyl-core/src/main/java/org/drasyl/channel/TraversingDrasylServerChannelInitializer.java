@@ -33,6 +33,8 @@ import org.drasyl.util.internal.UnstableApi;
 import java.net.InetSocketAddress;
 import java.util.Map;
 
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+
 /**
  * A {@link ChannelInitializer} for {@link DrasylServerChannel}s that tries to traverse (if any)
  * NATs with a fallback to relaying all messages through super peers.
@@ -48,8 +50,6 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      *                                       should run on
      * @param bindAddress                    address the UDP server will bind to. Default value:
      *                                       0.0.0.0:{@link #BIND_PORT}
-     * @param networkId                      the network we belong to. Default value:
-     *                                       {@link #NETWORK_ID}
      * @param superPeers                     list of super peers we register to. Default value:
      *                                       {@link #SUPER_PEERS}
      * @param protocolArmEnabled             if {@code true} all control plane messages will be
@@ -68,22 +68,19 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
      *                                       discarded without application traffic. Default value:
      *                                       {@link #PING_COMMUNICATION_TIMEOUT_MILLIS}
-     * @param peersManager
      */
     @SuppressWarnings("java:S107")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
                                                     final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
-                                                    final int networkId,
                                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                                     final boolean protocolArmEnabled,
                                                     final int pingIntervalMillis,
                                                     final int pingTimeoutMillis,
                                                     final int maxTimeOffsetMillis,
                                                     final int maxPeers,
-                                                    final int pingCommunicationTimeoutMillis,
-                                                    final PeersManager peersManager) {
-        super(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, maxPeers, peersManager);
+                                                    final int pingCommunicationTimeoutMillis) {
+        super(identity, udpServerGroup, bindAddress, superPeers, protocolArmEnabled, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, maxPeers);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
     }
 
@@ -96,21 +93,17 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * @param udpServerGroup     the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress        address the UDP server will bind to. Default value:
      *                           0.0.0.0:{@link #BIND_PORT}
-     * @param networkId          the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers         list of super peers we register to. Default value:
      *                           {@link #SUPER_PEERS}
      * @param protocolArmEnabled if {@code true} all control plane messages will be
      *                           encrypted/authenticated. Default value: {@code true}
-     * @param peersManager
      */
     public TraversingDrasylServerChannelInitializer(final Identity identity,
                                                     final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
-                                                    final int networkId,
                                                     final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                                    final boolean protocolArmEnabled,
-                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS, peersManager);
+                                                    final boolean protocolArmEnabled) {
+        this(identity, udpServerGroup, bindAddress, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
     /**
@@ -122,19 +115,15 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
      * @param udpServerGroup the {@link EventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
-     * @param networkId      the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers     list of super peers we register to. Default value:
      *                       {@link #SUPER_PEERS}
-     * @param peersManager
      */
     @SuppressWarnings("unused")
     public TraversingDrasylServerChannelInitializer(final Identity identity,
                                                     final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
-                                                    final int networkId,
-                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, networkId, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS, peersManager);
+                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
+        this(identity, udpServerGroup, bindAddress, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
     /**
@@ -154,7 +143,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
                                                     final EventLoopGroup udpServerGroup,
                                                     final InetSocketAddress bindAddress,
                                                     final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS, peersManager);
+        this(identity, udpServerGroup, bindAddress, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
     /**
@@ -173,7 +162,7 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
                                                     final EventLoopGroup udpServerGroup,
                                                     final int bindPort,
                                                     final PeersManager peersManager) {
-        this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS, peersManager);
+        this(identity, udpServerGroup, new InetSocketAddress(bindPort), SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
     /**
@@ -190,13 +179,14 @@ public class TraversingDrasylServerChannelInitializer extends RelayOnlyDrasylSer
     public TraversingDrasylServerChannelInitializer(final Identity identity,
                                                     final EventLoopGroup udpServerGroup,
                                                     final PeersManager peersManager) {
-        this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS, peersManager);
+        this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, PING_COMMUNICATION_TIMEOUT_MILLIS);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
-        ch.pipeline().replace(InternetDiscoveryChildrenHandler.class, null, new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, pingCommunicationTimeoutMillis, maxPeers, peersManager));
+        final Integer networkId = ch.config().getOption(NETWORK_ID);
+        ch.pipeline().replace(InternetDiscoveryChildrenHandler.class, null, new TraversingInternetDiscoveryChildrenHandler(networkId, identity.getIdentityPublicKey(), identity.getIdentitySecretKey(), identity.getProofOfWork(), 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, pingCommunicationTimeoutMillis, maxPeers));
     }
 }

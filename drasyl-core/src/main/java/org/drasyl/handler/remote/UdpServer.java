@@ -99,7 +99,7 @@ public class UdpServer extends ChannelDuplexHandler {
                      final EventLoopGroup group,
                      final InetSocketAddress bindAddress,
                      final PeersManager peersManager) {
-        this(bootstrap, group, bindAddress, ctx -> new UdpServerChannelInitializer(ctx, peersManager));
+        this(bootstrap, group, bindAddress, UdpServerChannelInitializer::new);
     }
 
     /**
@@ -276,7 +276,7 @@ public class UdpServer extends ChannelDuplexHandler {
                 LOG.info("Server started and listening at udp:/{}.", socketAddress);
 
                 final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) ctx.channel();
-                drasylServerChannel.udpChannel = future.channel();
+                drasylServerChannel.udpChannel = (DatagramChannel) future.channel();
 
                 UdpServer.this.channel = myChannel;
                 ctx.fireUserEventTriggered(new UdpServerBound(socketAddress));

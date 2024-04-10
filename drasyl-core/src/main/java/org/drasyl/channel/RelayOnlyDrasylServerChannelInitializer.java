@@ -21,12 +21,8 @@
  */
 package org.drasyl.channel;
 
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.handler.remote.OtherNetworkFilter;
@@ -37,7 +33,6 @@ import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
@@ -46,6 +41,8 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 /**
  * A {@link ChannelInitializer} for {@link DrasylServerChannel}s that relays all messages through
@@ -54,7 +51,6 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     public static final int BIND_PORT = 22527;
-    public static final int NETWORK_ID = 1;
     public static final Map<IdentityPublicKey, InetSocketAddress> SUPER_PEERS = Map.of(
             IdentityPublicKey.of("c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d"), new InetSocketAddress("sp-fkb1.drasyl.org", 22527),
             IdentityPublicKey.of("5b4578909bf0ad3565bb5faf843a9f68b325dd87451f6cb747e49d82f6ce5f4c"), new InetSocketAddress("sp-rjl1.drasyl.org", 22527),
@@ -68,14 +64,12 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     protected static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     protected final Identity identity;
     protected final InetSocketAddress bindAddress;
-    protected final int networkId;
     protected final Map<IdentityPublicKey, InetSocketAddress> superPeers;
     protected final boolean protocolArmEnabled;
     protected final int pingIntervalMillis;
     protected final int pingTimeoutMillis;
     protected final int maxTimeOffsetMillis;
     protected final int maxPeers;
-    protected final PeersManager peersManager;
     private final EventLoopGroup udpServerGroup;
 
     /**
@@ -84,7 +78,6 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      *                            on
      * @param bindAddress         address the UDP server will bind to. Default value:
      *                            0.0.0.0:{@link #BIND_PORT}
-     * @param networkId           the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers          list of super peers we register to. Default value:
      *                            {@link #SUPER_PEERS}
      * @param protocolArmEnabled  if {@code true} all control plane messages will be
@@ -102,25 +95,21 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
                                                    final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
-                                                   final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                                    final boolean protocolArmEnabled,
                                                    final int pingIntervalMillis,
                                                    final int pingTimeoutMillis,
                                                    final int maxTimeOffsetMillis,
-                                                   final int maxPeers,
-                                                   final PeersManager peersManager) {
+                                                   final int maxPeers) {
         this.identity = requireNonNull(identity);
         this.udpServerGroup = requireNonNull(udpServerGroup);
         this.bindAddress = requireNonNull(bindAddress);
-        this.networkId = networkId;
         this.superPeers = requireNonNull(superPeers);
         this.protocolArmEnabled = protocolArmEnabled;
         this.pingIntervalMillis = pingIntervalMillis;
         this.pingTimeoutMillis = pingTimeoutMillis;
         this.maxTimeOffsetMillis = maxTimeOffsetMillis;
         this.maxPeers = maxPeers;
-        this.peersManager = requireNonNull(peersManager);
     }
 
     /**
@@ -132,7 +121,6 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      *                           on
      * @param bindAddress        address the UDP server will bind to. Default value:
      *                           0.0.0.0:{@link #BIND_PORT}
-     * @param networkId          the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers         list of super peers we register to. Default value:
      *                           {@link #SUPER_PEERS}
      * @param protocolArmEnabled if {@code true} all control plane messages will be
@@ -142,11 +130,10 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
                                                    final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
-                                                   final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                                    final boolean protocolArmEnabled,
                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, peersManager);
+        this(identity, udpServerGroup, bindAddress, superPeers, protocolArmEnabled, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -158,7 +145,6 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
      * @param udpServerGroup the {@link NioEventLoopGroup} the underlying udp server should run on
      * @param bindAddress    address the UDP server will bind to. Default value:
      *                       0.0.0.0:{@link #BIND_PORT}
-     * @param networkId      the network we belong to. Default value: {@link #NETWORK_ID}
      * @param superPeers     list of super peers we register to. Default value:
      *                       {@link #SUPER_PEERS}
      */
@@ -166,10 +152,9 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
                                                    final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
-                                                   final int networkId,
                                                    final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, networkId, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, peersManager);
+        this(identity, udpServerGroup, bindAddress, superPeers, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -187,7 +172,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                                                    final EventLoopGroup udpServerGroup,
                                                    final InetSocketAddress bindAddress,
                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, bindAddress, NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, peersManager);
+        this(identity, udpServerGroup, bindAddress, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -204,7 +189,7 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
                                                    final EventLoopGroup udpServerGroup,
                                                    final int bindPort,
                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, new InetSocketAddress(bindPort), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, peersManager);
+        this(identity, udpServerGroup, new InetSocketAddress(bindPort), SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     /**
@@ -219,17 +204,16 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
     public RelayOnlyDrasylServerChannelInitializer(final Identity identity,
                                                    final EventLoopGroup udpServerGroup,
                                                    final PeersManager peersManager) {
-        this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), NETWORK_ID, SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS, peersManager);
+        this(identity, udpServerGroup, new InetSocketAddress(BIND_PORT), SUPER_PEERS, true, PING_INTERVAL_MILLIS, PING_TIMEOUT_MILLIS, MAX_TIME_OFFSET_MILLIS, MAX_PEERS);
     }
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        ch.networkId = networkId;
-        ch.proofOfWork = identity.getProofOfWork();
-
+        final Integer networkId = ch.config().getOption(NETWORK_ID);
+        final PeersManager peersManager = ch.config().getOption(PEERS_MANAGER);
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx, peersManager) {
+        p.addLast(new UdpServer(udpServerGroup, bindAddress, ctx -> new UdpServerChannelInitializer(ctx) {
             @Override
             protected void lastStage(final DatagramChannel ch) {
                 ch.pipeline().addLast(new OtherNetworkFilter(networkId));
@@ -245,35 +229,6 @@ public class RelayOnlyDrasylServerChannelInitializer extends ChannelInitializer<
         }));
 
         p.addLast(new UnconfirmedAddressResolveHandler(peersManager));
-        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, peersManager));
-        // FIXME: temporary
-        ch.pipeline().addLast(new ChannelOutboundHandlerAdapter() {
-            @Override
-            public void write(final ChannelHandlerContext ctx,
-                              final Object msg,
-                              final ChannelPromise promise) {
-                if (msg instanceof OverlayAddressedMessage) {
-                    final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
-                    peersManager.applicationMessageSentOrReceived(recipient);
-                    InetSocketAddress endpoint = peersManager.getEndpoint(recipient);
-                    if (endpoint == null) {
-                        endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
-                    }
-                    if (endpoint != null) {
-                        ch.udpChannel.writeAndFlush(((OverlayAddressedMessage<?>) msg).resolve(endpoint)).addListener((ChannelFutureListener) future -> ctx.executor().execute(() -> {
-                            if (future.isSuccess()) {
-                                promise.setSuccess();
-                            }
-                            else {
-                                promise.setFailure(future.cause());
-                            }
-                        }));
-                    }
-                }
-                else {
-                    ctx.write(msg, promise);
-                }
-            }
-        });
+        p.addLast(new InternetDiscoveryChildrenHandler(networkId, identity, 0, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers));
     }
 }

@@ -23,15 +23,12 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.util.Iterator;
 
 import static java.util.Objects.requireNonNull;
@@ -44,8 +41,8 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @UnstableApi
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    static final Class<?> PATH_ID = UnconfirmedAddressResolveHandler.class;
-    static final short PATH_PRIORITY = 110;
+    public static final Class<?> PATH_ID = UnconfirmedAddressResolveHandler.class;
+    public static final short PATH_PRIORITY = 110;
     private final long expireCacheAfter;
     private final PeersManager peersManager;
 
@@ -70,21 +67,6 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
         scheduleHousekeepingTask(ctx);
-    }
-
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            final DrasylAddress peer = ((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender();
-            final InetSocketAddress endpoint = ((InetAddressedMessage<?>) msg).sender();
-            // FIXME: WIRD IN ZUKUNFT NICHT MEHR FUNKTIONIEREN
-            peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
-            // FIXME: wird zukünftig mit application nachrichten nicht mehr funktionieren, wenn dies nicht mehr hier vorbei geht
-            peersManager.helloMessageReceived(peer, PATH_ID); // consider every message as hello. this is fine here
-        }
-
-        // pass through
-        ctx.fireChannelRead(msg);
     }
 
     private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {

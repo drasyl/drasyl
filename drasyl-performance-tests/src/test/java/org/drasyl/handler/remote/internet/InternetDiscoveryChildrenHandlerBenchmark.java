@@ -279,7 +279,7 @@ public class InternetDiscoveryChildrenHandlerBenchmark extends AbstractBenchmark
         handler = new InternetDiscoveryChildrenHandler(0, ID_1.getIdentityPublicKey(), ID_1.getIdentitySecretKey(), ID_1.getProofOfWork(), 1_000, 1_000, 1_000, 1_000, Map.of(
                 ID_2.getIdentityPublicKey(), new InetSocketAddress(0),
                 ID_3.getIdentityPublicKey(), new InetSocketAddress(0)
-        ), peersManager);
+        ));
     }
 
     @Setup(Level.Invocation)

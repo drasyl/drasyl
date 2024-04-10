@@ -43,25 +43,4 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UnconfirmedAddressResolveHandlerTest {
-    @Test
-    void shouldResolveOverlayAddressToInetAddressesDiscoveryThroughReceivedMessages(@Mock final RemoteMessage remoteMsg,
-                                                                                    @Mock final DrasylAddress overlayAddress,
-                                                                                    @Mock final InetSocketAddress inetAddress,
-                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) PeersManager peersManager) {
-        when(remoteMsg.getSender()).thenReturn(overlayAddress);
-        when(peersManager.getEndpoint(any(), any())).thenReturn(null);
-
-        final EmbeddedChannel channel = new EmbeddedChannel(new UnconfirmedAddressResolveHandler(peersManager));
-
-        // never received message from recipient -> overlay address cannot be resolved
-        final OverlayAddressedMessage<RemoteMessage> msg1 = new OverlayAddressedMessage<>(remoteMsg, overlayAddress);
-        channel.writeOutbound(msg1);
-        assertEquals(msg1, channel.readOutbound());
-
-        // got message from recipient -> save inet address
-        final InetAddressedMessage<RemoteMessage> msg2 = new InetAddressedMessage<>(remoteMsg, null, inetAddress);
-        channel.writeInbound(msg2);
-
-        verify(peersManager).addPath(any(), any(), any(), anyShort());
-    }
 }

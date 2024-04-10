@@ -61,13 +61,11 @@ class UdpServerTest {
     private InetSocketAddress bindAddress;
     private Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private PendingWriteQueue pendingWrites;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
 
     @BeforeEach
     void setUp() {
         bindAddress = new InetSocketAddress(22527);
-        channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx, peersManager);
+        channelInitializerSupplier = UdpServerChannelInitializer::new;
     }
 
     @Nested

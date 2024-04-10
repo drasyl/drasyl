@@ -66,7 +66,7 @@ class InternetDiscoveryChildrenHandlerTest {
     private ProofOfWork myProofOfWork;
     @Mock
     private LongSupplier currentTime;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private PeersManager peersManager;
 
     @Test
@@ -78,7 +78,7 @@ class InternetDiscoveryChildrenHandlerTest {
 
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
 
         // channel active
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -99,7 +99,7 @@ class InternetDiscoveryChildrenHandlerTest {
     void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey publicKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer,
                                                          @Mock final AcknowledgementMessage acknowledgementMsg,
-                                                         @Mock final InetSocketAddress inetAddress) {
+                                                         @Mock final InetSocketAddress inetAddress) throws Exception {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         when(acknowledgementMsg.getSender()).thenReturn(publicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
@@ -108,7 +108,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, peersManager, 0L, 5L, 30L, 60L, superPeers, null);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
