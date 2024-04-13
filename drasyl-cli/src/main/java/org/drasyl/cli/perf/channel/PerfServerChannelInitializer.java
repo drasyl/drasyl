@@ -24,17 +24,12 @@ package org.drasyl.cli.perf.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -45,15 +40,10 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
     private final Worm<Integer> exitCode;
 
     @SuppressWarnings("java:S107")
-    public PerfServerChannelInitializer(final Identity identity,
-                                        final EventLoopGroup udpServerGroup,
-                                        final InetSocketAddress bindAddress,
-                                        final long onlineTimeoutMillis,
-                                        final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+    public PerfServerChannelInitializer(final long onlineTimeoutMillis,
                                         final PrintStream out,
                                         final PrintStream err,
-                                        final Worm<Integer> exitCode,
-                                        final boolean protocolArmEnabled) {
+                                        final Worm<Integer> exitCode) {
         super(onlineTimeoutMillis);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);

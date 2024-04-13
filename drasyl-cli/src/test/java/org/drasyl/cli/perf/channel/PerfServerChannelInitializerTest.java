@@ -23,10 +23,8 @@ package org.drasyl.cli.perf.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.identity.Identity;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,11 +33,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -51,10 +45,7 @@ class PerfServerChannelInitializerTest {
     @Nested
     class InitChannel {
         @Test
-        void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress bindAddress,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream out,
+        void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final PrintStream out,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
@@ -64,7 +55,7 @@ class PerfServerChannelInitializerTest {
             when(channel.config().getNetworkId()).thenReturn(0);
             when(channel.config().getPeersManager()).thenReturn(peersManager);
 
-            final ChannelInboundHandler handler = new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, 1, Map.of(), out, err, exitCode, true);
+            final ChannelInboundHandler handler = new PerfServerChannelInitializer(1, out, err, exitCode);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(6)).addLast(any());

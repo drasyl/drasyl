@@ -40,7 +40,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
@@ -58,7 +57,7 @@ class WormholeSendChildChannelInitializerTest {
             when(ctx.channel()).thenReturn(channel);
             when(channel.remoteAddress()).thenReturn(sender);
 
-            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, ID_1, "abc", payload);
+            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, "abc", payload);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(5)).addLast(any());

@@ -22,18 +22,14 @@
 package org.drasyl.cli.wormhole.channel;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,15 +40,10 @@ public class WormholeReceiveChannelInitializer extends AbstractChannelInitialize
     private final IdentityPublicKey sender;
 
     @SuppressWarnings("java:S107")
-    public WormholeReceiveChannelInitializer(final Identity identity,
-                                             final EventLoopGroup udpServerGroup,
-                                             final InetSocketAddress bindAddress,
-                                             final long onlineTimeoutMillis,
-                                             final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+    public WormholeReceiveChannelInitializer(final long onlineTimeoutMillis,
                                              final PrintStream err,
                                              final Worm<Integer> exitCode,
-                                             final IdentityPublicKey sender,
-                                             final boolean protocolArmEnabled) {
+                                             final IdentityPublicKey sender) {
         super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

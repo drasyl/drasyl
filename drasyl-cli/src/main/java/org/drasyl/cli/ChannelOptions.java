@@ -174,6 +174,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                     .group(parentGroup, childGroup)
                     .channel(DrasylServerChannel.class)
                     .option(NETWORK_ID, networkId)
+                    // FIXME: alle optionen setzen!
                     .handler(handler)
                     .childHandler(childHandler);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();

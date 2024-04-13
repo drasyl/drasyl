@@ -30,7 +30,6 @@ import org.drasyl.cli.tun.handler.DrasylToTunHandler;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
@@ -48,18 +47,15 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
     private static final Logger LOG = LoggerFactory.getLogger(TunChildChannelInitializer.class);
     private static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
-    private final Identity identity;
     private final Channel tun;
     private final Map<InetAddress, DrasylAddress> routes;
     private final boolean applicationArmEnabled;
 
     public TunChildChannelInitializer(final PrintStream err,
-                                      final Identity identity,
                                       final Channel tun,
                                       final Map<InetAddress, DrasylAddress> routes,
                                       final boolean applicationArmEnabled) {
         this.err = requireNonNull(err);
-        this.identity = requireNonNull(identity);
         this.tun = requireNonNull(tun);
         this.routes = requireNonNull(routes);
         this.applicationArmEnabled = applicationArmEnabled;
@@ -78,7 +74,7 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         if (applicationArmEnabled) {
             p.addLast(new ArmHeaderCodec());
-            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
         }
 
         p.addLast(new TunPacketCodec());

@@ -34,7 +34,6 @@ import org.drasyl.cli.tunnel.handler.ExposeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
@@ -50,19 +49,16 @@ public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitia
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
     private final PrintStream err;
     private final Worm<Integer> exitCode;
-    private final Identity identity;
     private final String password;
     private final Service service;
 
     public TunnelExposeChildChannelInitializer(final PrintStream err,
                                                final Worm<Integer> exitCode,
-                                               final Identity identity,
                                                final String password,
                                                final Service service) {
         super(true, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
-        this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.service = requireNonNull(service);
     }
@@ -71,7 +67,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitia
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

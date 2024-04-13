@@ -106,7 +106,7 @@ public class TunnelExposeCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new TunnelExposeChildChannelInitializer(err, exitCode, identity, password, service);
+        return new TunnelExposeChildChannelInitializer(err, exitCode, password, service);
     }
 
     @Override

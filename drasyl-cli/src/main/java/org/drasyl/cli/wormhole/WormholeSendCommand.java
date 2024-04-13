@@ -99,13 +99,13 @@ public class WormholeSendCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, password, !protocolArmDisabled);
+        return new WormholeSendChannelInitializer(onlineTimeoutMillis, out, err, exitCode, password);
     }
 
     @Override
     protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
                                              final Identity identity) {
-        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload);
+        return new WormholeSendChildChannelInitializer(out, err, exitCode, password, payload);
     }
 
     @Override

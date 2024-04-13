@@ -72,7 +72,7 @@ public class PerfServerCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode,
                                         final Identity identity) {
-        return new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+        return new PerfServerChannelInitializer(onlineTimeoutMillis, out, err, exitCode);
     }
 
     @Override

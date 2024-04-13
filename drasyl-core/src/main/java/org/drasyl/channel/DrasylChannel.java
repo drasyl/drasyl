@@ -127,6 +127,10 @@ public class DrasylChannel extends AbstractChannel {
         return true;
     }
 
+    public Identity identity() {
+        return identity;
+    }
+
     @Override
     protected SocketAddress localAddress0() {
         return identity.getAddress();

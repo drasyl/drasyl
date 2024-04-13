@@ -36,10 +36,9 @@ import java.time.Duration;
 @SuppressWarnings("java:S110")
 public class LongTimeArmHandler extends AbstractArmHandler {
     protected LongTimeArmHandler(final Crypto crypto,
-                                 final Identity identity,
                                  final IdentityPublicKey peerIdentity,
                                  final Session session) {
-        super(crypto, identity, peerIdentity, session);
+        super(crypto, peerIdentity, session);
     }
 
     public LongTimeArmHandler(final Crypto crypto,

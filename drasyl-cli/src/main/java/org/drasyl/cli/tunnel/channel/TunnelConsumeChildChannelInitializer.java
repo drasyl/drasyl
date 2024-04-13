@@ -53,7 +53,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
-    private final Identity identity;
     private final IdentityPublicKey exposer;
     private final String password;
     private final int port;
@@ -69,7 +68,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
-        this.identity = requireNonNull(identity);
         this.exposer = requireNonNull(exposer);
         this.password = requireNonNull(password);
         this.port = requireNonNegative(port);
@@ -88,7 +86,7 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }
