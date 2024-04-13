@@ -25,19 +25,18 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -53,7 +52,6 @@ import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -66,61 +64,35 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings("unchecked")
 public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoverySuperPeerHandler.class);
-    private static final Object PATH = InternetDiscoverySuperPeerHandler.class;
     static final Class<?> PATH_ID = InternetDiscoverySuperPeerHandler.class;
     static final short PATH_PRIORITY = 100;
-    protected final int myNetworkId;
-    protected final IdentityPublicKey myPublicKey;
-    protected final ProofOfWork myProofOfWork;
     private final LongSupplier currentTime;
-    private final Long pingIntervalMillis;
-    private final Long pingTimeoutMillis;
-    private final long maxTimeOffsetMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
-    protected final PeersManager peersManager;
     private final HopCount hopLimit;
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
-    InternetDiscoverySuperPeerHandler(final Integer myNetworkId,
-                                      final IdentityPublicKey myPublicKey,
-                                      final ProofOfWork myProofOfWork,
-                                      final LongSupplier currentTime,
-                                      final Long pingIntervalMillis,
-                                      final Long pingTimeoutMillis,
-                                      final long maxTimeOffsetMillis,
+    InternetDiscoverySuperPeerHandler(final LongSupplier currentTime,
                                       final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                       final HopCount hopLimit,
-                                      final PeersManager peersManager,
                                       final Future<?> stalePeerCheckDisposable) {
-        this.myNetworkId = myNetworkId;
-        this.myPublicKey = requireNonNull(myPublicKey);
-        this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
-        this.pingIntervalMillis = pingIntervalMillis;
-        this.pingTimeoutMillis = pingTimeoutMillis;
-        this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.childrenPeers = requireNonNull(childrenPeers);
-        this.peersManager = requireNonNull(peersManager);
         this.hopLimit = requireNonNull(hopLimit);
         this.stalePeerCheckDisposable = stalePeerCheckDisposable;
     }
 
-    public InternetDiscoverySuperPeerHandler(final long maxTimeOffsetMillis,
-                                             final HopCount hopLimit) {
+    public InternetDiscoverySuperPeerHandler(final HopCount hopLimit) {
         this(
-                null,
-                null,
-                null,
                 System::currentTimeMillis,
-                null,
-                null,
-                maxTimeOffsetMillis,
                 new HashMap<>(),
                 hopLimit,
-                null,
                 null
         );
+    }
+
+    public InternetDiscoverySuperPeerHandler(final byte hopLimit) {
+        this(HopCount.of(hopLimit));
     }
 
     /*
@@ -141,7 +113,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (isHelloMessageWithChildrenTime(msg)) {
+        if (isHelloMessageWithChildrenTime(ctx, msg)) {
             final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
             handleHelloMessage(ctx, addressedMsg.content(), addressedMsg.sender());
         }
@@ -149,7 +121,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             final InetAddressedMessage<RemoteMessage> addressedMsg = (InetAddressedMessage<RemoteMessage>) msg;
             handleRoutableInboundMessage(ctx, addressedMsg);
         }
-        else if (isUnexpectedMessage(msg)) {
+        else if (isUnexpectedMessage(ctx, msg)) {
             handleUnexpectedMessage(ctx, msg);
         }
         else {
@@ -207,7 +179,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
     void startStalePeerCheck(final ChannelHandlerContext ctx) {
         LOG.debug("Start StalePeerCheck job.");
-        stalePeerCheckDisposable = ctx.executor().scheduleWithFixedDelay(() -> doStalePeerCheck(ctx), randomLong(pingIntervalMillis), pingIntervalMillis, MILLISECONDS);
+        stalePeerCheckDisposable = ctx.executor().scheduleWithFixedDelay(() -> doStalePeerCheck(ctx), randomLong(config(ctx).getHelloInterval().toMillis()), config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
     }
 
     void stopStalePeerCheck() {
@@ -228,20 +200,20 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (childrenPeer.isStale()) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (peersManager.removePath(address, PATH_ID)) {
-                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH));
+                if (config(ctx).getPeersManager().removePath(address, PATH_ID)) {
+                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH_ID));
                 }
             }
         }
     }
 
     @SuppressWarnings("java:S1067")
-    private boolean isHelloMessageWithChildrenTime(final Object msg) {
+    private boolean isHelloMessageWithChildrenTime(final ChannelHandlerContext ctx, final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
-                myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
+                ctx.channel().localAddress().equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
                 (((InetAddressedMessage<HelloMessage>) msg).content()).getChildrenTime() > 0 &&
-                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis();
     }
 
     private void handleHelloMessage(final ChannelHandlerContext ctx,
@@ -249,29 +221,23 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                     final InetSocketAddress inetAddress) {
         LOG.trace("Got Hello from `{}`.", msg.getSender());
 
-        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, pingTimeoutMillis, inetAddress, msg.getEndpoints()));
+        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
-        if (peersManager.addPath(msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY)) {
-            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH));
+        if (config(ctx).getPeersManager().addPath(msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY)) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH_ID));
         }
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), msg.getTime());
         LOG.trace("Send Acknowledgement for peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
     }
 
-    private boolean isApplicationMessageForMe(final Object msg) {
-        return msg instanceof InetAddressedMessage<?> &&
-                ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
-                myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
-    }
-
     @SuppressWarnings({ "java:S1067", "java:S2325" })
-    private boolean isUnexpectedMessage(final Object msg) {
+    private boolean isUnexpectedMessage(final ChannelHandlerContext ctx, final Object msg) {
         return msg instanceof InetAddressedMessage &&
                 !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && ((InetAddressedMessage<HelloMessage>) msg).content().getRecipient() == null) &&
-                !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis);
+                !(((InetAddressedMessage<?>) msg).content() instanceof HelloMessage && Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis());
     }
 
     @SuppressWarnings({ "unused", "java:S2325" })
@@ -279,6 +245,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                          final Object msg) {
         LOG.trace("Got unexpected message `{}`. Drop it.", msg);
         ReferenceCountUtil.release(msg);
+    }
+
+    protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 
     protected static class ChildrenPeer {

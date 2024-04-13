@@ -23,14 +23,12 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ExpiringSet;
 import org.drasyl.util.Pair;
 import org.drasyl.util.internal.UnstableApi;
@@ -58,33 +56,31 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
     private final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")
-    TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
-                                                final IdentityPublicKey myPublicKey,
-                                                final ProofOfWork myProofOfWork,
-                                                final LongSupplier currentTime,
-                                                final long pingIntervalMillis,
-                                                final long pingTimeoutMillis,
-                                                final long maxTimeOffsetMillis,
-                                                final PeersManager peersManager,
+    TraversingInternetDiscoverySuperPeerHandler(final LongSupplier currentTime,
                                                 final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
                                                 final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, peersManager, stalePeerCheckDisposable);
+        super(currentTime, childrenPeers, hopLimit, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
 
     @SuppressWarnings("java:S107")
-    public TraversingInternetDiscoverySuperPeerHandler(final long maxTimeOffsetMillis,
-                                                       final HopCount hopLimit,
+    public TraversingInternetDiscoverySuperPeerHandler(final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(maxTimeOffsetMillis, hopLimit);
+        super(hopLimit);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = new ExpiringSet<>(1_000, uniteMinIntervalMillis);
         }
         else {
             uniteAttemptsCache = null;
         }
+    }
+
+    @SuppressWarnings("java:S107")
+    public TraversingInternetDiscoverySuperPeerHandler(final byte hopLimit,
+                                                       final long uniteMinIntervalMillis) {
+        this(HopCount.of(hopLimit), uniteMinIntervalMillis);
     }
 
     @Override
@@ -133,7 +129,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             final Set<InetSocketAddress> recipientAddressCandidates = recipient.inetAddressCandidates();
 
             // send recipient's information to sender
-            final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, recipientAddressCandidates);
+            final UniteMessage senderUnite = UniteMessage.of(config(ctx).getNetworkId(), senderKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), recipientKey, recipientAddressCandidates);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, sender::publicInetAddress);
             ctx.write(new InetAddressedMessage<>(senderUnite, sender.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
@@ -142,7 +138,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             });
 
             // send sender's information to recipient
-            final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, senderAddressCandidates);
+            final UniteMessage recipientUnite = UniteMessage.of(config(ctx).getNetworkId(), recipientKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), senderKey, senderAddressCandidates);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, recipient::publicInetAddress);
             ctx.write(new InetAddressedMessage<>(recipientUnite, recipient.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {

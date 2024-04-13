@@ -26,6 +26,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -36,7 +37,6 @@ import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.DnsResolver;
 import org.drasyl.util.internal.UnstableApi;
@@ -67,10 +67,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final long DEFAULT_CHILDREN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
-    private static final Object PATH = InternetDiscoveryChildrenHandler.class;
     static final Class<?> PATH_ID = InternetDiscoveryChildrenHandler.class;
     static final short PATH_PRIORITY = 100;
-    protected Identity myIdentity;
     protected final LongSupplier currentTime;
     protected Map<IdentityPublicKey, SuperPeer> superPeers;
     private final long initialPingDelayMillis;
@@ -78,12 +76,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     protected InetSocketAddress bindAddress;
 
     @SuppressWarnings("java:S107")
-    InternetDiscoveryChildrenHandler(final Identity myIdentity,
-                                     final LongSupplier currentTime,
+    InternetDiscoveryChildrenHandler(final LongSupplier currentTime,
                                      final Long initialPingDelayMillis,
                                      final Map<IdentityPublicKey, SuperPeer> superPeers,
                                      final Future<?> heartbeatDisposable) {
-        this.myIdentity = myIdentity;
         this.currentTime = requireNonNull(currentTime);
         this.initialPingDelayMillis = initialPingDelayMillis;
         this.superPeers = superPeers;
@@ -94,7 +90,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     public InternetDiscoveryChildrenHandler(final LongSupplier currentTime,
                                             final long initialPingDelayMillis) {
         this(
-                null,
                 currentTime,
                 initialPingDelayMillis,
                 null,
@@ -210,11 +205,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final HelloMessage msg;
         if (isChildrenJoin) {
             // hello message is used to register at super peer as children
-            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork(), DEFAULT_CHILDREN_TIME, myIdentity.getIdentitySecretKey(), privateInetAddresses);
+            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), DEFAULT_CHILDREN_TIME, ((DrasylServerChannel) ctx.channel()).identity().getIdentitySecretKey(), privateInetAddresses);
         }
         else {
             // hello message is used to announce us at peer
-            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
+            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork());
         }
 
         LOG.trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`.", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
@@ -235,7 +230,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
                 superPeers.containsKey(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
-                myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
+                ctx.channel().localAddress().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis();
     }
 
@@ -256,10 +251,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         }
 
         if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
-            ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH, rtt));
+            ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH_ID, rtt));
         }
         else {
-            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH, rtt));
+            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH_ID, rtt));
         }
 
         determineBestSuperPeer(ctx);
@@ -280,7 +275,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             }
             else {
                 if (peersManager.removePath(publicKey, PATH_ID)) {
-                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH));
+                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH_ID));
                 }
             }
         }

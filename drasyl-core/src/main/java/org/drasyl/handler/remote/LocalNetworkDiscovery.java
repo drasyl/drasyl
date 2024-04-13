@@ -65,7 +65,6 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
     static final Class<?> PATH_ID = LocalNetworkDiscovery.class;
     static final short PATH_PRIORITY = 90;
-    private static final Object path = LocalNetworkDiscovery.class;
     private final InetSocketAddress recipient;
     private Future<?> scheduledPingFuture;
 
@@ -98,7 +97,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     void clearRoutes(final ChannelHandlerContext ctx) {
-        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
         config(ctx).getPeersManager().removePaths(PATH_ID);
     }
 
@@ -116,7 +115,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
             if (stale) {
                 final long lastInboundHelloTime = config(ctx).getPeersManager().lastHelloMessageReceivedTime(publicKey, PATH_ID);
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
-                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
+                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, PATH_ID));
                 config(ctx).getPeersManager().removePath(publicKey, PATH_ID);
             }
         }
@@ -143,7 +142,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
             if (config(ctx).getPeersManager().addPath(msgSender, PATH_ID, sender, PATH_PRIORITY)) {
-                ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
+                ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, PATH_ID));
             }
             config(ctx).getPeersManager().helloMessageReceived(msgSender, PATH_ID);
         }

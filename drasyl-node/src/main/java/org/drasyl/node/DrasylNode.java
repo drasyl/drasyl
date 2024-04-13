@@ -45,6 +45,8 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.FutureUtil;
+import org.drasyl.util.Murmur3;
+import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.logging.Logger;
@@ -78,8 +80,8 @@ import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
-import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.udpServerPort;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
+import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -520,5 +522,23 @@ public abstract class DrasylNode {
             }
         }
         return null;
+    }
+
+    static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
+        if (remoteBindPort == -1) {
+            /*
+             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+             own identity. this is done because we also expose this port via
+             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+             in the local network try to expose the same local port.
+             a completely random port would have the disadvantage that every time the node is
+             started it would use a new port and this would make discovery more difficult
+            */
+            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
+            return (int) (DrasylNodeServerChannelInitializer.MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - DrasylNodeServerChannelInitializer.MIN_DERIVED_PORT));
+        }
+        else {
+            return remoteBindPort;
+        }
     }
 }

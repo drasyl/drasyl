@@ -69,6 +69,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
     public static final ChannelOption<Boolean> HOLE_PUNCHING_ENABLED = valueOf("HOLE_PUNCHING");
     public static final ChannelOption<Duration> PATH_IDLE_TIME = valueOf("PATH_IDLE_TIME");
+    public static final ChannelOption<Byte> HOP_LIMIT = valueOf("HOP_LIMIT");
 
     private volatile int networkId = 1;
     private volatile PeersManager peersManager = new PeersManager();
@@ -88,6 +89,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile Duration maxMessageAge = ofSeconds(60);
     private volatile boolean holePunchingEnabled = true;
     private volatile Duration pathIdleTime = ofSeconds(60);
+    private volatile Byte hopLimit = 8;
 
     public DrasylServerChannelConfig(final Channel channel) {
         super(channel);
@@ -111,7 +113,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 UDP_BOOTSTRAP,
                 MAX_MESSAGE_AGE,
                 HOLE_PUNCHING_ENABLED,
-                PATH_IDLE_TIME
+                PATH_IDLE_TIME,
+                HOP_LIMIT
         );
     }
 
@@ -162,6 +165,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == PATH_IDLE_TIME) {
             return (T) getPathIdleTime();
+        }
+        if (option == HOP_LIMIT) {
+            return (T) Byte.valueOf(getHopLimit());
         }
         return super.getOption(option);
     }
@@ -226,6 +232,10 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return pathIdleTime;
     }
 
+    public byte getHopLimit() {
+        return hopLimit;
+    }
+
     @Override
     public <T> boolean setOption(ChannelOption<T> option, T value) {
         validate(option, value);
@@ -274,6 +284,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         else if (option == PATH_IDLE_TIME) {
             setPathIdleTime((Duration) value);
+        }
+        else if (option == HOP_LIMIT) {
+            setHopLimit((byte) value);
         }
         else {
             return super.setOption(option, value);
@@ -385,5 +398,12 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.pathIdleTime = requireNonNull(pathIdleTime);
+    }
+
+    public void setHopLimit(final byte hopLimit) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.hopLimit = hopLimit;
     }
 }

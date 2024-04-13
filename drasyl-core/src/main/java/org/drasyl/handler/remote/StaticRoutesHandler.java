@@ -41,7 +41,6 @@ import static java.util.Objects.requireNonNull;
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
     static final Class<?> PATH_ID = StaticRoutesHandler.class;
     static final short PATH_PRIORITY = 70;
-    private static final Object path = StaticRoutesHandler.class;
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
 
     public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
@@ -65,12 +64,12 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     private void populateRoutes(final ChannelHandlerContext ctx) {
         staticRoutes.forEach((peer, endpoint) -> {
             config(ctx).getPeersManager().addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
-            ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, path));
+            ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, PATH_ID));
         });
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
         config(ctx).getPeersManager().removePaths(PATH_ID);
     }
 
