@@ -24,6 +24,7 @@ package org.drasyl.handler.discovery;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.identity.DrasylAddress;
@@ -51,6 +52,8 @@ import static org.mockito.Mockito.verify;
 @ExtendWith(MockitoExtension.class)
 class IntraVmDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new HashMap<>();
     private final int myNetworkId = 0;
@@ -61,7 +64,7 @@ class IntraVmDiscoveryTest {
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
             final IntraVmDiscovery handler = new IntraVmDiscovery();
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelActive();
@@ -81,7 +84,7 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
             final IntraVmDiscovery handler = new IntraVmDiscovery();
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -104,7 +107,7 @@ class IntraVmDiscoveryTest {
             discoveries.put(Pair.of(0, recipient), ctx);
 
             final IntraVmDiscovery handler = new IntraVmDiscovery();
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
                 channel.writeAndFlush(new OverlayAddressedMessage<>(message, recipient));

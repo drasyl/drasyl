@@ -46,16 +46,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
-    private Integer myNetworkId;
     private boolean initialized;
-
-    @SuppressWarnings("unused")
-    IntraVmDiscovery(final int myNetworkId) {
-        this.myNetworkId = myNetworkId;
-    }
-
-    public IntraVmDiscovery() {
-    }
 
     @Override
     public void write(final ChannelHandlerContext ctx,
@@ -63,8 +54,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage) {
             final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
-
-            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(myNetworkId, recipient));
+            final DrasylServerChannelConfig config = (DrasylServerChannelConfig) ctx.channel().config();
+            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(config.getNetworkId(), recipient));
 
             if (discoveree == null) {
                 // pass through message
@@ -119,23 +110,20 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     }
 
     private void startDiscovery(final ChannelHandlerContext myCtx) {
-        if (myNetworkId == null) {
-            myNetworkId = ((DrasylServerChannelConfig) myCtx.channel().config()).getNetworkId();
-        }
-
         LOG.debug("Start Intra VM Discovery...");
 
         // store peer information
+        final DrasylServerChannelConfig config = (DrasylServerChannelConfig) myCtx.channel().config();
         discoveries.forEach((key, otherCtx) -> {
             final Integer networkId = key.first();
             final DrasylAddress publicKey = key.second();
-            if (myNetworkId == networkId) {
+            if (config.getNetworkId() == networkId) {
                 otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path, 0L));
                 myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path, 0L));
             }
         });
         discoveries.put(
-                Pair.of(myNetworkId, requireNonNull((DrasylAddress) myCtx.channel().localAddress())),
+                Pair.of(config.getNetworkId(), requireNonNull((DrasylAddress) myCtx.channel().localAddress())),
                 myCtx
         );
 
@@ -146,11 +134,12 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         LOG.debug("Stop Intra VM Discovery...");
 
         // remove peer information
-        discoveries.remove(Pair.of(myNetworkId, myCtx.channel().localAddress()));
+        final DrasylServerChannelConfig config = (DrasylServerChannelConfig) myCtx.channel().config();
+        discoveries.remove(Pair.of(config.getNetworkId(), myCtx.channel().localAddress()));
         discoveries.forEach((key, otherCtx) -> {
             final Integer otherNetworkId = key.first();
             final DrasylAddress publicKey = key.second();
-            if (myNetworkId == otherNetworkId) {
+            if (config.getNetworkId() == otherNetworkId) {
                 otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of((DrasylAddress) myCtx.channel().localAddress(), path));
                 myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
             }

@@ -79,7 +79,7 @@ public class DrasylChannel extends AbstractChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Queue<Object> inboundBuffer = PlatformDependent.newMpscQueue();
+    private final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
         if (!inboundBuffer.isEmpty()) {
@@ -306,7 +306,6 @@ public class DrasylChannel extends AbstractChannel {
             // another look at the LocalChannel implementation and how a closed target channel is
             // handled there. This is currently irrelevant to us, as we only write to the
             // DrasylServerChannel, which is always the last to be closed.
-            boolean wroteToParent = false;
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
                 if (buf == null) {
@@ -325,19 +324,13 @@ public class DrasylChannel extends AbstractChannel {
                     final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
                     final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
-                    parent().queueUdpWrite(inetMsg); // FIXME: use outbound buffer
+                    parent().queueUdpWrite(inetMsg);
                 }
                 else {
                     LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
                 }
 
                 in.remove();
-                wroteToParent = true;
-            }
-
-            if (wroteToParent) {
-                parent().finishUdpWrite();
-                udpChannel.flush(); // FIXME: use outbound buffer
             }
         }
         finally {
