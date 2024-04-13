@@ -117,6 +117,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return true;
     }
 
+    public Identity identity() {
+        return identity;
+    }
+
     @Override
     protected DrasylAddress localAddress0() {
         if (identity != null) {

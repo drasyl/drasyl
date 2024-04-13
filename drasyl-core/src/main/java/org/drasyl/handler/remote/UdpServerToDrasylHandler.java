@@ -75,7 +75,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             final Map<SocketAddress, DrasylChannel> drasylChannels = drasylServerChannel.channels;
             final DrasylChannel drasylChannel = drasylChannels.get(appMsg.getSender());
             if (drasylChannel != null) {
-                drasylChannel.inboundBuffer.add(appMsg.getPayload());
+                drasylChannel.addToInboundBuffer(appMsg.getPayload());
                 drasylChannel.finishRead();
             }
             else {
@@ -83,7 +83,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
                     @Override
                     public void operationComplete(Future<? super DrasylChannel> future) throws Exception {
                         final DrasylChannel drasylChannel = (DrasylChannel) future.get();
-                        drasylChannel.inboundBuffer.add(appMsg.getPayload());
+                        drasylChannel.addToInboundBuffer(appMsg.getPayload());
                         drasylChannel.finishRead();
                     }
                 });
