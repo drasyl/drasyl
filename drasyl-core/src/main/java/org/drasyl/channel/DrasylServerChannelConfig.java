@@ -63,7 +63,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Duration> HELLO_TIMEOUT = valueOf("HELLO_TIMEOUT");
     public static final ChannelOption<Integer> MAX_PEERS = valueOf("MAX_PEERS");
     public static final ChannelOption<Map<IdentityPublicKey, InetSocketAddress>> SUPER_PEERS = valueOf("SUPER_PEERS");
-    public static final ChannelOption<Integer> UDP_BIND_PORT = valueOf("UDP_BIND_PORT");
+    public static final ChannelOption<InetSocketAddress> UDP_BIND = valueOf("UDP_BIND");
     public static final ChannelOption<EventLoop> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
     public static final ChannelOption<EventLoop> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
@@ -79,7 +79,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile Duration helloTimeout = ofSeconds(30);
     private volatile int maxPeers = 100;
     private volatile Map<IdentityPublicKey, InetSocketAddress> superPeers = DEFAULT_SUPER_PEERS;
-    private volatile int udpBindPort = 22527;
+    private volatile InetSocketAddress udpBind = new InetSocketAddress(22527);
     private volatile Supplier<EventLoop> udpEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
     private volatile Bootstrap udpBootstrap = new Bootstrap()
             .option(ChannelOption.SO_BROADCAST, false)
@@ -106,7 +106,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 HELLO_TIMEOUT,
                 MAX_PEERS,
                 SUPER_PEERS,
-                UDP_BIND_PORT,
+                UDP_BIND,
                 UDP_EVENT_LOOP_SUPPLIER,
                 UDP_BOOTSTRAP,
                 MAX_MESSAGE_AGE,
@@ -145,8 +145,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         if (option == SUPER_PEERS) {
             return (T) getSuperPeers();
         }
-        if (option == UDP_BIND_PORT) {
-            return (T) Integer.valueOf(getUdpBindPort());
+        if (option == UDP_BIND) {
+            return (T) getUdpBind();
         }
         if (option == UDP_EVENT_LOOP_SUPPLIER) {
             return (T) getUdpEventLoopSupplier();
@@ -202,12 +202,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return superPeers;
     }
 
-    public int getUdpBindPort() {
-        return udpBindPort;
-    }
-
-    public InetSocketAddress getUdpBindAddress() {
-        return new InetSocketAddress(getUdpBindPort());
+    public InetSocketAddress getUdpBind() {
+        return udpBind;
     }
 
     public Supplier<EventLoop> getUdpEventLoopSupplier() {
@@ -261,8 +257,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         else if (option == SUPER_PEERS) {
             setSuperPeers((Map<IdentityPublicKey, InetSocketAddress>) value);
         }
-        else if (option == UDP_BIND_PORT) {
-            setUdpBindPort((Integer) value);
+        else if (option == UDP_BIND) {
+            setUdpBind((InetSocketAddress) value);
         }
         else if (option == UDP_EVENT_LOOP_SUPPLIER) {
             setUdpEventLoopSupplier((Supplier<EventLoop>) value);
@@ -349,11 +345,11 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         this.superPeers = requireNonNull(superPeers);
     }
 
-    public void setUdpBindPort(final Integer udpBindPort) {
+    public void setUdpBind(final InetSocketAddress udpBind) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
-        this.udpBindPort = requireNonNegative(udpBindPort);
+        this.udpBind = requireNonNull(udpBind);
     }
 
     public void setUdpEventLoopSupplier(final Supplier<EventLoop> udpEventLoopSupplier) {

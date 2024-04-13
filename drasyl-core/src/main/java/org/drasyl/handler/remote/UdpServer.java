@@ -110,7 +110,8 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start Server...");
         if (bindAddress == null) {
-            bindAddress = ((DrasylServerChannelConfig) ctx.channel().config()).getUdpBindAddress();
+            DrasylServerChannelConfig drasylServerChannelConfig = ((DrasylServerChannelConfig) ctx.channel().config());
+            bindAddress = drasylServerChannelConfig.getUdpBind();
         }
         if (group == null) {
             group = ((DrasylServerChannelConfig) ctx.channel().config()).getUdpEventLoopSupplier().get();

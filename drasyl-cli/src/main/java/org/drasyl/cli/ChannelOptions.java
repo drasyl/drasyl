@@ -44,7 +44,10 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -173,8 +176,10 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             final ServerBootstrap b = new ServerBootstrap()
                     .group(parentGroup, childGroup)
                     .channel(DrasylServerChannel.class)
+                    .option(UDP_BIND, bindAddress)
                     .option(NETWORK_ID, networkId)
-                    // FIXME: alle optionen setzen!
+                    .option(SUPER_PEERS, superPeers)
+                    .option(ARMING_ENABLED, !protocolArmDisabled)
                     .handler(handler)
                     .childHandler(childHandler);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();
