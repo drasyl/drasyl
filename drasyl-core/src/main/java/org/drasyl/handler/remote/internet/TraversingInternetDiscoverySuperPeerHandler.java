@@ -75,16 +75,10 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
     }
 
     @SuppressWarnings("java:S107")
-    public TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
-                                                       final IdentityPublicKey myPublicKey,
-                                                       final ProofOfWork myProofOfWork,
-                                                       final long pingIntervalMillis,
-                                                       final long pingTimeoutMillis,
-                                                       final long maxTimeOffsetMillis,
-                                                       final PeersManager peersManager,
+    public TraversingInternetDiscoverySuperPeerHandler(final long maxTimeOffsetMillis,
                                                        final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit, peersManager);
+        super(maxTimeOffsetMillis, hopLimit);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = new ExpiringSet<>(1_000, uniteMinIntervalMillis);
         }

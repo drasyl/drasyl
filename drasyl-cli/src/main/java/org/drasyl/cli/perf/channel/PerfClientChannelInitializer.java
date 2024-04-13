@@ -53,7 +53,7 @@ public class PerfClientChannelInitializer extends AbstractChannelInitializer {
                                         final Worm<Integer> exitCode,
                                         final IdentityPublicKey server,
                                         final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+        super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.server = requireNonNull(server);

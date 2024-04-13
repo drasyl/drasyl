@@ -21,20 +21,23 @@
  */
 package org.drasyl.handler.remote;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
+import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
 @UnstableApi
 public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChannel> {
-    private final ChannelHandlerContext drasylCtx;
+    private final DrasylServerChannel parent;
 
-    public UdpServerChannelInitializer(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public UdpServerChannelInitializer(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
@@ -43,11 +46,29 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
 
         p.addLast(new DatagramCodec());
         p.addLast(new ByteToRemoteMessageCodec());
-        p.addLast(new InvalidProofOfWorkFilter());
+        gatekeeperStage(ch);
         lastStage(ch);
     }
 
+    private void gatekeeperStage(final DatagramChannel ch) {
+        final ChannelPipeline p = ch.pipeline();
+
+        p.addLast(new OtherNetworkFilter(parent.config().getNetworkId()));
+        p.addLast(new InvalidProofOfWorkFilter());
+        if (parent.config().isArmingEnabled()) {
+            ch.pipeline().addLast(new ProtocolArmHandler(
+                    parent.identity(),
+                    Crypto.INSTANCE,
+                    parent.config().getArmingSessionMaxCount(),
+                    parent.config().getArmingSessionExpireAfter()
+            ));
+        }
+
+        // fully read unarmed messages (local network discovery)
+        ch.pipeline().addLast(new UnarmedMessageDecoder());
+    }
+
     protected void lastStage(final DatagramChannel ch) {
-        ch.pipeline().addLast(new UdpServerToDrasylHandler(drasylCtx));
+        ch.pipeline().addLast(new UdpServerToDrasylHandler(parent));
     }
 }

@@ -24,6 +24,7 @@ package org.drasyl.handler.discovery;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
@@ -45,11 +46,15 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     private static final Object path = IntraVmDiscovery.class;
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
-    private final int myNetworkId;
+    private Integer myNetworkId;
     private boolean initialized;
 
-    public IntraVmDiscovery(final int myNetworkId) {
+    @SuppressWarnings("unused")
+    IntraVmDiscovery(final int myNetworkId) {
         this.myNetworkId = myNetworkId;
+    }
+
+    public IntraVmDiscovery() {
     }
 
     @Override
@@ -114,6 +119,10 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
     }
 
     private void startDiscovery(final ChannelHandlerContext myCtx) {
+        if (myNetworkId == null) {
+            myNetworkId = ((DrasylServerChannelConfig) myCtx.channel().config()).getNetworkId();
+        }
+
         LOG.debug("Start Intra VM Discovery...");
 
         // store peer information

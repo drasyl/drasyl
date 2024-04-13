@@ -32,13 +32,12 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordLookup;
 import org.drasyl.handler.dht.chord.ChordLookupHandler;
 import org.drasyl.handler.dht.chord.ChordResponse;
 import org.drasyl.handler.dht.chord.ChordUtil;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.Identity;
@@ -50,6 +49,7 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Scanner;
 
+import static org.drasyl.channel.DrasylServerChannelConfig.HOLE_PUNCHING_ENABLED;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 
@@ -82,11 +82,11 @@ public class ChordLookupNode {
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new RelayOnlyDrasylServerChannelInitializer(identity, udpServerGroup, peersManager) {
+                .option(HOLE_PUNCHING_ENABLED, false)
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

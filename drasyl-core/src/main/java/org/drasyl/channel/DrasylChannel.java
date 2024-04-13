@@ -43,7 +43,6 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -57,7 +56,6 @@ import java.util.Queue;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -81,17 +79,15 @@ public class DrasylChannel extends AbstractChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue(); // FIXME: change to mpsc if we add DrasylChannel to DrasylChannel message passing
+    private final Queue<Object> inboundBuffer = PlatformDependent.newMpscQueue();
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
         if (!inboundBuffer.isEmpty()) {
             readInbound();
         }
     };
-    private final Runnable finishReadTask = this::finishRead0;
     private volatile State state;
-    volatile boolean pendingWrites;
-    private volatile Identity identity; // NOSONAR
+    private volatile Identity identity;
     private final DrasylAddress remoteAddress;
     private final PeersManager peersManager;
     private final DatagramChannel udpChannel;
@@ -104,7 +100,6 @@ public class DrasylChannel extends AbstractChannel {
                   final State state,
                   final Identity identity,
                   final DrasylAddress remoteAddress,
-                  final ProofOfWork proofOfWork,
                   final PeersManager peersManager,
                   final DatagramChannel udpChannel) {
         super(parent);
@@ -117,10 +112,9 @@ public class DrasylChannel extends AbstractChannel {
 
     DrasylChannel(final DrasylServerChannel parent,
                   final DrasylAddress remoteAddress,
-                  final ProofOfWork proofOfWork,
                   final PeersManager peersManager,
                   final DatagramChannel udpChannel) {
-        this(parent, null, parent.identity(), remoteAddress, proofOfWork, peersManager, udpChannel);
+        this(parent, null, parent.identity(), remoteAddress, peersManager, udpChannel);
     }
 
     @Override
@@ -225,13 +219,18 @@ public class DrasylChannel extends AbstractChannel {
         }
     }
 
-    public void addToInboundBuffer(final Object o) {
+    /**
+     * This method places the message {@code o} in the queue for inbound messages to be read by
+     * this channel. Queued messages are not processed until {@link #finishRead()} is called.
+     */
+    public void queueRead(final Object o) {
         inboundBuffer.add(o);
     }
 
     /**
-     * This method must be called when all currently available data has been placed in the inbound
-     * buffer, meaning that the "reading" of the source is finished.
+     * This method start processing (if any) queued inbound messages. This method ensures that
+     * read/write order is respected. Therefore, if channel is currently writing, these writes are
+     * performed first and the reads are performed afterwards.
      */
     public void finishRead() {
         // check whether the channel is currently writing; if so, we must schedule the event in the
@@ -267,10 +266,10 @@ public class DrasylChannel extends AbstractChannel {
     private void runFinishReadTask() {
         try {
             if (writeInProgress) {
-                finishReadFuture = eventLoop().submit(finishReadTask);
+                finishReadFuture = eventLoop().submit(this::finishRead0);
             }
             else {
-                eventLoop().execute(finishReadTask);
+                eventLoop().execute(this::finishRead0);
             }
         }
         catch (final Throwable cause) {
@@ -278,6 +277,11 @@ public class DrasylChannel extends AbstractChannel {
             close();
             PlatformDependent.throwException(cause);
         }
+    }
+
+    @Override
+    public DrasylServerChannel parent() {
+        return (DrasylServerChannel) super.parent();
     }
 
     @SuppressWarnings("java:S135")
@@ -299,7 +303,6 @@ public class DrasylChannel extends AbstractChannel {
             // handled there. This is currently irrelevant to us, as we only write to the
             // DrasylServerChannel, which is always the last to be closed.
             boolean wroteToParent = false;
-            pendingWrites = false;
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
                 if (buf == null) {
@@ -314,10 +317,11 @@ public class DrasylChannel extends AbstractChannel {
                 }
                 if (endpoint != null) {
                     // convert to remote message
-                    final int networkId = parent().config().getOption(NETWORK_ID);
+                    final int networkId = parent().config().getNetworkId();
                     final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
                     final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
-                    udpChannel.write(inetMsg); // FIXME: use outbound buffer
+
+                    parent().queueUdpWrite(inetMsg); // FIXME: use outbound buffer
                 }
                 else {
                     LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
@@ -328,6 +332,7 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             if (wroteToParent) {
+                parent().finishUdpWrite();
                 udpChannel.flush(); // FIXME: use outbound buffer
             }
         }

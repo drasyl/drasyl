@@ -56,7 +56,7 @@ class PluginsHandlerTest {
     class ChannelRegistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelRegistered(ctx);
 
@@ -68,7 +68,7 @@ class PluginsHandlerTest {
     class ChannelActive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelActive(ctx);
 
@@ -80,7 +80,7 @@ class PluginsHandlerTest {
     class ChannelInactive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelInactive(ctx);
 
@@ -92,7 +92,7 @@ class PluginsHandlerTest {
     class ChannelUnregistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelUnregistered(ctx);
 

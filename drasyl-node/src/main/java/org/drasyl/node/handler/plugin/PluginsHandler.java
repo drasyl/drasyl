@@ -24,6 +24,7 @@ package org.drasyl.node.handler.plugin;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.util.logging.Logger;
@@ -34,17 +35,19 @@ import static java.util.Objects.requireNonNull;
 public class PluginsHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(PluginsHandler.class);
     private final DrasylConfig config;
-    private final Identity identity;
+    private Identity identity;
 
-    public PluginsHandler(final DrasylConfig config,
-                          final Identity identity) {
+    public PluginsHandler(final DrasylConfig config) {
         this.config = requireNonNull(config);
-        this.identity = requireNonNull(identity);
     }
 
     @Override
     public void channelRegistered(final ChannelHandlerContext ctx) {
         ctx.fireChannelRegistered();
+
+        if (identity == null) {
+            identity = ((DrasylServerChannel) ctx.channel()).identity();
+        }
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");

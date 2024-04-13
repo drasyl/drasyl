@@ -58,14 +58,18 @@ import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND_PORT;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
+import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.udpServerPort;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
 
 /**
@@ -161,7 +165,10 @@ public abstract class DrasylNode {
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
                 .option(NETWORK_ID, config.getNetworkId())
-                .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup))
+                .option(UDP_BIND_PORT, udpServerPort(config.getRemoteBindPort(), identity.getAddress()))
+                .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
+                // FIXME: place alll config stuff here
+                .handler(new DrasylNodeServerChannelInitializer(config, this))
                 .childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 

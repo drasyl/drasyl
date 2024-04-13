@@ -78,7 +78,7 @@ class PeersManagerHandlerTest {
         children = new HashSet<>();
         superPeers = new HashSet<>();
         identity = IdentityTestUtil.ID_1;
-        underTest = new PeersManagerHandler(paths, children, superPeers, identity);
+        underTest = new PeersManagerHandler(paths, children, superPeers);
     }
 
     @Nested

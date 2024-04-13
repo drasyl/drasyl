@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,32 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.channel;
+package org.drasyl.channel;
 
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
+import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
+import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
+import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
+import org.drasyl.util.internal.UnstableApi;
 
-import static org.drasyl.util.Preconditions.requirePositive;
-
-@SuppressWarnings("java:S110")
-public abstract class AbstractChannelInitializer extends DefaultDrasylServerChannelInitializer {
-    private final long onlineTimeoutMillis;
-
-    @SuppressWarnings("java:S107")
-    protected AbstractChannelInitializer(final long onlineTimeoutMillis) {
-        this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
-    }
-
+/**
+ * The default {@link ChannelInitializer} for {@link DrasylServerChannel}s.
+ */
+@UnstableApi
+public class DefaultDrasylServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        super.initChannel(ch);
-
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
+        p.addLast(new UdpServer());
+        p.addLast(new UnconfirmedAddressResolveHandler());
+        if (ch.config().isHolePunchingEnabled()) {
+            p.addLast(new TraversingInternetDiscoveryChildrenHandler());
+        }
+        else {
+            p.addLast(new InternetDiscoveryChildrenHandler());
+        }
     }
 }
-

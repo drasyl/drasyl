@@ -44,7 +44,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.tunnel.TunnelCommand.CONNECTION_CONFIG;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.util.Preconditions.requireNonNegative;
@@ -89,7 +88,7 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

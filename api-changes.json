@@ -205,7 +205,7 @@
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.channel.TraversingDrasylServerChannelInitializer",
+          "old": "class org.drasyl.channel.DefaultDrasylServerChannelInitializer",
           "justification": "Internal element that was never intended to be used outside drasyl"
         },
         {

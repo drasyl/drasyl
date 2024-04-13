@@ -23,12 +23,11 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Map;
@@ -40,21 +39,22 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(StaticRoutesHandler.class);
     static final Class<?> PATH_ID = StaticRoutesHandler.class;
     static final short PATH_PRIORITY = 70;
     private static final Object path = StaticRoutesHandler.class;
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
-    private final PeersManager peersManager;
+    private PeersManager peersManager;
 
-    public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes,
-                               final PeersManager peersManager) {
+    public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
         this.staticRoutes = requireNonNull(staticRoutes);
-        this.peersManager = requireNonNull(peersManager);
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        if (peersManager == null) {
+            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+        }
+
         populateRoutes(ctx);
 
         ctx.fireChannelActive();

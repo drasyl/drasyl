@@ -42,7 +42,6 @@ import java.util.Map;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
@@ -51,20 +50,19 @@ import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 @UnstableApi
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
-    private final ChannelHandlerContext drasylCtx;
+    private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
 
-    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) drasylCtx.channel();
-        final PeersManager peersManager = drasylServerChannel.config().getOption(PEERS_MANAGER);
+        final PeersManager peersManager = parent.config().getPeersManager();
 
         LOG.trace("Read Datagram {}", msg);
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && drasylServerChannel.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && parent.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
             peersManager.applicationMessageSentOrReceived(appMsg.getSender());
 
@@ -72,31 +70,31 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             peersManager.addPath(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
             peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
 
-            final Map<SocketAddress, DrasylChannel> drasylChannels = drasylServerChannel.channels;
+            final Map<SocketAddress, DrasylChannel> drasylChannels = parent.channels;
             final DrasylChannel drasylChannel = drasylChannels.get(appMsg.getSender());
             if (drasylChannel != null) {
-                drasylChannel.addToInboundBuffer(appMsg.getPayload());
+                drasylChannel.queueRead(appMsg.getPayload());
                 drasylChannel.finishRead();
             }
             else {
-                drasylServerChannel.serve(appMsg.getSender()).addListener(new GenericFutureListener<Future<? super DrasylChannel>>() {
+                parent.serve(appMsg.getSender()).addListener(new GenericFutureListener<Future<? super DrasylChannel>>() {
                     @Override
                     public void operationComplete(Future<? super DrasylChannel> future) throws Exception {
                         final DrasylChannel drasylChannel = (DrasylChannel) future.get();
-                        drasylChannel.addToInboundBuffer(appMsg.getPayload());
+                        drasylChannel.queueRead(appMsg.getPayload());
                         drasylChannel.finishRead();
                     }
                 });
             }
         }
         else {
-            drasylCtx.fireChannelRead(msg);
+            parent.pipeline().fireChannelRead(msg);
         }
     }
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        drasylCtx.fireChannelReadComplete();
+        parent.pipeline().fireChannelReadComplete();
         ctx.fireChannelReadComplete();
     }
 

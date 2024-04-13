@@ -31,6 +31,7 @@ import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
@@ -65,7 +66,7 @@ class UdpServerTest {
     @BeforeEach
     void setUp() {
         bindAddress = new InetSocketAddress(22527);
-        channelInitializerSupplier = UdpServerChannelInitializer::new;
+        channelInitializerSupplier = ctx -> new UdpServerChannelInitializer((DrasylServerChannel) ctx.channel().parent());
     }
 
     @Nested
@@ -81,7 +82,7 @@ class UdpServerTest {
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, null);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(bindAddress);
@@ -100,7 +101,7 @@ class UdpServerTest {
             when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, channel);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -124,7 +125,7 @@ class UdpServerTest {
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, channel);
+            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, channel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));

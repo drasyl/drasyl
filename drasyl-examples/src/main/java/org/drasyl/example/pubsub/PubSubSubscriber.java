@@ -31,15 +31,14 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.pubsub.PubSubCodec;
 import org.drasyl.handler.pubsub.PubSubPublish;
 import org.drasyl.handler.pubsub.PubSubSubscribe;
 import org.drasyl.handler.pubsub.PubSubSubscribeHandler;
 import org.drasyl.handler.pubsub.PubSubUnsubscribe;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -88,11 +87,10 @@ public class PubSubSubscriber {
 
         final EventLoopGroup group = new DefaultEventLoopGroup(1);
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 0, peersManager) {
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

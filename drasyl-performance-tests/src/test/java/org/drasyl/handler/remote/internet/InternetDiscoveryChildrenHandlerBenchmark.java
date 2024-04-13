@@ -36,7 +36,6 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -50,13 +49,11 @@ import org.openjdk.jmh.annotations.Threads;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.util.Map;
 
 import static io.netty.buffer.UnpooledByteBufAllocator.DEFAULT;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
-import static test.util.IdentityTestUtil.ID_3;
 
 @State(Scope.Benchmark)
 public class InternetDiscoveryChildrenHandlerBenchmark extends AbstractBenchmark {
@@ -275,11 +272,7 @@ public class InternetDiscoveryChildrenHandlerBenchmark extends AbstractBenchmark
 
     @Setup
     public void setup() throws CryptoException, InvalidMessageFormatException {
-        final PeersManager peersManager = new PeersManager();
-        handler = new InternetDiscoveryChildrenHandler(0, ID_1.getIdentityPublicKey(), ID_1.getIdentitySecretKey(), ID_1.getProofOfWork(), 1_000, 1_000, 1_000, 1_000, Map.of(
-                ID_2.getIdentityPublicKey(), new InetSocketAddress(0),
-                ID_3.getIdentityPublicKey(), new InetSocketAddress(0)
-        ));
+        handler = new InternetDiscoveryChildrenHandler();
     }
 
     @Setup(Level.Invocation)

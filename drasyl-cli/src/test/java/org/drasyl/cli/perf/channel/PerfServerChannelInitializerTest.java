@@ -61,8 +61,8 @@ class PerfServerChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
             when(ctx.channel()).thenReturn(channel);
-            when(channel.config().getOption(NETWORK_ID)).thenReturn(0);
-            when(channel.config().getOption(PEERS_MANAGER)).thenReturn(peersManager);
+            when(channel.config().getNetworkId()).thenReturn(0);
+            when(channel.config().getPeersManager()).thenReturn(peersManager);
 
             final ChannelInboundHandler handler = new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, 1, Map.of(), out, err, exitCode, true);
             handler.channelRegistered(ctx);

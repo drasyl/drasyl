@@ -31,7 +31,6 @@ import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
-import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
@@ -67,7 +66,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     public EmbeddedNode(final DrasylConfig config) throws DrasylException {
         this(config, new ArrayDeque<>());
 
-        bootstrap.handler(new DrasylNodeServerChannelInitializer(config, identity, this, DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup()) {
+        bootstrap.handler(new DrasylNodeServerChannelInitializer(config, this) {
             @Override
             protected void initChannel(final DrasylServerChannel ch) {
                 super.initChannel(ch);

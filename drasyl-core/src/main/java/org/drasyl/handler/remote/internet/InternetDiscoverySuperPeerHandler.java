@@ -73,8 +73,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     protected final IdentityPublicKey myPublicKey;
     protected final ProofOfWork myProofOfWork;
     private final LongSupplier currentTime;
-    private final long pingIntervalMillis;
-    private final long pingTimeoutMillis;
+    private final Long pingIntervalMillis;
+    private final Long pingTimeoutMillis;
     private final long maxTimeOffsetMillis;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     protected final PeersManager peersManager;
@@ -82,12 +82,12 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     Future<?> stalePeerCheckDisposable;
 
     @SuppressWarnings("java:S107")
-    InternetDiscoverySuperPeerHandler(final int myNetworkId,
+    InternetDiscoverySuperPeerHandler(final Integer myNetworkId,
                                       final IdentityPublicKey myPublicKey,
                                       final ProofOfWork myProofOfWork,
                                       final LongSupplier currentTime,
-                                      final long pingIntervalMillis,
-                                      final long pingTimeoutMillis,
+                                      final Long pingIntervalMillis,
+                                      final Long pingTimeoutMillis,
                                       final long maxTimeOffsetMillis,
                                       final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                       final HopCount hopLimit,
@@ -97,8 +97,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         this.myPublicKey = requireNonNull(myPublicKey);
         this.myProofOfWork = requireNonNull(myProofOfWork);
         this.currentTime = requireNonNull(currentTime);
-        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
-        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
+        this.pingIntervalMillis = pingIntervalMillis;
+        this.pingTimeoutMillis = pingTimeoutMillis;
         this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
         this.childrenPeers = requireNonNull(childrenPeers);
         this.peersManager = requireNonNull(peersManager);
@@ -106,24 +106,19 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         this.stalePeerCheckDisposable = stalePeerCheckDisposable;
     }
 
-    public InternetDiscoverySuperPeerHandler(final int myNetworkId,
-                                             final IdentityPublicKey myPublicKey,
-                                             final ProofOfWork myProofOfWork,
-                                             final long pingIntervalMillis,
-                                             final long pingTimeoutMillis,
-                                             final long maxTimeOffsetMillis,
-                                             final HopCount hopLimit,
-                                             final PeersManager peersManager) {
+    public InternetDiscoverySuperPeerHandler(final long maxTimeOffsetMillis,
+                                             final HopCount hopLimit) {
         this(
-                myNetworkId,
-                myPublicKey,
-                myProofOfWork,
+                null,
+                null,
+                null,
                 System::currentTimeMillis,
-                pingIntervalMillis,
-                pingTimeoutMillis,
+                null,
+                null,
                 maxTimeOffsetMillis,
                 new HashMap<>(),
-                hopLimit, peersManager,
+                hopLimit,
+                null,
                 null
         );
     }

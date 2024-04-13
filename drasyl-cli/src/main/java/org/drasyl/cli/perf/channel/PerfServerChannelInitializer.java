@@ -54,7 +54,7 @@ public class PerfServerChannelInitializer extends AbstractChannelInitializer {
                                         final PrintStream err,
                                         final Worm<Integer> exitCode,
                                         final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+        super(onlineTimeoutMillis);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

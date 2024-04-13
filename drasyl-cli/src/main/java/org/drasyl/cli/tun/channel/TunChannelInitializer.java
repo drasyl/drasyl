@@ -58,7 +58,7 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
                                  final Channel tun,
                                  final Set<DrasylAddress> remoteAddress,
                                  final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+        super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.tun = requireNonNull(tun);

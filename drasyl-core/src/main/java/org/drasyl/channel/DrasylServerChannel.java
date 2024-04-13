@@ -25,12 +25,8 @@ import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.DefaultAddressedEnvelope;
-import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
@@ -47,10 +43,8 @@ import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
@@ -58,15 +52,12 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Queue;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
@@ -81,8 +72,8 @@ import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 @UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
-    private static final AtomicReferenceFieldUpdater<DrasylServerChannel, Future> FINISH_WRITE_FUTURE_UPDATER =
-            AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishWriteFuture");
+    private static final AtomicReferenceFieldUpdater<DrasylServerChannel, Future> FINISH_UDP_WRITE_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DrasylServerChannel.class, Future.class, "finishUdpWriteFuture");
     public DatagramChannel udpChannel;
 
     enum State {OPEN, ACTIVE, CLOSED}
@@ -93,10 +84,9 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private volatile Identity identity; // NOSONAR
     final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
 
-    private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
-    private volatile boolean readInProgress;
-    private final Runnable finishWriteTask = this::finishChildWrite0;
-    private volatile Future<?> finishWriteFuture;
+    private final Queue<Object> outboundUdpBuffer = PlatformDependent.newMpscQueue();
+    private volatile boolean udpReadInProgress;
+    private volatile Future<?> finishUdpWriteFuture;
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -150,7 +140,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter(paths));
                 ch.pipeline().addLast(new DuplicateChannelFilter());
-                ch.pipeline().addLast(new PendingWritesFlusher());
             }
         });
     }
@@ -170,7 +159,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
 
     private void releaseOutboundBuffer() {
         Object msg;
-        while ((msg = outboundBuffer.poll()) != null) {
+        while ((msg = outboundUdpBuffer.poll()) != null) {
             ReferenceCountUtil.release(msg);
         }
     }
@@ -183,7 +172,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    public DefaultChannelConfig config() {
+    public DrasylServerChannelConfig config() {
         return config;
     }
 
@@ -198,7 +187,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     protected DrasylChannel newDrasylChannel(final DrasylAddress peer) {
-        return new DrasylChannel(this, peer, identity.getProofOfWork(), config().getOption(PEERS_MANAGER), udpChannel);
+        return new DrasylChannel(this, peer, config().getPeersManager(), udpChannel);
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
@@ -227,47 +216,56 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return serve(peer, new DefaultPromise<>(eventLoop()));
     }
 
-    Queue<Object> outboundBuffer() {
-        return outboundBuffer;
+    /**
+     * This method places the message {@code o} in the queue for outbound messages to be written by
+     * the UDP channel. Queued message are not processed until {@link #finishUdpWrite()} is called.
+     */
+    public void queueUdpWrite(final Object o) {
+        outboundUdpBuffer.add(o);
     }
 
-    void finishChildWrite() {
+    /**
+     * This method start processing (if any) queued outbound messages for the UDP channel. This
+     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
+     * reading, these reads are performed first and the writes are performed afterwards.
+     */
+    public void finishUdpWrite() {
         // check whether the channel is currently reading; if so, we must schedule the event in the
         // event loop to maintain the read/write order.
-        if (eventLoop().inEventLoop() && !readInProgress) {
-            finishChildWrite0();
+        if (udpChannel.eventLoop().inEventLoop() && !udpReadInProgress) {
+            finishUdpWrite0();
         }
         else {
-            runFinishChildWriteTask();
+            runFinishUdpWriteTask();
         }
     }
 
-    private void finishChildWrite0() {
-        final Future<?> thisFinishWriteFuture = this.finishWriteFuture;
-        if (thisFinishWriteFuture != null) {
-            if (!thisFinishWriteFuture.isDone()) {
-                runFinishChildWriteTask();
+    private void finishUdpWrite0() {
+        final Future<?> thisFinishUdpWriteFuture = this.finishUdpWriteFuture;
+        if (thisFinishUdpWriteFuture != null) {
+            if (!thisFinishUdpWriteFuture.isDone()) {
+                runFinishUdpWriteTask();
                 return;
             }
             else {
                 // lazy unset to make sure we don't prematurely unset it while scheduling a new task.
-                FINISH_WRITE_FUTURE_UPDATER.compareAndSet(this, thisFinishWriteFuture, null);
+                FINISH_UDP_WRITE_FUTURE_UPDATER.compareAndSet(this, thisFinishUdpWriteFuture, null);
             }
         }
         // we should only set readInProgress to false if there is any data that was read as
         // otherwise we may miss to forward data later on.
-        if (!outboundBuffer.isEmpty()) {
-            writeOutbound();
+        if (!outboundUdpBuffer.isEmpty()) {
+            writeUdpChannel();
         }
     }
 
-    private void runFinishChildWriteTask() {
+    private void runFinishUdpWriteTask() {
         try {
-            if (readInProgress) {
-                finishWriteFuture = eventLoop().submit(finishWriteTask);
+            if (udpReadInProgress) {
+                finishUdpWriteFuture = udpChannel.eventLoop().submit(this::finishUdpWrite0);
             }
             else {
-                eventLoop().execute(finishWriteTask);
+                udpChannel.eventLoop().execute(this::finishUdpWrite0);
             }
         }
         catch (final Throwable cause) {
@@ -277,22 +275,21 @@ public class DrasylServerChannel extends AbstractServerChannel {
         }
     }
 
-    void writeOutbound() {
-        final ChannelPipeline pipeline = pipeline();
+    void writeUdpChannel() {
         do {
-            final Object toSend = outboundBuffer.poll();
-            if (toSend == null) {
+            final Object o = outboundUdpBuffer.poll();
+            if (o == null) {
                 break;
             }
-            pipeline.write(toSend).addListener(future -> {
+            udpChannel.write(o).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written to server channel failed:", () -> toSend, future::cause);
+                    LOG.warn("Outbound message `{}` written to UDP channel failed:", () -> o, future::cause);
                 }
             });
         } while (true); // TODO: use isWritable?
 
         // all messages written, fire flush event
-        pipeline.flush();
+        udpChannel.flush();
     }
 
     /**
@@ -301,17 +298,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
      */
     private static class ChildChannelRouter extends ChannelDuplexHandler {
         private final SetMultimap<DrasylAddress, Object> paths;
-        private final Set<IdentityPublicKey> fireReadCompleteChannels;
 
         @SuppressWarnings("java:S2384")
-        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths,
-                           final Set<IdentityPublicKey> fireReadCompleteChannels) {
-            this.paths = requireNonNull(paths);
-            this.fireReadCompleteChannels = requireNonNull(fireReadCompleteChannels);
-        }
-
         ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
-            this(paths, new HashSet<>());
+            this.paths = requireNonNull(paths);
         }
 
         @Override
@@ -336,57 +326,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     ctx.close().addListener(future2 -> promise.tryFailure(future.cause()));
                 }
             });
-        }
-
-        @Override
-        public void channelRead(final ChannelHandlerContext ctx,
-                                final Object msg) {
-            if (msg instanceof Channel) {
-                // pass through
-                ctx.fireChannelRead(msg);
-            }
-            else if (ctx.channel().isOpen()) {
-                final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
-                serverChannel.readInProgress = true;
-                try {
-                    final DefaultAddressedEnvelope childMsg = (DefaultAddressedEnvelope) msg;
-                    Object o = childMsg.content();
-                    final IdentityPublicKey peer;
-                    if (o instanceof ApplicationMessage) {
-                        peer = (IdentityPublicKey) ((ApplicationMessage) o).getSender();
-                        o = ((ApplicationMessage) o).getPayload();
-                    }
-                    else {
-                        peer = (IdentityPublicKey) childMsg.sender();
-                    }
-
-                    final DrasylChannel channel = serverChannel.serve0(peer);
-                    channel.addToInboundBuffer(o);
-                    fireReadCompleteChannels.add(peer);
-                }
-                catch (final ClassCastException e) {
-                    LOG.error("Can't cast message or sender of message `{}`: ", msg, e);
-                }
-            }
-        }
-
-        @Override
-        public void channelReadComplete(final ChannelHandlerContext ctx) {
-            // pass channelReadComplete to all channels that have read something
-            for (final IdentityPublicKey peer : fireReadCompleteChannels) {
-                final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
-
-                if (channel != null) {
-                    // pass event to channel
-                    channel.finishRead();
-                }
-            }
-            fireReadCompleteChannels.clear();
-
-            final DrasylServerChannel serverChannel = (DrasylServerChannel) ctx.channel();
-            serverChannel.readInProgress = false;
-
-            ctx.fireChannelReadComplete();
         }
 
         @Override
@@ -460,25 +399,6 @@ public class DrasylServerChannel extends AbstractServerChannel {
             }
 
             ctx.fireChannelRead(msg);
-        }
-    }
-
-    /**
-     * This handler is part of the backpressure mechanisms of the server channel. It informs all
-     * child channels to flush once the server channel has become writable again.
-     */
-    private static class PendingWritesFlusher extends ChannelInboundHandlerAdapter {
-        @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-            ctx.fireChannelWritabilityChanged();
-
-            if (ctx.channel().isWritable()) {
-                for (final DrasylChannel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
-                    if (channel.pendingWrites) {
-                        channel.flush();
-                    }
-                }
-            }
         }
     }
 }

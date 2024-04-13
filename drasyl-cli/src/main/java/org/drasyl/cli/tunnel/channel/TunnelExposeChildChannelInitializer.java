@@ -45,7 +45,6 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.tunnel.TunnelCommand.CONNECTION_CONFIG;
-import static org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer.MAX_PEERS;
 
 public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitializer {
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
@@ -72,7 +71,7 @@ public class TunnelExposeChildChannelInitializer extends ConnectionChannelInitia
     protected void initChannel(final DrasylChannel ch) throws Exception {
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

@@ -26,6 +26,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
@@ -38,8 +39,6 @@ import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.DnsResolver;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -57,9 +56,6 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
-import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Joins one or multiple super peer(s) as a children. Uses the super peer with the best RTT as a
@@ -75,115 +71,68 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final Object PATH = InternetDiscoveryChildrenHandler.class;
     static final Class<?> PATH_ID = InternetDiscoveryChildrenHandler.class;
     static final short PATH_PRIORITY = 100;
-    protected final int myNetworkId;
-    protected final IdentityPublicKey myPublicKey;
-    protected final ProofOfWork myProofOfWork;
+    protected Integer myNetworkId;
+    protected Identity myIdentity;
     protected final LongSupplier currentTime;
-    protected final long pingTimeoutMillis;
-    protected final long maxTimeOffsetMillis;
-    protected final Map<IdentityPublicKey, SuperPeer> superPeers;
-    private final IdentitySecretKey mySecretKey;
-    private final long initialPingDelayMillis;
-    private final long pingIntervalMillis;
+    protected final Long pingTimeoutMillis;
+    protected final Long maxTimeOffsetMillis;
+    protected Map<IdentityPublicKey, SuperPeer> superPeers;
+    private final Long initialPingDelayMillis;
+    private final Long pingIntervalMillis;
     Future<?> heartbeatDisposable;
     protected InetSocketAddress bindAddress;
     PeersManager peersManager;
 
     @SuppressWarnings("java:S107")
-    InternetDiscoveryChildrenHandler(final int myNetworkId,
-                                     final IdentityPublicKey myPublicKey,
-                                     final IdentitySecretKey mySecretKey,
-                                     final ProofOfWork myProofOfWork,
+    InternetDiscoveryChildrenHandler(final Integer myNetworkId,
+                                     final Identity myIdentity,
                                      final LongSupplier currentTime,
-                                     final long initialPingDelayMillis,
-                                     final long pingIntervalMillis,
-                                     final long pingTimeoutMillis,
-                                     final long maxTimeOffsetMillis,
+                                     final Long initialPingDelayMillis,
+                                     final Long pingIntervalMillis,
+                                     final Long pingTimeoutMillis,
+                                     final Long maxTimeOffsetMillis,
                                      final Map<IdentityPublicKey, SuperPeer> superPeers,
                                      final Future<?> heartbeatDisposable,
                                      final PeersManager peersManager) {
         this.myNetworkId = myNetworkId;
-        this.myPublicKey = requireNonNull(myPublicKey);
-        this.mySecretKey = requireNonNull(mySecretKey);
-        this.myProofOfWork = requireNonNull(myProofOfWork);
+        this.myIdentity = myIdentity;
         this.currentTime = requireNonNull(currentTime);
-        this.initialPingDelayMillis = requireNonNegative(initialPingDelayMillis);
-        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
-        this.pingTimeoutMillis = requirePositive(pingTimeoutMillis);
-        this.maxTimeOffsetMillis = requirePositive(maxTimeOffsetMillis);
-        this.superPeers = requireNonNull(superPeers);
+        this.initialPingDelayMillis = initialPingDelayMillis;
+        this.pingIntervalMillis = pingIntervalMillis;
+        this.pingTimeoutMillis = pingTimeoutMillis;
+        this.maxTimeOffsetMillis = maxTimeOffsetMillis;
+        this.superPeers = superPeers;
         this.heartbeatDisposable = heartbeatDisposable;
         this.peersManager = peersManager;
     }
 
     @SuppressWarnings("java:S107")
-    public InternetDiscoveryChildrenHandler(final int myNetworkId,
-                                            final IdentityPublicKey myPublicKey,
-                                            final IdentitySecretKey mySecretKey,
-                                            final ProofOfWork myProofOfWork,
-                                            final LongSupplier currentTime,
-                                            final long initialPingDelayMillis,
-                                            final long pingIntervalMillis,
-                                            final long pingTimeoutMillis,
-                                            final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+    public InternetDiscoveryChildrenHandler(final LongSupplier currentTime,
+                                            final Long initialPingDelayMillis,
+                                            final Long pingIntervalMillis,
+                                            final Long pingTimeoutMillis,
+                                            final Long maxTimeOffsetMillis) {
         this(
-                myNetworkId,
-                myPublicKey,
-                mySecretKey,
-                myProofOfWork,
+                null,
+                null,
                 currentTime,
                 initialPingDelayMillis,
                 pingIntervalMillis,
                 pingTimeoutMillis,
                 maxTimeOffsetMillis,
-                superPeerAddresses.entrySet().stream().collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, pingTimeoutMillis, e.getValue()))),
+                null,
                 null,
                 null);
     }
 
     @SuppressWarnings("java:S107")
-    public InternetDiscoveryChildrenHandler(final int myNetworkId,
-                                            final IdentityPublicKey myPublicKey,
-                                            final IdentitySecretKey mySecretKey,
-                                            final ProofOfWork myProofOfWork,
-                                            final long initialPingDelayMillis,
-                                            final long pingIntervalMillis,
-                                            final long pingTimeoutMillis,
-                                            final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
+    public InternetDiscoveryChildrenHandler() {
         this(
-                myNetworkId,
-                myPublicKey,
-                mySecretKey,
-                myProofOfWork,
                 System::currentTimeMillis,
-                initialPingDelayMillis,
-                pingIntervalMillis,
-                pingTimeoutMillis,
-                maxTimeOffsetMillis,
-                superPeerAddresses
-        );
-    }
-
-    @SuppressWarnings("java:S107")
-    public InternetDiscoveryChildrenHandler(final int myNetworkId,
-                                            final Identity myIdentity,
-                                            final long initialPingDelayMillis,
-                                            final long pingIntervalMillis,
-                                            final long pingTimeoutMillis,
-                                            final long maxTimeOffsetMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses) {
-        this(
-                myNetworkId,
-                myIdentity.getIdentityPublicKey(),
-                myIdentity.getIdentitySecretKey(),
-                myIdentity.getProofOfWork(),
-                initialPingDelayMillis,
-                pingIntervalMillis,
-                pingTimeoutMillis,
-                maxTimeOffsetMillis,
-                superPeerAddresses
+                null,
+                null,
+                null,
+                null
         );
     }
 
@@ -193,8 +142,15 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        if (myNetworkId == null) {
+            myNetworkId = ((DrasylServerChannelConfig) ctx.channel().config()).getNetworkId();
+        }
         if (peersManager == null) {
-            peersManager = ctx.channel().config().getOption(PEERS_MANAGER);
+            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+        }
+        if (superPeers == null) {
+            superPeers = ((DrasylServerChannelConfig) ctx.channel().config()).getSuperPeers().entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, pingTimeoutMillis, e.getValue())));
         }
         startHeartbeat(ctx);
         ctx.fireChannelActive();
@@ -282,11 +238,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final HelloMessage msg;
         if (isChildrenJoin) {
             // hello message is used to register at super peer as children
-            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork, DEFAULT_CHILDREN_TIME, mySecretKey, privateInetAddresses);
+            msg = HelloMessage.of(myNetworkId, publicKey, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork(), DEFAULT_CHILDREN_TIME, myIdentity.getIdentitySecretKey(), privateInetAddresses);
         }
         else {
             // hello message is used to announce us at peer
-            msg = HelloMessage.of(myNetworkId, publicKey, myPublicKey, myProofOfWork);
+            msg = HelloMessage.of(myNetworkId, publicKey, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
         }
 
         LOG.trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`.", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);
@@ -307,7 +263,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
                 superPeers.containsKey(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
-                myPublicKey.equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
+                myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
     }
 
@@ -340,7 +296,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private boolean isApplicationMessageForMe(final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
-                myPublicKey.equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
+                myIdentity.getIdentityPublicKey().equals((((InetAddressedMessage<ApplicationMessage>) msg).content()).getRecipient());
     }
 
     private void determineBestSuperPeer(final ChannelHandlerContext ctx) {

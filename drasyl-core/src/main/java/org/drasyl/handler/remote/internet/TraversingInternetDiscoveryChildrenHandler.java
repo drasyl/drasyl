@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
@@ -33,9 +34,8 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -53,9 +53,6 @@ import java.util.function.LongSupplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
-import static org.drasyl.util.Preconditions.requireNonNegative;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 /**
  * Extends {@link InternetDiscoveryChildrenHandler} by performing a rendezvous initiated by one of
@@ -70,15 +67,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private static final Object PATH = TraversingInternetDiscoveryChildrenHandler.class;
     static final Class<?> PATH_ID = TraversingInternetDiscoveryChildrenHandler.class;
     static final short PATH_PRIORITY = 95;
-    private final long pingCommunicationTimeoutMillis;
-    private final long maxPeers;
+    private Long pingCommunicationTimeoutMillis;
+    private Integer maxPeers;
     private final Map<DrasylAddress, TraversingPeer> traversingPeers;
 
     @SuppressWarnings("java:S107")
-    TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
-                                               final IdentityPublicKey myPublicKey,
-                                               final IdentitySecretKey mySecretKey,
-                                               final ProofOfWork myProofOfWork,
+    TraversingInternetDiscoveryChildrenHandler(final Integer myNetworkId,
+                                               final Identity myIdentity,
                                                final LongSupplier currentTime,
                                                final PeersManager peersManager,
                                                final long initialPingDelayMillis,
@@ -88,54 +83,41 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
                                                final long pingCommunicationTimeoutMillis,
-                                               final long maxPeers,
+                                               final Integer maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, peersManager);
-        this.pingCommunicationTimeoutMillis = requirePositive(pingCommunicationTimeoutMillis);
-        this.maxPeers = requireNonNegative(maxPeers);
+        super(myNetworkId, myIdentity, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, peersManager);
+        this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
+        this.maxPeers = maxPeers;
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 
     /**
-     * @param myNetworkId                    the network we belong to
-     * @param myPublicKey                    own public key
-     * @param mySecretKey                    own secret key
-     * @param myProofOfWork                  own proof of work
-     * @param initialPingDelayMillis         time in millis after
-     *                                       {@link #channelActive(ChannelHandlerContext)} has been
-     *                                       fired, we start to ping super peers
-     * @param pingIntervalMillis             interval in millis between a ping
-     * @param pingTimeoutMillis              time in millis without ping response before a peer is
-     *                                       assumed as unreachable
-     * @param maxTimeOffsetMillis            time millis offset of received messages' timestamp
-     *                                       before discarding them
-     * @param superPeerAddresses             inet addresses and public keys of super peers
      * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
      *                                       discarded without application traffic
      * @param maxPeers                       maximum number of peers to which a traversed connection
      *                                       should be maintained at the same time
      */
     @SuppressWarnings("java:S107")
-    public TraversingInternetDiscoveryChildrenHandler(final int myNetworkId,
-                                                      final IdentityPublicKey myPublicKey,
-                                                      final IdentitySecretKey mySecretKey,
-                                                      final ProofOfWork myProofOfWork,
-                                                      final long initialPingDelayMillis,
-                                                      final long pingIntervalMillis,
-                                                      final long pingTimeoutMillis,
-                                                      final long maxTimeOffsetMillis,
-                                                      final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses,
-                                                      final long pingCommunicationTimeoutMillis,
-                                                      final long maxPeers) {
-        super(myNetworkId, myPublicKey, mySecretKey, myProofOfWork, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeerAddresses);
-        this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
-        this.maxPeers = requireNonNegative(maxPeers);
+    public TraversingInternetDiscoveryChildrenHandler() {
+        super();
         this.traversingPeers = new HashMap<>();
     }
 
     /*
      * Channel Events
      */
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        if (pingCommunicationTimeoutMillis == null) {
+            pingCommunicationTimeoutMillis = ((DrasylServerChannelConfig) ctx.channel().config()).getPathIdleTime().toMillis();
+        }
+        if (maxPeers == null) {
+            maxPeers = ((DrasylServerChannelConfig) ctx.channel().config()).getMaxPeers();
+        }
+
+        super.channelActive(ctx);
+    }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx,
@@ -165,7 +147,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private boolean isUniteMessageFromSuperPeer(final Object msg) {
         return msg instanceof InetAddressedMessage &&
                 ((InetAddressedMessage<?>) msg).content() instanceof UniteMessage &&
-                myPublicKey.equals(((InetAddressedMessage<UniteMessage>) msg).content().getRecipient()) &&
+                myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<UniteMessage>) msg).content().getRecipient()) &&
                 superPeers.containsKey(((InetAddressedMessage<UniteMessage>) msg).content().getSender());
     }
 
@@ -202,7 +184,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private boolean isHelloMessageFromTraversingPeer(final Object msg) {
         return msg instanceof InetAddressedMessage &&
                 ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
-                myPublicKey.equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
+                myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
                 traversingPeers.containsKey(((InetAddressedMessage<HelloMessage>) msg).content().getSender()) &&
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis &&
                 ((InetAddressedMessage<HelloMessage>) msg).content().getChildrenTime() == 0;
@@ -216,13 +198,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myPublicKey, myProofOfWork, msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork(), msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
 
         if (!traversingPeer.isReachable() && traversingPeer.addInetAddressCandidate(inetAddress)) {
             // send Hello immediately to speed up traversal
-            ctx.channel().config().getOption(PEERS_MANAGER).applicationMessageSentOrReceived(msg.getSender());
+            ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
             traversingPeer.helloSent();
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -233,7 +215,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private boolean isAcknowledgementMessageFromTraversingPeer(final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
-                myPublicKey.equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
+                myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
                 traversingPeers.containsKey(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
     }
@@ -273,7 +255,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (traversingPeer.isStale()) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (ctx.channel().config().getOption(PEERS_MANAGER).removePath(address, PATH_ID)) {
+                if (((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager().removePath(address, PATH_ID)) {
                     ctx.fireUserEventTriggered(RemovePathEvent.of(address, PATH));
                 }
             }

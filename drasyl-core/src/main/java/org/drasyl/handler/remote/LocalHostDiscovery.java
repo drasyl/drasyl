@@ -24,6 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.identity.DrasylAddress;
@@ -82,25 +83,23 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private final boolean watchEnabled;
     private final Duration leaseTime;
     private final Path path;
-    private final int networkId;
-    private final PeersManager peersManager;
+    private Integer networkId;
+    private PeersManager peersManager;
     private Future<?> watchDisposable;
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery(final int networkId,
-                              final boolean watchEnabled,
+    public LocalHostDiscovery(final boolean watchEnabled,
                               final Duration leaseTime,
-                              final Path path,
-                              final PeersManager peersManager) {
+                              final Path path) {
         this(
                 file -> LocalHostPeerInformation.of(file).addresses(),
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
                 watchEnabled,
                 leaseTime,
                 path,
-                networkId,
-                peersManager,
+                null,
+                null,
                 null,
                 null
         );
@@ -112,7 +111,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                        final boolean watchEnabled,
                        final Duration leaseTime,
                        final Path path,
-                       final int networkId,
+                       final Integer networkId,
                        final PeersManager peersManager,
                        final Future<?> watchDisposable,
                        final Future<?> postDisposable) {
@@ -320,6 +319,18 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         catch (final IOException e) {
             LOG.warn("Unable to write peer information to `{}`: {}", filePath::toAbsolutePath, e::getMessage);
         }
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        if (networkId == null) {
+            networkId = ((DrasylServerChannelConfig) ctx.channel().config()).getNetworkId();
+        }
+        if (peersManager == null) {
+            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+        }
+
+        ctx.fireChannelActive();
     }
 
     @Override

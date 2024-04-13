@@ -24,14 +24,14 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.RandomUtil.randomLong;
 
 /**
@@ -67,43 +66,33 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     static final Class<?> PATH_ID = LocalNetworkDiscovery.class;
     static final short PATH_PRIORITY = 90;
     private static final Object path = LocalNetworkDiscovery.class;
-    private final IdentityPublicKey myPublicKey;
-    private final ProofOfWork myProofOfWork;
-    private final long pingIntervalMillis;
-    private final int networkId;
+    private Identity myIdentity;
+    private Integer networkId;
     private final InetSocketAddress recipient;
-    private final PeersManager peersManager;
+    private PeersManager peersManager;
     private Future<?> scheduledPingFuture;
 
-    LocalNetworkDiscovery(final IdentityPublicKey myPublicKey,
-                          final ProofOfWork myProofOfWork,
-                          final long pingIntervalMillis,
-                          final int networkId,
+    LocalNetworkDiscovery(final Identity myIdentity,
+                          final Integer networkId,
                           final InetSocketAddress recipient,
                           final PeersManager peersManager,
                           final Future<?> scheduledPingFuture) {
-        this.myPublicKey = requireNonNull(myPublicKey);
-        this.myProofOfWork = requireNonNull(myProofOfWork);
-        this.pingIntervalMillis = requirePositive(pingIntervalMillis);
+        this.myIdentity = myIdentity;
         this.networkId = networkId;
         this.recipient = requireNonNull(recipient);
         this.peersManager = requireNonNull(peersManager);
         this.scheduledPingFuture = scheduledPingFuture;
     }
 
-    public LocalNetworkDiscovery(final int networkId,
-                                 final long pingIntervalMillis,
-                                 final IdentityPublicKey myPublicKey,
-                                 final ProofOfWork myProofOfWork,
-                                 final InetSocketAddress recipient,
-                                 final PeersManager peersManager) {
-        this(myPublicKey, myProofOfWork, pingIntervalMillis, networkId, recipient, peersManager, null);
+    public LocalNetworkDiscovery(final InetSocketAddress recipient) {
+        this(null, null, recipient, null, null);
     }
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
         if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
-            scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(pingIntervalMillis), pingIntervalMillis, MILLISECONDS);
+            final long helloInterval = ((DrasylServerChannelConfig) ctx.channel().config()).getHelloInterval().toMillis();
+            scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(helloInterval), helloInterval, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
     }
@@ -173,6 +162,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
+        if (myIdentity == null) {
+            myIdentity = (Identity) ctx.channel().localAddress();
+        }
+
         startHeartbeat(ctx);
 
         ctx.fireChannelActive();
@@ -187,7 +180,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final HelloMessage messageEnvelope = HelloMessage.of(networkId, myPublicKey, myProofOfWork);
+        final HelloMessage messageEnvelope = HelloMessage.of(networkId, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, recipient);
         ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, recipient)).addListener(future -> {
             if (!future.isSuccess()) {

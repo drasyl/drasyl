@@ -23,9 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
@@ -36,8 +34,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
@@ -50,9 +46,7 @@ class DrasylNodeServerChannelInitializerTest {
     class InitChannel {
         @Test
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final NioEventLoopGroup udpServerGroup,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
@@ -69,10 +63,10 @@ class DrasylNodeServerChannelInitializerTest {
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(5L));
             when(config.getRemoteUniteMinInterval()).thenReturn(ofSeconds(20L));
             when(config.getRemoteMessageArmProtocolSessionMaxCount()).thenReturn(100);
-            when(channel.config().getOption(NETWORK_ID)).thenReturn(0);
-            when(channel.config().getOption(PEERS_MANAGER)).thenReturn(peersManager);
+            when(channel.config().getNetworkId()).thenReturn(0);
+            when(channel.config().getPeersManager()).thenReturn(peersManager);
 
-            final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, identity, node, udpServerGroup);
+            final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, node);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(19)).addLast(any());

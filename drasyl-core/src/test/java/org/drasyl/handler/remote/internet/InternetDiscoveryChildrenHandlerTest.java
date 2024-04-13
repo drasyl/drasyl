@@ -29,9 +29,8 @@ import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -59,11 +58,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class InternetDiscoveryChildrenHandlerTest {
     @Mock
-    private IdentityPublicKey myPublicKey;
-    @Mock
-    private IdentitySecretKey mySecretKey;
-    @Mock
-    private ProofOfWork myProofOfWork;
+    private Identity myIdentity;
     @Mock
     private LongSupplier currentTime;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -73,12 +68,12 @@ class InternetDiscoveryChildrenHandlerTest {
     void shouldContactSuperPeersOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer) {
         when(publicKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-        when(myPublicKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
-        when(mySecretKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(myIdentity.getIdentityPublicKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(myIdentity.getIdentitySecretKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
 
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(null, myIdentity, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
 
         // channel active
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -102,13 +97,13 @@ class InternetDiscoveryChildrenHandlerTest {
                                                          @Mock final InetSocketAddress inetAddress) throws Exception {
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
         when(acknowledgementMsg.getSender()).thenReturn(publicKey);
-        when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
+        when(acknowledgementMsg.getRecipient()).thenReturn(myIdentity.getIdentityPublicKey());
         when(acknowledgementMsg.getTime()).thenReturn(1L);
         when(currentTime.getAsLong()).thenReturn(2L);
         when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(null, myIdentity, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);

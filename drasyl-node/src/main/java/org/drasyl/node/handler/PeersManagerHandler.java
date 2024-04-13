@@ -23,6 +23,7 @@ package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -61,21 +62,28 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
     private final SetMultimap<DrasylAddress, Object> paths;
     private final Set<DrasylAddress> children;
     private final Set<DrasylAddress> superPeers;
-    private final Identity identity;
+    private Identity identity;
 
     @SuppressWarnings("java:S2384")
     PeersManagerHandler(final SetMultimap<DrasylAddress, Object> paths,
                         final Set<DrasylAddress> children,
-                        final Set<DrasylAddress> superPeers,
-                        final Identity identity) {
+                        final Set<DrasylAddress> superPeers) {
         this.paths = requireNonNull(paths);
         this.children = requireNonNull(children);
         this.superPeers = requireNonNull(superPeers);
-        this.identity = requireNonNull(identity);
     }
 
-    public PeersManagerHandler(final Identity identity) {
-        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>(), identity);
+    public PeersManagerHandler() {
+        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>());
+    }
+
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) {
+        if (identity == null) {
+            identity = ((DrasylServerChannel) ctx.channel()).identity();
+        }
+
+        ctx.fireChannelActive();
     }
 
     @Override

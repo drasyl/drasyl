@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
@@ -31,7 +32,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Iterator;
 
-import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
 
@@ -44,20 +44,24 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     public static final Class<?> PATH_ID = UnconfirmedAddressResolveHandler.class;
     public static final short PATH_PRIORITY = 110;
     private final long expireCacheAfter;
-    private final PeersManager peersManager;
+    private PeersManager peersManager;
 
-    public UnconfirmedAddressResolveHandler(final long expireCacheAfter,
-                                            final PeersManager peersManager) {
+    UnconfirmedAddressResolveHandler(final long expireCacheAfter,
+                                     final PeersManager peersManager) {
         this.expireCacheAfter = requirePositive(expireCacheAfter);
-        this.peersManager = requireNonNull(peersManager);
+        this.peersManager = peersManager;
     }
 
-    public UnconfirmedAddressResolveHandler(final PeersManager peersManager) {
-        this(60_000L, peersManager);
+    public UnconfirmedAddressResolveHandler() {
+        this(60_000L, null);
     }
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (peersManager == null) {
+            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+        }
+
         if (ctx.channel().isActive()) {
             scheduleHousekeepingTask(ctx);
         }

@@ -43,7 +43,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.channel.AbstractChannelInitializer.MAX_PEERS;
 
 public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     private static final Logger LOG = LoggerFactory.getLogger(TunChildChannelInitializer.class);
@@ -79,7 +78,7 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         if (applicationArmEnabled) {
             p.addLast(new ArmHeaderCodec());
-            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), identity, (IdentityPublicKey) ch.remoteAddress()));
         }
 
         p.addLast(new TunPacketCodec());

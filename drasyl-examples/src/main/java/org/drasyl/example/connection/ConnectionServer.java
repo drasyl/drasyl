@@ -29,9 +29,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionConfig;
@@ -39,7 +39,6 @@ import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.ConnectionResetException;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -75,11 +74,10 @@ public class ConnectionServer {
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527, peersManager))
+                .handler(new DefaultDrasylServerChannelInitializer())
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {

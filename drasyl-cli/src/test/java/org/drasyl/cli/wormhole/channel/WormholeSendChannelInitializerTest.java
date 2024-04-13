@@ -61,8 +61,8 @@ class WormholeSendChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
             when(ctx.channel()).thenReturn(channel);
-            when(channel.config().getOption(NETWORK_ID)).thenReturn(0);
-            when(channel.config().getOption(PEERS_MANAGER)).thenReturn(peersManager);
+            when(channel.config().getNetworkId()).thenReturn(0);
+            when(channel.config().getPeersManager()).thenReturn(peersManager);
 
             final ChannelInboundHandler handler = new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, 0, 1, Map.of(), out, err, exitCode, "abc", true);
             handler.channelRegistered(ctx);

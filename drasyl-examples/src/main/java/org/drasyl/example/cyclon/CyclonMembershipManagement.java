@@ -27,15 +27,14 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.handler.membership.cyclon.CyclonCodec;
 import org.drasyl.handler.membership.cyclon.CyclonNeighbor;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingClientHandler;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingServerHandler;
 import org.drasyl.handler.membership.cyclon.CyclonView;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -91,11 +90,10 @@ public class CyclonMembershipManagement {
 
         final EventLoopGroup group = new DefaultEventLoopGroup();
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        final PeersManager peersManager = new PeersManager();
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 0, peersManager) {
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);

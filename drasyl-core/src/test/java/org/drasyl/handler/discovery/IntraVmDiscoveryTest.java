@@ -60,7 +60,7 @@ class IntraVmDiscoveryTest {
         @Test
         void shouldStartDiscoveryOnChannelActive() {
             IntraVmDiscovery.discoveries = discoveries;
-            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final IntraVmDiscovery handler = new IntraVmDiscovery();
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
@@ -80,7 +80,7 @@ class IntraVmDiscoveryTest {
         void shouldStopDiscoveryOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, identity.getAddress()), ctx);
-            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final IntraVmDiscovery handler = new IntraVmDiscovery();
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
@@ -103,7 +103,7 @@ class IntraVmDiscoveryTest {
             IntraVmDiscovery.discoveries = discoveries;
             discoveries.put(Pair.of(0, recipient), ctx);
 
-            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final IntraVmDiscovery handler = new IntraVmDiscovery();
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
             channel.pipeline().addLast(handler);
             try {
@@ -121,7 +121,7 @@ class IntraVmDiscoveryTest {
         void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final IdentityPublicKey recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Object message) {
             IntraVmDiscovery.discoveries = discoveries;
-            final IntraVmDiscovery handler = new IntraVmDiscovery(myNetworkId);
+            final IntraVmDiscovery handler = new IntraVmDiscovery();
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress());
             channel.pipeline().addLast(handler);
             try {

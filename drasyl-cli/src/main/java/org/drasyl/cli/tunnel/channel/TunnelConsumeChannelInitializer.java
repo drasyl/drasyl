@@ -53,7 +53,7 @@ public class TunnelConsumeChannelInitializer extends AbstractChannelInitializer 
                                            final Worm<Integer> exitCode,
                                            final IdentityPublicKey exposer,
                                            final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+        super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.exposer = requireNonNull(exposer);

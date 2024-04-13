@@ -22,6 +22,7 @@
 package org.drasyl.channel.embedded;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -38,16 +39,36 @@ import java.util.Queue;
  */
 public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
     private static final SocketAddress LOCAL_ADDRESS = new EmbeddedSocketAddress();
+    private final ChannelConfig config;
     private final SocketAddress localAddress;
+
+    public UserEventAwareEmbeddedChannel(final ChannelConfig config,
+                                         final SocketAddress localAddress,
+                                         final ChannelHandler... handlers) {
+        super(ArrayUtil.concat(handlers, new ChannelHandler[]{ new UserEventAcceptor() }));
+        this.config = config;
+        this.localAddress = localAddress;
+    }
 
     public UserEventAwareEmbeddedChannel(final SocketAddress localAddress,
                                          final ChannelHandler... handlers) {
         super(ArrayUtil.concat(handlers, new ChannelHandler[]{ new UserEventAcceptor() }));
+        this.config = null;
         this.localAddress = localAddress;
     }
 
     public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
         this(LOCAL_ADDRESS, handlers);
+    }
+
+    @Override
+    public ChannelConfig config() {
+        if (config != null) {
+            return config;
+        }
+        else {
+            return super.config();
+        }
     }
 
     @Override

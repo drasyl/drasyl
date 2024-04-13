@@ -49,7 +49,7 @@ class StaticRoutesHandlerTest {
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final InetSocketAddress address = new InetSocketAddress(22527);
 
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
             channel.pipeline().fireChannelActive();
@@ -66,7 +66,7 @@ class StaticRoutesHandlerTest {
                                             @Mock final InetSocketAddress address) {
         when(peersManager.getPeers(PATH_ID)).thenReturn(Set.of(publicKey));
 
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address), peersManager);
+        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
         try {
             channel.userEvents().clear();

@@ -31,9 +31,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -41,7 +41,6 @@ import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.function.Function;
@@ -61,126 +60,65 @@ public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
     private final Bootstrap bootstrap;
-    private final EventLoopGroup group;
-    private final InetSocketAddress bindAddress;
+    private EventLoopGroup group;
+    private InetSocketAddress bindAddress;
     private final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
-    private PendingWriteQueue pendingWrites;
     private Channel channel;
 
     UdpServer(final Bootstrap bootstrap,
               final EventLoopGroup group,
               final InetSocketAddress bindAddress,
               final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
-              final PendingWriteQueue pendingWrites,
               final Channel channel) {
         this.bootstrap = requireNonNull(bootstrap);
-        this.group = requireNonNull(group);
-        this.bindAddress = requireNonNull(bindAddress);
+        this.group = group;
+        this.bindAddress = bindAddress;
         this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
-        this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
     public UdpServer(final Bootstrap bootstrap,
-                     final EventLoopGroup group,
                      final InetSocketAddress bindAddress,
                      final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
         this(
                 bootstrap,
-                group,
+                null,
                 bindAddress,
                 channelInitializerSupplier,
-                null,
                 null
         );
     }
 
-    public UdpServer(final Bootstrap bootstrap,
-                     final EventLoopGroup group,
-                     final InetSocketAddress bindAddress,
-                     final PeersManager peersManager) {
-        this(bootstrap, group, bindAddress, UdpServerChannelInitializer::new);
+    public UdpServer(final Bootstrap bootstrap) {
+        this(bootstrap, null, ctx -> new UdpServerChannelInitializer((DrasylServerChannel) ctx.channel().parent()));
     }
 
     /**
-     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindAddress the address the UDP server will bind to
      */
-    public UdpServer(final EventLoopGroup group,
-                     final InetSocketAddress bindAddress,
-                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress, channelInitializerSupplier);
+    public UdpServer(final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), null, channelInitializerSupplier);
     }
 
     /**
-     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindAddress  the address the UDP server will bind to
-     * @param peersManager
      */
-    public UdpServer(final EventLoopGroup group,
-                     final InetSocketAddress bindAddress,
-                     final PeersManager peersManager) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress, peersManager);
-    }
-
-    /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort,
-                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
-        this(group, new InetSocketAddress(bindHost, bindPort), channelInitializerSupplier);
-    }
-
-    /**
-     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost     the host the UDP server will bind to
-     * @param bindPort     the port the UDP server will bind to
-     * @param peersManager
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort,
-                     final PeersManager peersManager) {
-        this(group, new InetSocketAddress(bindHost, bindPort), peersManager);
-    }
-
-    /**
-     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost     the host the UDP server will bind to
-     * @param bindPort     the port the UDP server will bind to
-     * @param peersManager
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final String bindHost,
-                     final int bindPort,
-                     final PeersManager peersManager) {
-        this(group, new InetSocketAddress(bindHost, bindPort), peersManager);
-    }
-
-    /**
-     * Create UDP server that will bind to host {@code 0.0.0.0} and port {@code bindPort}.
-     *
-     * @param group        the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindPort     the port the UDP server will bind to
-     * @param peersManager
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final int bindPort,
-                     final PeersManager peersManager) {
-        this(group, new InetSocketAddress(bindPort), peersManager);
+    public UdpServer() {
+        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8));
     }
 
     @SuppressWarnings("java:S1905")
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start Server...");
+        if (bindAddress == null) {
+            bindAddress = ((DrasylServerChannelConfig) ctx.channel().config()).getUdpBindAddress();
+        }
+        if (group == null) {
+            group = ((DrasylServerChannelConfig) ctx.channel().config()).getUdpEventLoopSupplier().get();
+        }
+
         bootstrap
                 .group(group)
-                .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                .channel(EventLoopGroupUtil.getBestDatagramChannel()) // TODO: check if compatible with group
                 .handler(channelInitializerSupplier.apply(ctx))
                 .bind(bindAddress)
                 .addListener(new UdpServerBindListener(ctx));
