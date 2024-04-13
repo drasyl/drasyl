@@ -54,8 +54,7 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof OverlayAddressedMessage) {
             final DrasylAddress recipient = ((OverlayAddressedMessage<?>) msg).recipient();
-            final DrasylServerChannelConfig config = (DrasylServerChannelConfig) ctx.channel().config();
-            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(config.getNetworkId(), recipient));
+            final ChannelHandlerContext discoveree = discoveries.get(Pair.of(config(ctx).getNetworkId(), recipient));
 
             if (discoveree == null) {
                 // pass through message
@@ -113,17 +112,16 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         LOG.debug("Start Intra VM Discovery...");
 
         // store peer information
-        final DrasylServerChannelConfig config = (DrasylServerChannelConfig) myCtx.channel().config();
         discoveries.forEach((key, otherCtx) -> {
             final Integer networkId = key.first();
             final DrasylAddress publicKey = key.second();
-            if (config.getNetworkId() == networkId) {
+            if (config(myCtx).getNetworkId() == networkId) {
                 otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path, 0L));
                 myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path, 0L));
             }
         });
         discoveries.put(
-                Pair.of(config.getNetworkId(), requireNonNull((DrasylAddress) myCtx.channel().localAddress())),
+                Pair.of(config(myCtx).getNetworkId(), requireNonNull((DrasylAddress) myCtx.channel().localAddress())),
                 myCtx
         );
 
@@ -134,17 +132,20 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
         LOG.debug("Stop Intra VM Discovery...");
 
         // remove peer information
-        final DrasylServerChannelConfig config = (DrasylServerChannelConfig) myCtx.channel().config();
-        discoveries.remove(Pair.of(config.getNetworkId(), myCtx.channel().localAddress()));
+        discoveries.remove(Pair.of(config(myCtx).getNetworkId(), myCtx.channel().localAddress()));
         discoveries.forEach((key, otherCtx) -> {
             final Integer otherNetworkId = key.first();
             final DrasylAddress publicKey = key.second();
-            if (config.getNetworkId() == otherNetworkId) {
+            if (config(myCtx).getNetworkId() == otherNetworkId) {
                 otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of((DrasylAddress) myCtx.channel().localAddress(), path));
                 myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
             }
         });
 
         LOG.debug("Intra VM Discovery stopped.");
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

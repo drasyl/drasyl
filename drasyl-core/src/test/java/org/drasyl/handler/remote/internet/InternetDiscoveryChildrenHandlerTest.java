@@ -73,7 +73,7 @@ class InternetDiscoveryChildrenHandlerTest {
 
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(null, myIdentity, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null);
 
         // channel active
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -103,7 +103,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(null, myIdentity, currentTime, 0L, 5L, 30L, 60L, superPeers, null, peersManager);
+        final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);

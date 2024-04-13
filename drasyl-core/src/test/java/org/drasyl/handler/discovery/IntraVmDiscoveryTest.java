@@ -56,7 +56,6 @@ class IntraVmDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new HashMap<>();
-    private final int myNetworkId = 0;
 
     @Nested
     class StartDiscovery {

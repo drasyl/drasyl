@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
@@ -42,7 +43,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.nio.file.FileSystem;
 import java.nio.file.Files;
@@ -51,8 +51,6 @@ import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.WatchService;
 import java.time.Duration;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.Set;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -77,6 +75,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LocalHostDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Duration leaseTime = ofSeconds(60);
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -85,17 +85,12 @@ class LocalHostDiscoveryTest {
     private ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     @Mock
     private ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
-    private final Map<IdentityPublicKey, InetSocketAddress> routes = new HashMap<>();
     @Mock
     private Future<?> watchDisposable;
     @Mock
     private Future<?> postDisposable;
+    @SuppressWarnings("unused")
     private boolean watchEnabled;
-    @Mock
-    private InetAddress bindHost;
-    private int networkId;
-    @Mock
-    private PeersManager peersManager;
 
     @Nested
     class StartDiscovery {
@@ -103,13 +98,14 @@ class LocalHostDiscoveryTest {
         @Timeout(value = 10_000, unit = MILLISECONDS)
         void shouldStartDiscoveryOnPortEvent(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(ctx.channel().config()).thenReturn(config);
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(discoveryPath.resolve(anyString()).toFile().mkdirs()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().canRead()).thenReturn(true);
             when(discoveryPath.resolve(anyString()).toFile().canWrite()).thenReturn(true);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, false, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, false, leaseTime, discoveryPath, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -124,8 +120,8 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(anyString())).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, watchDisposable, postDisposable);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity.getAddress(), handler);
             try {
                 channel.pipeline().fireUserEventTriggered(event);
 
@@ -141,6 +137,7 @@ class LocalHostDiscoveryTest {
         void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock(answer = RETURNS_DEEP_STUBS) final UdpServerBound event,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+            when(ctx.channel().config()).thenReturn(config);
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             doAnswer(invocation1 -> {
@@ -153,7 +150,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
             when(discoveryPath.resolve(any(String.class))).thenReturn(discoveryPath);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -168,6 +165,7 @@ class LocalHostDiscoveryTest {
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final WatchService watchService,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                    @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) throws IOException {
+            when(ctx.channel().config()).thenReturn(config);
             when(event.getBindAddress()).thenReturn(new InetSocketAddress(12345));
             when(ctx.executor()).thenReturn(executor);
             final File file = discoveryPath.toFile(); // mockito work-around for an issue from 2015 (#330)
@@ -193,7 +191,7 @@ class LocalHostDiscoveryTest {
             doReturn(fileSystem).when(discoveryPath).getFileSystem();
             doReturn(watchService).when(fileSystem).newWatchService();
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, true, leaseTime, discoveryPath, watchDisposable, postDisposable);
 
             handler.userEventTriggered(ctx, event);
 
@@ -206,12 +204,13 @@ class LocalHostDiscoveryTest {
     class StopDiscovery {
         @Test
         void shouldStopDiscoveryOnChannelInactive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, leaseTime, discoveryPath, networkId, peersManager, watchDisposable, postDisposable);
+            when(ctx.channel().config()).thenReturn(config);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, leaseTime, discoveryPath, watchDisposable, postDisposable);
             handler.channelInactive(ctx);
 
             verify(watchDisposable).cancel(false);
             verify(postDisposable).cancel(false);
-            verify(peersManager).removePaths(PATH_ID);
+            verify(config.getPeersManager()).removePaths(PATH_ID);
         }
     }
 
@@ -220,17 +219,18 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldScanDirectory(@TempDir final Path dir,
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws IOException {
+            when(ctx.channel().config()).thenReturn(config);
             when(fileReader.apply(any())).thenReturn(Set.of(new InetSocketAddress("192.168.188.23", 12345)));
-            when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
 
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.txt");
             Files.createDirectory(path.getParent());
             Files.writeString(path, "192.168.188.42:12345\n192.168.188.23:12345", StandardOpenOption.CREATE);
 
-            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, ofMinutes(5), dir, networkId, peersManager, watchDisposable, postDisposable);
+            final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, ofMinutes(5), dir, watchDisposable, postDisposable);
             handler.scan(ctx);
 
-            verify(peersManager).addPath(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_PRIORITY);
+            verify(config.getPeersManager()).addPath(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_PRIORITY);
 
             verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
         }

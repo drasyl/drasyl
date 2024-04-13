@@ -85,7 +85,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final long pingCommunicationTimeoutMillis,
                                                final Integer maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(myNetworkId, myIdentity, currentTime, initialPingDelayMillis, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, superPeers, heartbeatDisposable, peersManager);
+        super(myIdentity, currentTime, initialPingDelayMillis, superPeers, heartbeatDisposable);
         this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
         this.maxPeers = maxPeers;
         this.traversingPeers = requireNonNull(traversingPeers);
@@ -126,11 +126,11 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final InetAddressedMessage<UniteMessage> addressedMsg = (InetAddressedMessage<UniteMessage>) msg;
             handleUniteMessage(ctx, addressedMsg.content());
         }
-        else if (isHelloMessageFromTraversingPeer(msg)) {
+        else if (isHelloMessageFromTraversingPeer(ctx, msg)) {
             final InetAddressedMessage<HelloMessage> addressedMsg = (InetAddressedMessage<HelloMessage>) msg;
             handleHelloMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
-        else if (isAcknowledgementMessageFromTraversingPeer(msg)) {
+        else if (isAcknowledgementMessageFromTraversingPeer(ctx, msg)) {
             final InetAddressedMessage<AcknowledgementMessage> addressedMsg = (InetAddressedMessage<AcknowledgementMessage>) msg;
             handleAcknowledgementMessageFromTraversingPeer(ctx, addressedMsg.content(), addressedMsg.sender());
         }
@@ -158,13 +158,13 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
             final TraversingPeer existingTraversingPeer = traversingPeers.get(address);
-            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, pingTimeoutMillis, pingCommunicationTimeoutMillis, endpoints, address, peersManager);
+            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), pingCommunicationTimeoutMillis, endpoints, address, config(ctx).getPeersManager());
 
             if (!Objects.equals(existingTraversingPeer, newTraversingPeer)) {
                 // new peer or endpoints have changes -> send Hello
                 LOG.debug("Try to reach peer `{}` at endpoints `{}`", address, endpoints);
                 traversingPeers.put(address, newTraversingPeer);
-                peersManager.applicationMessageSentOrReceived(address);
+                config(ctx).getPeersManager().applicationMessageSentOrReceived(address);
                 newTraversingPeer.helloSent();
                 for (final InetSocketAddress inetAddress : newTraversingPeer.inetAddressCandidates()) {
                     writeHelloMessage(ctx, address, inetAddress, null);
@@ -181,12 +181,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     }
 
     @SuppressWarnings("java:S1067")
-    private boolean isHelloMessageFromTraversingPeer(final Object msg) {
+    private boolean isHelloMessageFromTraversingPeer(final ChannelHandlerContext ctx, final Object msg) {
         return msg instanceof InetAddressedMessage &&
                 ((InetAddressedMessage<?>) msg).content() instanceof HelloMessage &&
                 myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<HelloMessage>) msg).content().getRecipient()) &&
                 traversingPeers.containsKey(((InetAddressedMessage<HelloMessage>) msg).content().getSender()) &&
-                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis &&
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<HelloMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis() &&
                 ((InetAddressedMessage<HelloMessage>) msg).content().getChildrenTime() == 0;
     }
 
@@ -198,7 +198,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(msg.getSender());
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(myNetworkId, msg.getSender(), myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork(), msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork(), msg.getTime());
         LOG.trace("Send Acknowledgement for traversing peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
 
@@ -212,12 +212,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     }
 
     @SuppressWarnings("java:S1067")
-    private boolean isAcknowledgementMessageFromTraversingPeer(final Object msg) {
+    private boolean isAcknowledgementMessageFromTraversingPeer(final ChannelHandlerContext ctx, final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
                 myIdentity.getIdentityPublicKey().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
                 traversingPeers.containsKey(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
-                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= maxTimeOffsetMillis;
+                Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis();
     }
 
     private void handleAcknowledgementMessageFromTraversingPeer(final ChannelHandlerContext ctx,
@@ -230,7 +230,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        if (peersManager.addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
+        if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
             ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, inetAddress, PATH, rtt));
         }
         else {

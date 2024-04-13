@@ -64,8 +64,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Integer> MAX_PEERS = valueOf("MAX_PEERS");
     public static final ChannelOption<Map<IdentityPublicKey, InetSocketAddress>> SUPER_PEERS = valueOf("SUPER_PEERS");
     public static final ChannelOption<InetSocketAddress> UDP_BIND = valueOf("UDP_BIND");
-    public static final ChannelOption<EventLoop> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
-    public static final ChannelOption<EventLoop> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
+    public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
+    public static final ChannelOption<Bootstrap> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
     public static final ChannelOption<Boolean> HOLE_PUNCHING_ENABLED = valueOf("HOLE_PUNCHING");
     public static final ChannelOption<Duration> PATH_IDLE_TIME = valueOf("PATH_IDLE_TIME");

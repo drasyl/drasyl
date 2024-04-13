@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandler;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
@@ -38,19 +39,20 @@ import java.util.Set;
 import static org.drasyl.handler.remote.StaticRoutesHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class StaticRoutesHandlerTest {
-    @Mock
-    private PeersManager peersManager;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
 
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
         final InetSocketAddress address = new InetSocketAddress(22527);
 
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
         try {
             channel.pipeline().fireChannelActive();
 
@@ -64,10 +66,10 @@ class StaticRoutesHandlerTest {
     @Test
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddress address) {
-        when(peersManager.getPeers(PATH_ID)).thenReturn(Set.of(publicKey));
+        when(config.getPeersManager().getPeers(PATH_ID)).thenReturn(Set.of(publicKey));
 
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
         try {
             channel.userEvents().clear();
             channel.pipeline().fireChannelInactive();

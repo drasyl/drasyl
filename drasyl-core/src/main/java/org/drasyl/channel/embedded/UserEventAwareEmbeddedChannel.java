@@ -57,8 +57,13 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
         this.localAddress = localAddress;
     }
 
+    public UserEventAwareEmbeddedChannel(final ChannelConfig config,
+                                         final ChannelHandler... handlers) {
+        this(config, LOCAL_ADDRESS, handlers);
+    }
+
     public UserEventAwareEmbeddedChannel(final ChannelHandler... handlers) {
-        this(LOCAL_ADDRESS, handlers);
+        this(null, LOCAL_ADDRESS, handlers);
     }
 
     @Override

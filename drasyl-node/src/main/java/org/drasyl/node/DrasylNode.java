@@ -53,6 +53,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -64,9 +65,17 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_EXPIRE_AFTER;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
+import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_INTERVAL;
+import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_TIMEOUT;
+import static org.drasyl.channel.DrasylServerChannelConfig.MAX_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.PATH_IDLE_TIME;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND_PORT;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.udpServerPort;
@@ -165,9 +174,16 @@ public abstract class DrasylNode {
                 .localAddress(identity)
                 .channel(DrasylServerChannel.class)
                 .option(NETWORK_ID, config.getNetworkId())
-                .option(UDP_BIND_PORT, udpServerPort(config.getRemoteBindPort(), identity.getAddress()))
+                .option(ARMING_ENABLED, config.isRemoteMessageArmProtocolEnabled())
+                .option(ARMING_SESSION_MAX_COUNT, config.getRemoteMessageArmProtocolSessionMaxCount())
+                .option(ARMING_SESSION_EXPIRE_AFTER, config.getRemoteMessageArmProtocolSessionExpireAfter())
+                .option(HELLO_INTERVAL, config.getRemotePingInterval())
+                .option(HELLO_TIMEOUT, config.getRemotePingTimeout())
+                .option(MAX_PEERS, config.getRemotePingMaxPeers())
                 .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
-                // FIXME: place alll config stuff here
+                .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
+                .option(UDP_EVENT_LOOP_SUPPLIER, udpServerGroup::next)
+                .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
                 .handler(new DrasylNodeServerChannelInitializer(config, this))
                 .childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();

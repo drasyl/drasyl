@@ -83,11 +83,26 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private final boolean watchEnabled;
     private final Duration leaseTime;
     private final Path path;
-    private Integer networkId;
-    private PeersManager peersManager;
     private Future<?> watchDisposable;
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
+
+    @SuppressWarnings({ "java:S107" })
+    LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
+                       final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
+                       final boolean watchEnabled,
+                       final Duration leaseTime,
+                       final Path path,
+                       final Future<?> watchDisposable,
+                       final Future<?> postDisposable) {
+        this.fileReader = requireNonNull(fileReader);
+        this.fileWriter = requireNonNull(fileWriter);
+        this.watchEnabled = watchEnabled;
+        this.leaseTime = leaseTime;
+        this.path = path;
+        this.watchDisposable = watchDisposable;
+        this.postDisposable = postDisposable;
+    }
 
     public LocalHostDiscovery(final boolean watchEnabled,
                               final Duration leaseTime,
@@ -99,37 +114,14 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                 leaseTime,
                 path,
                 null,
-                null,
-                null,
                 null
         );
-    }
-
-    @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
-                       final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
-                       final boolean watchEnabled,
-                       final Duration leaseTime,
-                       final Path path,
-                       final Integer networkId,
-                       final PeersManager peersManager,
-                       final Future<?> watchDisposable,
-                       final Future<?> postDisposable) {
-        this.fileReader = requireNonNull(fileReader);
-        this.fileWriter = requireNonNull(fileWriter);
-        this.watchEnabled = watchEnabled;
-        this.leaseTime = leaseTime;
-        this.path = path;
-        this.networkId = networkId;
-        this.peersManager = requireNonNull(peersManager);
-        this.watchDisposable = watchDisposable;
-        this.postDisposable = postDisposable;
     }
 
     private void startDiscovery(final ChannelHandlerContext ctx,
                                 final InetSocketAddress bindAddress) {
         LOG.debug("Start Local Host Discovery...");
-        final Path discoveryPath = discoveryPath();
+        final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
 
         if (!directory.mkdirs() && !directory.exists()) {
@@ -167,7 +159,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
         }
 
-        final Path filePath = discoveryPath().resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX);
+        final Path filePath = discoveryPath(ctx).resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX);
         try {
             Files.deleteIfExists(filePath);
         }
@@ -175,8 +167,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
-        peersManager.removePaths(PATH_ID);
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
+        config(ctx).getPeersManager().removePaths(PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }
@@ -251,7 +243,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S134")
     synchronized void scan(final ChannelHandlerContext ctx) {
-        final Path discoveryPath = discoveryPath();
+        final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.channel().localAddress().toString();
         final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
@@ -283,7 +275,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        for (final Iterator<DrasylAddress> i = peersManager.getPeers(PATH_ID).iterator();
+        for (final Iterator<DrasylAddress> i = config(ctx).getPeersManager().getPeers(PATH_ID).iterator();
              i.hasNext(); ) {
             final DrasylAddress publicKey = i.next();
 
@@ -296,7 +288,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
-            if (peersManager.addPath(publicKey, PATH_ID, address, PATH_PRIORITY)) {
+            if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, address, PATH_PRIORITY)) {
                 ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, PATH_ID));
             }
         }));
@@ -322,18 +314,6 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        if (networkId == null) {
-            networkId = ((DrasylServerChannelConfig) ctx.channel().config()).getNetworkId();
-        }
-        if (peersManager == null) {
-            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
-        }
-
-        ctx.fireChannelActive();
-    }
-
-    @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         stopDiscovery(ctx);
 
@@ -350,7 +330,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         ctx.fireUserEventTriggered(evt);
     }
 
-    private Path discoveryPath() {
-        return path.resolve(String.valueOf(networkId));
+    private Path discoveryPath(final ChannelHandlerContext ctx) {
+        return path.resolve(String.valueOf(config(ctx).getNetworkId()));
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

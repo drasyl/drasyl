@@ -43,7 +43,6 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
     static final short PATH_PRIORITY = 70;
     private static final Object path = StaticRoutesHandler.class;
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
-    private PeersManager peersManager;
 
     public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
         this.staticRoutes = requireNonNull(staticRoutes);
@@ -51,10 +50,6 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        if (peersManager == null) {
-            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
-        }
-
         populateRoutes(ctx);
 
         ctx.fireChannelActive();
@@ -69,13 +64,17 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
         staticRoutes.forEach((peer, endpoint) -> {
-            peersManager.addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
+            config(ctx).getPeersManager().addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
             ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, path));
         });
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
-        peersManager.removePaths(PATH_ID);
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
+        config(ctx).getPeersManager().removePaths(PATH_ID);
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

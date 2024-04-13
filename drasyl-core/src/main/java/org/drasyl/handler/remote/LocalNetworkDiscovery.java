@@ -24,6 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -31,7 +32,6 @@ import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -66,26 +66,17 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     static final Class<?> PATH_ID = LocalNetworkDiscovery.class;
     static final short PATH_PRIORITY = 90;
     private static final Object path = LocalNetworkDiscovery.class;
-    private Identity myIdentity;
-    private Integer networkId;
     private final InetSocketAddress recipient;
-    private PeersManager peersManager;
     private Future<?> scheduledPingFuture;
 
-    LocalNetworkDiscovery(final Identity myIdentity,
-                          final Integer networkId,
-                          final InetSocketAddress recipient,
-                          final PeersManager peersManager,
+    LocalNetworkDiscovery(final InetSocketAddress recipient,
                           final Future<?> scheduledPingFuture) {
-        this.myIdentity = myIdentity;
-        this.networkId = networkId;
         this.recipient = requireNonNull(recipient);
-        this.peersManager = requireNonNull(peersManager);
         this.scheduledPingFuture = scheduledPingFuture;
     }
 
     public LocalNetworkDiscovery(final InetSocketAddress recipient) {
-        this(null, null, recipient, null, null);
+        this(recipient, null);
     }
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
@@ -107,8 +98,8 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     void clearRoutes(final ChannelHandlerContext ctx) {
-        peersManager.getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
-        peersManager.removePaths(PATH_ID);
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, path)));
+        config(ctx).getPeersManager().removePaths(PATH_ID);
     }
 
     void doHeartbeat(final ChannelHandlerContext ctx) {
@@ -117,16 +108,16 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void removeStalePeers(final ChannelHandlerContext ctx) {
-        for (final Iterator<DrasylAddress> it = peersManager.getPeers(PATH_ID).iterator();
+        for (final Iterator<DrasylAddress> it = config(ctx).getPeersManager().getPeers(PATH_ID).iterator();
              it.hasNext(); ) {
             final DrasylAddress publicKey = it.next();
-            final boolean stale = peersManager.isStale(publicKey, PATH_ID);
+            final boolean stale = config(ctx).getPeersManager().isStale(publicKey, PATH_ID);
 
             if (stale) {
-                final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
+                final long lastInboundHelloTime = config(ctx).getPeersManager().lastHelloMessageReceivedTime(publicKey, PATH_ID);
                 LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
                 ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
-                peersManager.removePath(publicKey, PATH_ID);
+                config(ctx).getPeersManager().removePath(publicKey, PATH_ID);
             }
         }
     }
@@ -151,10 +142,10 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
-            if (peersManager.addPath(msgSender, PATH_ID, sender, PATH_PRIORITY)) {
+            if (config(ctx).getPeersManager().addPath(msgSender, PATH_ID, sender, PATH_PRIORITY)) {
                 ctx.fireUserEventTriggered(AddPathEvent.of(msgSender, sender, path));
             }
-            peersManager.helloMessageReceived(msgSender, PATH_ID);
+            config(ctx).getPeersManager().helloMessageReceived(msgSender, PATH_ID);
         }
 
         future.complete(null);
@@ -162,10 +153,6 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        if (myIdentity == null) {
-            myIdentity = (Identity) ctx.channel().localAddress();
-        }
-
         startHeartbeat(ctx);
 
         ctx.fireChannelActive();
@@ -180,12 +167,16 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final HelloMessage messageEnvelope = HelloMessage.of(networkId, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
+        final HelloMessage messageEnvelope = HelloMessage.of(config(ctx).getNetworkId(), ((DrasylChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylChannel) ctx.channel()).identity().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, recipient);
         ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, recipient)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send local network discovery message to `{}`", () -> recipient, future::cause);
             }
         });
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

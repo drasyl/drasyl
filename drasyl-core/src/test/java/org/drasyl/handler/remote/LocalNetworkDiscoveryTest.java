@@ -25,6 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -62,13 +64,11 @@ import static test.util.IdentityTestUtil.ID_2;
 @ExtendWith(MockitoExtension.class)
 class LocalNetworkDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
     private Future<?> pingDisposable;
-    private final long pingInterval = 1_000L;
-    private final long pingTimeout = 5_000L;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
 
     @Nested
     class EventHandling {
@@ -81,7 +81,7 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldStartHeartbeatingOnChannelActive() {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, null));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(MULTICAST_ADDRESS, null));
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 verify(handler).startHeartbeat(any());
@@ -94,7 +94,7 @@ class LocalNetworkDiscoveryTest {
 
         @Test
         void shouldStopHeartbeatingAndClearRoutesOnChannelInactive() {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable));
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -112,7 +112,9 @@ class LocalNetworkDiscoveryTest {
     class StartHeartbeat {
         @Test
         void shouldScheduleHeartbeat(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, null));
+            when(ctx.channel().config()).thenReturn(config);
+
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(MULTICAST_ADDRESS, null));
 
             handler.startHeartbeat(ctx);
 
@@ -124,15 +126,18 @@ class LocalNetworkDiscoveryTest {
     class DoHeartbeat {
         @Test
         void shouldRemoveStalePeersAndPingLocalNetworkPeers(@Mock final IdentityPublicKey publicKey,
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(peersManager.getPeers(any())).thenReturn(Set.of(publicKey));
-            when(peersManager.isStale(any(), any())).thenReturn(true);
+            when(ctx.channel()).thenReturn(channel);
+            when(channel.config()).thenReturn(config);
+            when(config.getPeersManager().getPeers(any())).thenReturn(Set.of(publicKey));
+            when(config.getPeersManager().isStale(any(), any())).thenReturn(true);
 
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(ID_1, null, MULTICAST_ADDRESS, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.doHeartbeat(ctx);
 
             verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
-            verify(peersManager).removePath(any(), any());
+            verify(config.getPeersManager()).removePath(any(), any());
             verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof HelloMessage && m.recipient().equals(MULTICAST_ADDRESS)));
         }
     }
@@ -141,7 +146,7 @@ class LocalNetworkDiscoveryTest {
     class StopHeartbeat {
         @Test
         void shouldStopHeartbeat() {
-            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable));
+            final LocalNetworkDiscovery handler = spy(new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable));
 
             handler.stopHeartbeat();
 
@@ -154,13 +159,14 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(peersManager.getPeers(any())).thenReturn(Set.of(publicKey));
+            when(ctx.channel().config()).thenReturn(config);
+            when(config.getPeersManager().getPeers(any())).thenReturn(Set.of(publicKey));
 
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.clearRoutes(ctx);
 
             verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
-            verify(peersManager).removePaths(any());
+            verify(config.getPeersManager()).removePaths(any());
         }
     }
 
@@ -169,12 +175,13 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
+            when(ctx.channel().config()).thenReturn(config);
+            when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
 
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
 
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
             verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
@@ -188,7 +195,7 @@ class LocalNetworkDiscoveryTest {
             when(identity.getIdentityPublicKey()).thenReturn(publicKey);
             when(identity.getAddress()).thenReturn(publicKey);
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
             verify(ctx, never()).fireUserEventTriggered(any(AddPathEvent.class));
@@ -197,7 +204,7 @@ class LocalNetworkDiscoveryTest {
         @Test
         void shouldPassThroughUnicastMessages(@Mock final InetSocketAddress sender,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(identity, null, MULTICAST_ADDRESS, peersManager, pingDisposable);
+            final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(identity.getAddress(), handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
