@@ -44,6 +44,7 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
@@ -168,9 +169,9 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         identity = DrasylNode.generateIdentity(config);
 
-        final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
-        final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
-        final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
+        final EventLoopGroup parentGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        final EventLoopGroup childGroup = parentGroup;
+        final EventLoopGroup udpServerGroup = parentGroup;
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .localAddress(identity)

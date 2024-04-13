@@ -29,7 +29,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylChannel.State;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
@@ -41,7 +40,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -58,10 +56,8 @@ class DrasylChannelTest {
     class DoRegister {
         @Test
         void shouldActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel) {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
             channel.doRegister();
 
@@ -74,13 +70,11 @@ class DrasylChannelTest {
         @Test
         void shouldCloseChannelAndRemoveLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final EventLoop eventLoop,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise channelPromise) {
             when(eventLoop.inEventLoop()).thenReturn(true);
 
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.unsafe().register(eventLoop, channelPromise);
 
             channel.doDisconnect();
@@ -95,13 +89,11 @@ class DrasylChannelTest {
         @Test
         void shouldCloseChannelAndRemoveLocalAddress(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final EventLoop eventLoop,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise promise) {
             when(eventLoop.inEventLoop()).thenReturn(true);
 
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.unsafe().register(eventLoop, promise);
 
             channel.doClose();
@@ -116,10 +108,8 @@ class DrasylChannelTest {
         @Test
         void shouldThrowExceptionIfChannelIsNotBound(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, identity, remoteAddress, peersManager, udpChannel);
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, identity, remoteAddress);
 
             assertThrows(NotYetConnectedException.class, () -> channel.doWrite(null));
         }
@@ -127,26 +117,21 @@ class DrasylChannelTest {
         @Test
         void shouldThrowExceptionIfChannelIsAlreadyClosed(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, identity, remoteAddress, peersManager, udpChannel);
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, identity, remoteAddress);
 
             assertThrows(ClosedChannelException.class, () -> channel.doWrite(null));
         }
 
         @Test
         void shouldWriteMessageToParentChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel,
                                                @Mock final Object msg,
                                                @Mock final ChannelPromise promise) throws Exception {
-            when(parent.localAddress0()).thenReturn(identity.getAddress());
             when(parent.config().getNetworkId()).thenReturn(0);
 
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.doRegister();
 
             final ChannelOutboundBuffer in = channel.unsafe().outboundBuffer();
@@ -155,8 +140,8 @@ class DrasylChannelTest {
 
             channel.doWrite(in);
 
-            verify(udpChannel).write(any());
-            verify(udpChannel).flush();
+            verify(parent).enqueueUdpWrite(any());
+            verify(parent).finishUdpWrite();
         }
     }
 
@@ -164,20 +149,16 @@ class DrasylChannelTest {
     class FilterOutboundMessage {
         @Test
         void shouldRejectNonByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                           @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel) {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
             assertThrows(UnsupportedOperationException.class, () -> channel.filterOutboundMessage("Hello World"));
         }
 
         @Test
         void shouldAcceptByteBufMessage(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                        @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                        @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager,
-                                        @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel) throws Exception {
-            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress, peersManager, udpChannel);
+                                        @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) throws Exception {
+            final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
             final ByteBuf buffer = Unpooled.buffer();
             assertEquals(buffer, channel.filterOutboundMessage(buffer));

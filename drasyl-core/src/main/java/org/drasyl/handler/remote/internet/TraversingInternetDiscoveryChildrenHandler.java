@@ -73,7 +73,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                                                final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
-        super(currentTime, initialPingDelayMillis, superPeers, heartbeatDisposable);
+        super(currentTime, initialPingDelayMillis, heartbeatDisposable);
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 

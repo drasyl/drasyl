@@ -37,8 +37,6 @@ import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.SocketAddress;
-import java.util.Map;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
@@ -52,9 +50,15 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
+    private ChannelHandlerContext ctx;
 
     public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
     }
 
     @Override
@@ -66,12 +70,11 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
             peersManager.applicationMessageSentOrReceived(appMsg.getSender());
 
-            // FIXME: aus UnconfirmedAddressResolveHandler kopiert
+            // UnconfirmedAddressResolveHandler discovery
             peersManager.addPath(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
             peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
 
-            final Map<SocketAddress, DrasylChannel> drasylChannels = parent.channels;
-            final DrasylChannel drasylChannel = drasylChannels.get(appMsg.getSender());
+            final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
                 drasylChannel.queueRead(appMsg.getPayload());
                 drasylChannel.finishRead();
@@ -105,11 +108,20 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelInactive();
     }
 
-    Queue<Object> outboundBuffer() {
-        return outboundBuffer;
+    /**
+     * This method places the message {@code o} in the queue for outbound messages to be written by
+     * this channel. Queued message are not processed until {@link #finishWrite()} is called.
+     */
+    public void enqueueWrite(final Object o) {
+        outboundBuffer.add(o);
     }
 
-    void finishWrite(final ChannelHandlerContext ctx) {
+    /**
+     * This method start processing (if any) queued outbound messages for the UDP channel. This
+     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
+     * reading, these reads are performed first and the writes are performed afterwards.
+     */
+    public void finishWrite() {
         // check whether the channel is currently reading; if so, we must schedule the event in the
         // event loop to maintain the read/write order.
         if (ctx.executor().inEventLoop()) {
@@ -134,13 +146,13 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     void writeOutbound(final ChannelHandlerContext ctx) {
         final ChannelPipeline pipeline = ctx.pipeline();
         do {
-            final Object toSend = outboundBuffer.poll();
-            if (toSend == null) {
+            final Object o = outboundBuffer.poll();
+            if (o == null) {
                 break;
             }
-            pipeline.write(toSend).addListener(future -> {
+            pipeline.write(o).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> toSend, future::cause);
+                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> o, future::cause);
                 }
             });
         } while (true); // TODO: use isWritable?

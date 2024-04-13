@@ -40,6 +40,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
@@ -55,6 +56,7 @@ class WormholeSendChildChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
             final IdentityPublicKey sender = ID_2.getIdentityPublicKey();
             when(ctx.channel()).thenReturn(channel);
+            when(channel.identity()).thenReturn(ID_1);
             when(channel.remoteAddress()).thenReturn(sender);
 
             final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, "abc", payload);

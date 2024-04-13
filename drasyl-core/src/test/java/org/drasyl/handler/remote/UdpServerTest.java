@@ -22,19 +22,15 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
-import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -54,26 +50,22 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class UdpServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel channel;
+    private DatagramChannel udpChannel;
     private InetSocketAddress bindAddress;
-    private Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
-    private PendingWriteQueue pendingWrites;
+    private Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
 
     @BeforeEach
     void setUp() {
         bindAddress = new InetSocketAddress(22527);
-        channelInitializerSupplier = ctx -> new UdpServerChannelInitializer((DrasylServerChannel) ctx.channel().parent());
+        channelInitializerSupplier = parent -> new UdpServerChannelInitializer(parent);
     }
 
     @Nested
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(bootstrap.group(any()).channel(any()).handler(any()).bind(bindAddress).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
@@ -82,10 +74,10 @@ class UdpServerTest {
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, null);
+            final UdpServer handler = new UdpServer(channelInitializerSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(bindAddress);
+                verify(bootstrap.group(any()).channel(any()).handler(any()), times(1)).bind(bindAddress);
             }
             finally {
                 channel.close();
@@ -98,15 +90,15 @@ class UdpServerTest {
     class StopServer {
         @Test
         void shouldStopServerOnChannelInactive() {
-            when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(udpChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, channel);
+            final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
 
-                verify(UdpServerTest.this.channel).close();
+                verify(UdpServerTest.this.udpChannel).close();
             }
             finally {
                 channel.close();
@@ -120,17 +112,17 @@ class UdpServerTest {
         @Test
         void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg,
                                              @Mock(answer = RETURNS_DEEP_STUBS) final UdpServerToDrasylHandler udpServerToDrasylHandler) {
-            when(channel.pipeline().get(any(Class.class))).thenReturn(udpServerToDrasylHandler);
+            when(udpChannel.pipeline().get(any(Class.class))).thenReturn(udpServerToDrasylHandler);
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, channel);
+            final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(udpServerToDrasylHandler.outboundBuffer()).add(any());
+                verify(udpServerToDrasylHandler).enqueueWrite(any());
             }
             finally {
                 channel.close();

@@ -24,7 +24,6 @@ package org.drasyl.cli.perf.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
@@ -50,11 +49,8 @@ class PerfClientChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey server,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
-            when(channel.config().getNetworkId()).thenReturn(0);
-            when(channel.config().getPeersManager()).thenReturn(peersManager);
 
             final ChannelInboundHandler handler = new PerfClientChannelInitializer(1, err, exitCode, server);
             handler.channelRegistered(ctx);

@@ -126,9 +126,6 @@ class WormholeCommandIT {
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
-                senderGroup,
-                senderGroup,
-                udpServerGroup,
                 null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -158,9 +155,6 @@ class WormholeCommandIT {
         receiverThread = new Thread(() -> new WormholeReceiveCommand(
                 new PrintStream(receiverOut, true),
                 System.err,
-                receiverGroup,
-                receiverGroup,
-                udpServerGroup,
                 null,
                 receiverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -196,9 +190,6 @@ class WormholeCommandIT {
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
-                senderGroup,
-                senderGroup,
-                udpServerGroup,
                 null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -229,9 +220,6 @@ class WormholeCommandIT {
             receiverThread = new Thread(() -> new WormholeReceiveCommand(
                     new PrintStream(receiverOut, true),
                     System.err,
-                    receiverGroup,
-                    receiverGroup,
-                    udpServerGroup,
                     null,
                     receiverPath.toFile(),
                     new InetSocketAddress("127.0.0.1", 0),

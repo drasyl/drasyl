@@ -43,8 +43,6 @@ class PluginsHandlerTest {
     @Mock
     private DrasylConfig config;
     @Mock
-    private Identity identity;
-    @Mock
     private DrasylPlugin plugin;
 
     @BeforeEach

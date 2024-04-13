@@ -46,13 +46,6 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
 
         p.addLast(new DatagramCodec());
         p.addLast(new ByteToRemoteMessageCodec());
-        gatekeeperStage(ch);
-        lastStage(ch);
-    }
-
-    private void gatekeeperStage(final DatagramChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-
         p.addLast(new OtherNetworkFilter(parent.config().getNetworkId()));
         p.addLast(new InvalidProofOfWorkFilter());
         if (parent.config().isArmingEnabled()) {
@@ -63,12 +56,7 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
                     parent.config().getArmingSessionExpireAfter()
             ));
         }
-
-        // fully read unarmed messages (local network discovery)
         ch.pipeline().addLast(new UnarmedMessageDecoder());
-    }
-
-    protected void lastStage(final DatagramChannel ch) {
         ch.pipeline().addLast(new UdpServerToDrasylHandler(parent));
     }
 }

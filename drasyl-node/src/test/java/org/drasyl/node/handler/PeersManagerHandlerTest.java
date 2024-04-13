@@ -29,7 +29,6 @@ import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.NodeOfflineEvent;
@@ -47,7 +46,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentMatcher;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import test.util.IdentityTestUtil;
 
 import java.net.InetSocketAddress;
 import java.util.HashSet;
@@ -70,14 +68,12 @@ class PeersManagerHandlerTest {
     private Set<DrasylAddress> children;
     private Set<DrasylAddress> superPeers;
     private PeersManagerHandler underTest;
-    private Identity identity;
 
     @BeforeEach
     void setUp() {
         paths = new HashSetMultimap<>();
         children = new HashSet<>();
         superPeers = new HashSet<>();
-        identity = IdentityTestUtil.ID_1;
         underTest = new PeersManagerHandler(paths, children, superPeers);
     }
 

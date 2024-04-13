@@ -25,6 +25,8 @@ import ch.qos.logback.classic.Level;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.DefaultEventLoop;
+import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
@@ -48,6 +50,7 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -60,9 +63,6 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     public static final short MIN_DERIVED_PORT = 22528;
     protected final PrintStream out;
     protected final PrintStream err;
-    protected final EventLoopGroup parentGroup;
-    protected final EventLoopGroup childGroup;
-    protected final EventLoopGroup udpServerGroup;
     @Option(
             names = { "--identity" },
             description = "Loads the identity from specified file. If the file does not exist, a new identity will be generated an stored in this file.",
@@ -108,9 +108,6 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,
                              final PrintStream err,
-                             final EventLoopGroup parentGroup,
-                             final EventLoopGroup childGroup,
-                             final EventLoopGroup udpServerGroup,
                              final Level logLevel,
                              final File identityFile,
                              final InetSocketAddress bindAddress,
@@ -120,9 +117,6 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
         super(logLevel);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
-        this.parentGroup = requireNonNull(parentGroup);
-        this.childGroup = requireNonNull(childGroup);
-        this.udpServerGroup = requireNonNull(udpServerGroup);
         this.identityFile = identityFile;
         this.bindAddress = bindAddress;
         this.networkId = networkId;
@@ -130,28 +124,18 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
         this.superPeers = superPeers;
     }
 
-    protected ChannelOptions(final EventLoopGroup parentGroup,
-                             final EventLoopGroup childGroup,
-                             final EventLoopGroup udpServerGroup) {
+    protected ChannelOptions() {
         this.out = System.out; // NOSONAR
         this.err = System.err; // NOSONAR
-        this.parentGroup = requireNonNull(parentGroup);
-        this.childGroup = requireNonNull(childGroup);
-        this.udpServerGroup = requireNonNull(udpServerGroup);
-    }
-
-    protected ChannelOptions(final EventLoopGroup parentGroup,
-                             final EventLoopGroup childGroup) {
-        this(parentGroup, childGroup, EventLoopGroupUtil.getBestEventLoopGroup(1));
-    }
-
-    protected ChannelOptions(final EventLoopGroup group) {
-        this(group, group, EventLoopGroupUtil.getBestEventLoopGroup(1));
     }
 
     @Override
     public Integer call() {
         setLogLevel();
+
+        final EventLoop serverChannelLoop = getServerChannelLoop();
+        final EventLoopGroup childChannelLoopGroup = getChildChannelLoopGroup();
+        final EventLoop udpChannelLoop = getUdpChannelLoop();
 
         try {
             final Worm<Integer> exitCode = Worm.of();
@@ -170,18 +154,19 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                 bindAddress = new InetSocketAddress(bindAddress.getAddress(), identityPort);
             }
 
-            final ChannelHandler handler = getHandler(exitCode, identity);
-            final ChannelHandler childHandler = getChildHandler(exitCode, identity);
+            final ChannelHandler serverChannelInitializer = getServerChannelInitializer(exitCode);
+            final ChannelHandler childChannelInitializer = getChildChannelInitializer(exitCode);
 
             final ServerBootstrap b = new ServerBootstrap()
-                    .group(parentGroup, childGroup)
+                    .group(serverChannelLoop, childChannelLoopGroup)
                     .channel(DrasylServerChannel.class)
-                    .option(UDP_BIND, bindAddress)
                     .option(NETWORK_ID, networkId)
-                    .option(SUPER_PEERS, superPeers)
                     .option(ARMING_ENABLED, !protocolArmDisabled)
-                    .handler(handler)
-                    .childHandler(childHandler);
+                    .option(SUPER_PEERS, superPeers)
+                    .option(UDP_BIND, bindAddress)
+                    .option(UDP_EVENT_LOOP_SUPPLIER, () -> udpChannelLoop)
+                    .handler(serverChannelInitializer)
+                    .childHandler(childChannelInitializer);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
@@ -189,9 +174,9 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                 if (ch.isOpen()) {
                     ch.close().syncUninterruptibly();
                 }
-                parentGroup.shutdownGracefully();
-                childGroup.shutdownGracefully();
-                udpServerGroup.shutdownGracefully();
+                serverChannelLoop.shutdownGracefully();
+                childChannelLoopGroup.shutdownGracefully();
+                udpChannelLoop.shutdownGracefully();
             }));
 
             ch.closeFuture().syncUninterruptibly();
@@ -202,15 +187,25 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             throw new CliException("Identity could not be read from file.", e);
         }
         finally {
-            parentGroup.shutdownGracefully();
-            childGroup.shutdownGracefully();
-            udpServerGroup.shutdownGracefully();
+            serverChannelLoop.shutdownGracefully();
+            childChannelLoopGroup.shutdownGracefully();
+            udpChannelLoop.shutdownGracefully();
         }
     }
 
-    protected abstract ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                                 final Identity identity);
+    protected EventLoop getServerChannelLoop() {
+        return new DefaultEventLoop();
+    }
 
-    protected abstract ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                                      final Identity identity);
+    protected EventLoopGroup getChildChannelLoopGroup() {
+        return EventLoopGroupUtil.getBestEventLoopGroup();
+    }
+
+    protected EventLoop getUdpChannelLoop() {
+        return getChildChannelLoopGroup().next();
+    }
+
+    protected abstract ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode);
+
+    protected abstract ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode);
 }

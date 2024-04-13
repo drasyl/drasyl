@@ -33,7 +33,6 @@ import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
@@ -60,7 +59,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
     public TunnelConsumeChildChannelInitializer(final PrintStream out,
                                                 final PrintStream err,
                                                 final Worm<Integer> exitCode,
-                                                final Identity identity,
                                                 final IdentityPublicKey exposer,
                                                 final String password,
                                                 final int port) {

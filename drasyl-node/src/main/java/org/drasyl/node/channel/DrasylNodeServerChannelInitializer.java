@@ -42,6 +42,7 @@ import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpMulticastServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
@@ -142,21 +143,19 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
         if (config.isRemoteExposeEnabled()) {
             // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ch) {
+            ch.pipeline().addLast(new UdpServer(ctx -> new UdpServerChannelInitializer(ch) {
                 @Override
-                protected void lastStage(final DatagramChannel ch) {
-                    ch.pipeline().addLast(new PortMapper());
+                protected void initChannel(final DatagramChannel ch) {
+                    super.initChannel(ch);
 
-                    super.lastStage(ch);
+                    ch.pipeline().addBefore(ch.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new PortMapper());
                 }
-            };
+            }));
         }
         else {
             // use default datagram channel
-            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ch) {
-            };
+            ch.pipeline().addLast(new UdpServer());
         }
-        ch.pipeline().addLast(new UdpServer(channelInitializerSupplier));
 
         // tcp fallback
         if (config.isRemoteTcpFallbackEnabled()) {

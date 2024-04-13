@@ -58,7 +58,7 @@ class WormholeReceiveChildChannelInitializerTest {
             final ChannelInboundHandler handler = new WormholeReceiveChildChannelInitializer(out, err, exitCode, sender, "abc");
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(5)).addLast(any());
+            verify(channel.pipeline(), times(1)).addLast(any());
         }
     }
 }

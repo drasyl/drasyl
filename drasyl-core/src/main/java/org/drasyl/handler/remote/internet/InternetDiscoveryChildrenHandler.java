@@ -74,15 +74,14 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private final long initialPingDelayMillis;
     Future<?> heartbeatDisposable;
     protected InetSocketAddress bindAddress;
+    private boolean initialized;
 
     @SuppressWarnings("java:S107")
     InternetDiscoveryChildrenHandler(final LongSupplier currentTime,
                                      final Long initialPingDelayMillis,
-                                     final Map<IdentityPublicKey, SuperPeer> superPeers,
                                      final Future<?> heartbeatDisposable) {
         this.currentTime = requireNonNull(currentTime);
         this.initialPingDelayMillis = initialPingDelayMillis;
-        this.superPeers = superPeers;
         this.heartbeatDisposable = heartbeatDisposable;
     }
 
@@ -92,7 +91,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this(
                 currentTime,
                 initialPingDelayMillis,
-                null,
                 null
         );
     }
@@ -110,15 +108,19 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         this(0);
     }
 
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            startHeartbeat(ctx);
+        }
+    }
+
     /*
      * Channel Events
      */
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
-        superPeers = config(ctx).getSuperPeers().entrySet().stream()
-                    .collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), e.getValue())));
-
         startHeartbeat(ctx);
         ctx.fireChannelActive();
     }
@@ -157,13 +159,18 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
-        LOG.debug("Start Heartbeat job.");
-        // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
-        for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
-            final IdentityPublicKey publicKey = entry.getKey();
-            config(ctx).getPeersManager().removePath(publicKey, PATH_ID);
+        if (!initialized) {
+            initialized = true;
+            superPeers = config(ctx).getSuperPeers().entrySet().stream()
+                    .collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), e.getValue())));
+            LOG.debug("Start Heartbeat job.");
+            // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
+            for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
+                final IdentityPublicKey publicKey = entry.getKey();
+                config(ctx).getPeersManager().removePath(publicKey, PATH_ID);
+            }
+            heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
         }
-        heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
     }
 
     void stopHeartbeat() {

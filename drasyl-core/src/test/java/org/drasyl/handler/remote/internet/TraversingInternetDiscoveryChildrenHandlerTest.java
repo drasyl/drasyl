@@ -22,10 +22,10 @@
 package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.TraversingPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -61,12 +61,12 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TraversingInternetDiscoveryChildrenHandlerTest {
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
     @Mock
     private Identity myIdentity;
     @Mock
     private LongSupplier currentTime;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
 
     @Test
     void shouldHandleUniteMessageFromSuperPeer(@Mock final IdentityPublicKey superPeerPublicKey,
@@ -141,13 +141,13 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                               @Mock final TraversingPeer traversingPeer) {
         when(acknowledgementMsg.getRecipient()).thenReturn(myIdentity.getIdentityPublicKey());
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, traversingPeers);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
 
         channel.writeInbound(msg);
 
@@ -169,7 +169,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, peersManager);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, config.getPeersManager());
 
                 assertTrue(traversingPeer.addInetAddressCandidate(inetAddressB));
                 assertTrue(traversingPeer.inetAddressCandidates().contains(inetAddressB));
@@ -182,7 +182,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordFirstDiscoveryTime(@Mock final InetSocketAddress inetAddress) {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, address, peersManager);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, address, config.getPeersManager());
                 traversingPeer.helloSent();
                 traversingPeer.helloSent();
 
@@ -198,7 +198,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
                 when(currentTime.getAsLong()).thenReturn(1L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, peersManager);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, config.getPeersManager());
                 traversingPeer.acknowledgementReceived(inetAddressB);
 
                 assertEquals(1L, traversingPeer.lastAcknowledgementTime);

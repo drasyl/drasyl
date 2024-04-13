@@ -21,11 +21,11 @@
  */
 package org.drasyl.handler.remote.internet;
 
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -34,7 +34,6 @@ import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,28 +62,26 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InternetDiscoverySuperPeerHandlerTest {
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
     @Mock
     private IdentityPublicKey myPublicKey;
-    @Mock
-    private ProofOfWork myProofOfWork;
     @Mock
     private LongSupplier currentTime;
     @Mock
     private HopCount hopLimit;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
 
     @Test
     void shouldCheckForStaleChildrenOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
-        when(peersManager.removePath(any(), any())).thenReturn(true);
+        when(config.getPeersManager().removePath(any(), any())).thenReturn(true);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
 
         // channel active
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
             final Object evt = channel.readEvent();
@@ -109,10 +106,10 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getRecipient()).thenReturn(myPublicKey);
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
-        when(peersManager.addPath(any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
 
         channel.writeInbound(msg);
 
@@ -215,7 +212,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
 
         channel.writeInbound(msg);
 

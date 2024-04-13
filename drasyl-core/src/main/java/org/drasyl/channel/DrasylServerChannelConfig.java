@@ -27,6 +27,7 @@ import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -65,6 +66,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Map<IdentityPublicKey, InetSocketAddress>> SUPER_PEERS = valueOf("SUPER_PEERS");
     public static final ChannelOption<InetSocketAddress> UDP_BIND = valueOf("UDP_BIND");
     public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
+    public static final ChannelOption<Class<? extends DatagramChannel>> UDP_CHANNEL_CLASS = valueOf("UDP_CHANNEL_CLASS");
     public static final ChannelOption<Bootstrap> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
     public static final ChannelOption<Boolean> HOLE_PUNCHING_ENABLED = valueOf("HOLE_PUNCHING");
@@ -81,7 +83,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile int maxPeers = 100;
     private volatile Map<IdentityPublicKey, InetSocketAddress> superPeers = DEFAULT_SUPER_PEERS;
     private volatile InetSocketAddress udpBind = new InetSocketAddress(22527);
-    private volatile Supplier<EventLoop> udpEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
+    private volatile Supplier<EventLoop> udpEventLoopSupplier;
+    private volatile Class<? extends DatagramChannel> udpChannelClass = EventLoopGroupUtil.getBestDatagramChannel();
     private volatile Bootstrap udpBootstrap = new Bootstrap()
             .option(ChannelOption.SO_BROADCAST, false)
             .option(ChannelOption.SO_REUSEADDR, UDP_SO_REUSEADDR)
@@ -110,6 +113,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 SUPER_PEERS,
                 UDP_BIND,
                 UDP_EVENT_LOOP_SUPPLIER,
+                UDP_CHANNEL_CLASS,
                 UDP_BOOTSTRAP,
                 MAX_MESSAGE_AGE,
                 HOLE_PUNCHING_ENABLED,
@@ -153,6 +157,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == UDP_EVENT_LOOP_SUPPLIER) {
             return (T) getUdpEventLoopSupplier();
+        }
+        if (option == UDP_CHANNEL_CLASS) {
+            return (T) getUdpChannelClass();
         }
         if (option == UDP_BOOTSTRAP) {
             return (T) getUdpBootstrap();
@@ -213,8 +220,13 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     }
 
     public Supplier<EventLoop> getUdpEventLoopSupplier() {
+        if (udpEventLoopSupplier == null) {
+            udpEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
+        }
         return udpEventLoopSupplier;
     }
+
+    public Class<? extends DatagramChannel> getUdpChannelClass() { return udpChannelClass; }
 
     public Bootstrap getUdpBootstrap() {
         return udpBootstrap;
@@ -272,6 +284,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         else if (option == UDP_EVENT_LOOP_SUPPLIER) {
             setUdpEventLoopSupplier((Supplier<EventLoop>) value);
+        }
+        else if (option == UDP_CHANNEL_CLASS) {
+            setUdpChannelClass((Class<? extends DatagramChannel>) value);
         }
         else if (option == UDP_BOOTSTRAP) {
             setUdpBootstrap((Bootstrap) value);
@@ -370,6 +385,13 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.udpEventLoopSupplier = requireNonNull(udpEventLoopSupplier);
+    }
+
+    public void setUdpChannelClass(final Class<? extends DatagramChannel> udpChannelClass) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.udpChannelClass = requireNonNull(udpChannelClass);
     }
 
     public void setUdpBootstrap(final Bootstrap udpBootstrap) {

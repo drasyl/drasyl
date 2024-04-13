@@ -21,25 +21,8 @@
  */
 package org.drasyl.handler.remote.internet;
 
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
-import org.drasyl.identity.DrasylAddress;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.net.InetSocketAddress;
-
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UnconfirmedAddressResolveHandlerTest {

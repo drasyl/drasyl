@@ -32,7 +32,6 @@ import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.event.Node;
 import org.drasyl.node.event.NodeOfflineEvent;
 import org.drasyl.node.event.NodeOnlineEvent;
@@ -62,7 +61,6 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
     private final SetMultimap<DrasylAddress, Object> paths;
     private final Set<DrasylAddress> children;
     private final Set<DrasylAddress> superPeers;
-    private Identity identity;
 
     @SuppressWarnings("java:S2384")
     PeersManagerHandler(final SetMultimap<DrasylAddress, Object> paths,
@@ -75,15 +73,6 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
 
     public PeersManagerHandler() {
         this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>());
-    }
-
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        if (identity == null) {
-            identity = ((DrasylServerChannel) ctx.channel()).identity();
-        }
-
-        ctx.fireChannelActive();
     }
 
     @Override
@@ -151,7 +140,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         // role (super peer)
         final boolean firstSuperPeer = superPeers.isEmpty();
         if (superPeers.add(publicKey) && firstSuperPeer) {
-            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(identity)));
+            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
         }
     }
 
@@ -162,7 +151,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
 
         // role (super peer)
         if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(identity)));
+            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
         }
 
         // path

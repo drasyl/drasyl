@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -35,7 +34,6 @@ import static java.util.Objects.requireNonNull;
 public class PluginsHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(PluginsHandler.class);
     private final DrasylConfig config;
-    private Identity identity;
 
     public PluginsHandler(final DrasylConfig config) {
         this.config = requireNonNull(config);
@@ -45,13 +43,9 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
     public void channelRegistered(final ChannelHandlerContext ctx) {
         ctx.fireChannelRegistered();
 
-        if (identity == null) {
-            identity = ((DrasylServerChannel) ctx.channel()).identity();
-        }
-
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
+            final PluginEnvironment environment = PluginEnvironment.of(config, ((DrasylServerChannel) ctx.channel()).identity(), ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
             LOG.debug("All onBeforeStart listeners executed");
         }
@@ -63,7 +57,7 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
+            final PluginEnvironment environment = PluginEnvironment.of(config, ((DrasylServerChannel) ctx.channel()).identity(), ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
             LOG.debug("All onAfterStart listeners executed");
         }
@@ -75,7 +69,7 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
+            final PluginEnvironment environment = PluginEnvironment.of(config, ((DrasylServerChannel) ctx.channel()).identity(), ctx.channel().pipeline());
             config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
             LOG.debug("All onBeforeShutdown listeners executed");
         }
@@ -89,7 +83,7 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
 
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");
-            final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
+            final PluginEnvironment environment = PluginEnvironment.of(config, ((DrasylServerChannel) ctx.channel()).identity(), pipeline);
             config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
             LOG.debug("All onAfterShutdown listeners executed");
         }

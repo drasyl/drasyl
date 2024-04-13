@@ -23,7 +23,6 @@ package org.drasyl.handler.remote.internet;
 
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
@@ -31,7 +30,6 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,15 +53,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class TraversingInternetDiscoverySuperPeerHandlerTest {
     @Mock
-    private IdentityPublicKey myPublicKey;
-    @Mock
-    private ProofOfWork myProofOfWork;
-    @Mock
     private LongSupplier currentTime;
     @Mock
     private HopCount hopLimit;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
 
     @Test
     void shouldInitiateRendezvousWhenRelayingMessageBetweenTwoChildrenPeers(@Mock final IdentityPublicKey publicKeyA,

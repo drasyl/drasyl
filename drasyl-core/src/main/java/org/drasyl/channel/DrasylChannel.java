@@ -32,7 +32,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.RecvByteBufAllocator;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.InternalThreadLocalMap;
@@ -89,8 +88,6 @@ public class DrasylChannel extends AbstractChannel {
     private volatile State state;
     private volatile Identity identity;
     private final DrasylAddress remoteAddress;
-    private final PeersManager peersManager;
-    private final DatagramChannel udpChannel;
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
     private volatile Future<?> finishReadFuture;
@@ -99,22 +96,16 @@ public class DrasylChannel extends AbstractChannel {
     DrasylChannel(final Channel parent,
                   final State state,
                   final Identity identity,
-                  final DrasylAddress remoteAddress,
-                  final PeersManager peersManager,
-                  final DatagramChannel udpChannel) {
+                  final DrasylAddress remoteAddress) {
         super(parent);
         this.state = state;
         this.identity = requireNonNull(identity);
         this.remoteAddress = remoteAddress;
-        this.peersManager = requireNonNull(peersManager);
-        this.udpChannel = requireNonNull(udpChannel);
     }
 
     DrasylChannel(final DrasylServerChannel parent,
-                  final DrasylAddress remoteAddress,
-                  final PeersManager peersManager,
-                  final DatagramChannel udpChannel) {
-        this(parent, null, parent.identity(), remoteAddress, peersManager, udpChannel);
+                  final DrasylAddress remoteAddress) {
+        this(parent, null, parent.identity(), remoteAddress);
     }
 
     @Override
@@ -133,6 +124,9 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected SocketAddress localAddress0() {
+        if (identity == null) {
+            return null;
+        }
         return identity.getAddress();
     }
 
@@ -313,6 +307,7 @@ public class DrasylChannel extends AbstractChannel {
                 }
 
                 // map remoteAddress to udp endpoint
+                final PeersManager peersManager = parent().config().getPeersManager();
                 peersManager.applicationMessageSentOrReceived(remoteAddress);
                 InetSocketAddress endpoint = peersManager.getEndpoint(remoteAddress);
                 if (endpoint == null) {
@@ -320,11 +315,10 @@ public class DrasylChannel extends AbstractChannel {
                 }
                 if (endpoint != null) {
                     // convert to remote message
-                    final int networkId = parent().config().getNetworkId();
-                    final ApplicationMessage appMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
+                    final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
                     final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
-                    parent().queueUdpWrite(inetMsg);
+                    parent().enqueueUdpWrite(inetMsg);
                 }
                 else {
                     LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
@@ -336,6 +330,8 @@ public class DrasylChannel extends AbstractChannel {
         finally {
             writeInProgress = false;
         }
+
+        parent().finishUdpWrite();
     }
 
     @Override

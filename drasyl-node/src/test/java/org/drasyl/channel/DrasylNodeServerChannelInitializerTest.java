@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
@@ -48,28 +47,22 @@ class DrasylNodeServerChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final PeersManager peersManager) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
             when(config.isRemoteEnabled()).thenReturn(true);
             when(config.isRemoteExposeEnabled()).thenReturn(true);
             when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
             when(config.isRemoteLocalNetworkDiscoveryEnabled()).thenReturn(true);
-            when(config.isRemoteMessageArmProtocolEnabled()).thenReturn(true);
             when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);
             when(config.isIntraVmDiscoveryEnabled()).thenReturn(true);
             when(config.getRemotePingInterval()).thenReturn(ofSeconds(5L));
             when(config.getRemotePingTimeout()).thenReturn(ofSeconds(30L));
-            when(config.getRemotePingInterval()).thenReturn(ofSeconds(5L));
             when(config.getRemoteUniteMinInterval()).thenReturn(ofSeconds(20L));
-            when(config.getRemoteMessageArmProtocolSessionMaxCount()).thenReturn(100);
-            when(channel.config().getNetworkId()).thenReturn(0);
-            when(channel.config().getPeersManager()).thenReturn(peersManager);
 
             final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, node);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(19)).addLast(any());
+            verify(channel.pipeline(), times(16)).addLast(any());
         }
     }
 }

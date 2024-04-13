@@ -33,6 +33,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.Future;
@@ -86,6 +88,7 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -159,7 +162,6 @@ public class TunCommand extends ChannelOptions {
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
@@ -172,6 +174,10 @@ public class TunCommand extends ChannelOptions {
         else {
             routes = new ArrayList<>();
         }
+
+        final EventLoop serverChannelLoop = getServerChannelLoop();
+        final EventLoopGroup childChannelLoopGroup = getChildChannelLoopGroup();
+        final EventLoop udpChannelLoop = getUdpChannelLoop();
 
         Channel rcChannel = null;
         try {
@@ -204,7 +210,7 @@ public class TunCommand extends ChannelOptions {
                             final ChannelPipeline p = ch.pipeline();
 
                             p.addLast(new AddressAndSubnetHandler(identity, routesMap));
-                            p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap));
+                            p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap, serverChannelLoop, childChannelLoopGroup, udpChannelLoop));
                         }
                     });
             final Channel ch = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
@@ -236,21 +242,19 @@ public class TunCommand extends ChannelOptions {
             if (rcChannel != null) {
                 rcChannel.close().syncUninterruptibly();
             }
-            parentGroup.shutdownGracefully();
-            childGroup.shutdownGracefully();
+            serverChannelLoop.shutdownGracefully();
+            childChannelLoopGroup.shutdownGracefully();
         }
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
@@ -365,13 +369,22 @@ public class TunCommand extends ChannelOptions {
         private final Worm<Integer> exitCode;
         private DrasylServerChannel channel;
         private final Map<InetAddress, DrasylAddress> routes;
+        private final EventLoop serverChannelLoop;
+        private final EventLoopGroup childChannelLoopGroup;
+        private final EventLoop udpChannelLoop;
 
         public TunToDrasylHandler(final Identity identity,
                                   final Worm<Integer> exitCode,
-                                  final Map<InetAddress, DrasylAddress> routes) {
+                                  final Map<InetAddress, DrasylAddress> routes,
+                                  final EventLoop serverChannelLoop,
+                                  final EventLoopGroup childChannelLoopGroup,
+                                  final EventLoop udpChannelLoop) {
             this.identity = requireNonNull(identity);
             this.exitCode = requireNonNull(exitCode);
             this.routes = requireNonNull(routes);
+            this.serverChannelLoop = requireNonNull(serverChannelLoop);
+            this.childChannelLoopGroup = requireNonNull(childChannelLoopGroup);
+            this.udpChannelLoop = requireNonNull(udpChannelLoop);
         }
 
         @Override
@@ -383,12 +396,13 @@ public class TunCommand extends ChannelOptions {
             final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
-                    .group(parentGroup, childGroup)
+                    .group(serverChannelLoop, childChannelLoopGroup)
                     .channel(DrasylServerChannel.class)
-                    .option(UDP_BIND, bindAddress)
                     .option(NETWORK_ID, networkId)
-                    .option(SUPER_PEERS, superPeers)
                     .option(ARMING_ENABLED, !protocolArmDisabled)
+                    .option(SUPER_PEERS, superPeers)
+                    .option(UDP_BIND, bindAddress)
+                    .option(UDP_EVENT_LOOP_SUPPLIER, () -> udpChannelLoop)
                     .handler(handler)
                     .childHandler(childHandler);
             channel = (DrasylServerChannel) b.bind(identity).channel();

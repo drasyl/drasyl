@@ -79,7 +79,6 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
-    public static final int TIMEOUT_SECONDS = 5;
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");

@@ -22,7 +22,6 @@
 package org.drasyl.channel;
 
 import org.drasyl.channel.DrasylServerChannel.State;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.Nested;
@@ -42,9 +41,6 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylServerChannelTest {
-    @Mock
-    private PeersManager peersManager;
-
     @Nested
     class DoBind {
         @Test
