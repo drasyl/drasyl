@@ -361,7 +361,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
                     }
 
                     final DrasylChannel channel = serverChannel.serve0(peer);
-                    channel.inboundBuffer.add(o);
+                    channel.addToInboundBuffer(o);
                     fireReadCompleteChannels.add(peer);
                 }
                 catch (final ClassCastException e) {

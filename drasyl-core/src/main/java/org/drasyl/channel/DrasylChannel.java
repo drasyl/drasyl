@@ -81,7 +81,7 @@ public class DrasylChannel extends AbstractChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    private final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue(); // FIXME: change to mpsc if we add DrasylChannel to DrasylChannel message passing
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
         if (!inboundBuffer.isEmpty()) {
@@ -225,8 +225,8 @@ public class DrasylChannel extends AbstractChannel {
         }
     }
 
-    public void addToInboundBuffer(final ByteBuf buf) {
-        inboundBuffer.add(buf);
+    public void addToInboundBuffer(final Object o) {
+        inboundBuffer.add(o);
     }
 
     /**
