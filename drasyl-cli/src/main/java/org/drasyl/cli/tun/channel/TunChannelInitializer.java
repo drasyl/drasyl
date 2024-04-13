@@ -23,19 +23,14 @@ package org.drasyl.cli.tun.channel;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -48,16 +43,11 @@ public class TunChannelInitializer extends AbstractChannelInitializer {
     private final Set<DrasylAddress> remoteAddress;
 
     @SuppressWarnings("java:S107")
-    public TunChannelInitializer(final Identity identity,
-                                 final EventLoopGroup udpServerGroup,
-                                 final InetSocketAddress bindAddress,
-                                 final long onlineTimeoutMillis,
-                                 final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+    public TunChannelInitializer(final long onlineTimeoutMillis,
                                  final PrintStream err,
                                  final Worm<Integer> exitCode,
                                  final Channel tun,
-                                 final Set<DrasylAddress> remoteAddress,
-                                 final boolean protocolArmEnabled) {
+                                 final Set<DrasylAddress> remoteAddress) {
         super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
