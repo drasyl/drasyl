@@ -34,7 +34,6 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -66,31 +65,18 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoveryChildrenHandler.class);
     static final Class<?> PATH_ID = TraversingInternetDiscoveryChildrenHandler.class;
     static final short PATH_PRIORITY = 95;
-    private Long pingCommunicationTimeoutMillis;
-    private Integer maxPeers;
     private final Map<DrasylAddress, TraversingPeer> traversingPeers;
 
     @SuppressWarnings("java:S107")
-    TraversingInternetDiscoveryChildrenHandler(final Identity myIdentity,
-                                               final LongSupplier currentTime,
+    TraversingInternetDiscoveryChildrenHandler(final LongSupplier currentTime,
                                                final long initialPingDelayMillis,
                                                final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
-                                               final long pingCommunicationTimeoutMillis,
-                                               final Integer maxPeers,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
         super(currentTime, initialPingDelayMillis, superPeers, heartbeatDisposable);
-        this.pingCommunicationTimeoutMillis = pingCommunicationTimeoutMillis;
-        this.maxPeers = maxPeers;
         this.traversingPeers = requireNonNull(traversingPeers);
     }
 
-    /**
-     * @param pingCommunicationTimeoutMillis time in millis a traversed connection to a peer will be
-     *                                       discarded without application traffic
-     * @param maxPeers                       maximum number of peers to which a traversed connection
-     *                                       should be maintained at the same time
-     */
     @SuppressWarnings("java:S107")
     public TraversingInternetDiscoveryChildrenHandler() {
         super();
@@ -100,18 +86,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     /*
      * Channel Events
      */
-
-    @Override
-    public void channelActive(ChannelHandlerContext ctx) {
-        if (pingCommunicationTimeoutMillis == null) {
-            pingCommunicationTimeoutMillis = ((DrasylServerChannelConfig) ctx.channel().config()).getPathIdleTime().toMillis();
-        }
-        if (maxPeers == null) {
-            maxPeers = ((DrasylServerChannelConfig) ctx.channel().config()).getMaxPeers();
-        }
-
-        super.channelActive(ctx);
-    }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx,
@@ -150,9 +124,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final Set<InetSocketAddress> endpoints = msg.getEndpoints();
         LOG.debug("Got Unite for peer `{}` with endpoints `{}`.", address, endpoints);
 
-        if (maxPeers == 0 || maxPeers > traversingPeers.size()) {
+        if (config(ctx).getMaxPeers() == 0 || config(ctx).getMaxPeers() > traversingPeers.size()) {
             final TraversingPeer existingTraversingPeer = traversingPeers.get(address);
-            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), pingCommunicationTimeoutMillis, endpoints, address, config(ctx).getPeersManager());
+            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), config(ctx).getPathIdleTime().toMillis(), endpoints, address, config(ctx).getPeersManager());
 
             if (!Objects.equals(existingTraversingPeer, newTraversingPeer)) {
                 // new peer or endpoints have changes -> send Hello
@@ -289,6 +263,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         private final Set<InetSocketAddress> inetAddressCandidates;
         private InetSocketAddress primaryInetAddress;
 
+        @SuppressWarnings("java:S107")
         TraversingPeer(final LongSupplier currentTime,
                        final long pingTimeoutMillis,
                        final long pingCommunicationTimeoutMillis,

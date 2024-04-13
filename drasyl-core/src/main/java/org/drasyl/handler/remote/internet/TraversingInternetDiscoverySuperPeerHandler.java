@@ -51,8 +51,6 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscoverySuperPeerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoverySuperPeerHandler.class);
-    static final Class<?> PATH_ID = TraversingInternetDiscoverySuperPeerHandler.class;
-    static final short PATH_PRIORITY = 95;
     private final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")

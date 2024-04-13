@@ -81,7 +81,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null, 60L, 100, traversingPeers);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -104,7 +104,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null, 60L, 100, traversingPeers);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -125,7 +125,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null, 60L, 100, traversingPeers);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, traversingPeers);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -146,7 +146,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(myIdentity, currentTime, 0L, superPeers, null, 60L, 100, traversingPeers);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, traversingPeers);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
         channel.writeInbound(msg);
