@@ -116,6 +116,7 @@ public class PerfClientCommand extends ChannelOptions {
     PerfClientCommand() {
     }
 
+    @Override
     protected EventLoopGroup getChildChannelLoopGroup() {
         // we have only one peer
         if (childChannelLoopGroup == null) {

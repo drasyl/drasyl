@@ -49,7 +49,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     }
 
     public SegmentCodec() {
-        this(true);
+        this(false); // FIXME: später wieder einschalten
     }
 
     @Override
@@ -143,7 +143,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                     if (LOG.isTraceEnabled()) {
                         in.setShort(CKS_INDEX, 0);
                         final int expectedChecksum = calculateChecksum(in, readerIndex);
-                        LOG.debug("{} Drop SEG `{}` because of wrong checksum. Checksum {} expected.", ctx.channel(), seg, expectedChecksum);
+                        LOG.trace("{} Drop SEG `{}` because of wrong checksum. Checksum {} expected.", ctx.channel(), seg, expectedChecksum);
                     }
                     return;
                 }

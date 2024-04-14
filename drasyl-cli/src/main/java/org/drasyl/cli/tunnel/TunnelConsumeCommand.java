@@ -88,6 +88,7 @@ public class TunnelConsumeCommand extends ChannelOptions {
     public TunnelConsumeCommand() {
     }
 
+    @Override
     protected EventLoopGroup getChildChannelLoopGroup() {
         // we have only one peer
         if (childChannelLoopGroup == null) {

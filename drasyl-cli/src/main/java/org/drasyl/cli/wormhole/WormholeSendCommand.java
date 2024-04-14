@@ -91,6 +91,7 @@ public class WormholeSendCommand extends ChannelOptions {
         return super.call();
     }
 
+    @Override
     protected EventLoopGroup getChildChannelLoopGroup() {
         // we have only one peer
         if (childChannelLoopGroup == null) {
