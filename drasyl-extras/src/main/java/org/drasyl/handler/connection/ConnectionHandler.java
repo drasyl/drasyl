@@ -265,7 +265,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        ReferenceCountUtil.touch(msg, "channelRead");
         if (msg instanceof Segment) {
             segmentArrives(ctx, (Segment) msg);
         }
@@ -927,7 +926,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrives");
         LOG.trace("{} Read `{}`.", ctx.channel(), seg);
 
         try {
@@ -954,14 +952,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             }
         }
         finally {
-            ReferenceCountUtil.touch(seg, "ReliableConnectionHandler release " + seg.toString());
             seg.release();
         }
     }
 
     private void segmentArrivesOnClosedState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnClosedState");
         // RFC 9293: all data in the incoming segment is discarded.
         // (this is handled by handler's auto release of all arrived segments)
 
@@ -994,7 +990,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
         // RFC 9293: First, check for a RST:
         if (seg.isRst()) {
             // RFC 9293: An incoming RST segment could not be valid since it could not have been
@@ -1112,8 +1107,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
                                               final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnSynSentState");
-
         // RFC 9293: First, check the ACK bit:
         if (seg.isAck()) {
             // RFC 9293: If the ACK bit is set,
@@ -1378,8 +1371,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
-
         // RFC 9293: First, check sequence number:
 
         switch (state()) {
@@ -2453,7 +2444,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final AtomicBoolean doPush = new AtomicBoolean();
         final ChannelPromise promise = ctx.newPromise();
         final ByteBuf data = tcb.sendBuffer().read(bytes, doPush, promise);
-        ReferenceCountUtil.touch(data, "segmentizeData");
         byte ctl = ACK;
         if (doPush.get()) {
             ctl |= PSH;
@@ -2585,7 +2575,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final Segment seg = tcb.retransmissionQueue().nextSegment();
         if (seg != null) {
             final ByteBuf copy = seg.content().copy();
-            ReferenceCountUtil.touch(copy, "retransmissionSegment");
             return formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
         }
         return null;

@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.CompositeByteBuf;
 import io.netty.buffer.DefaultByteBufHolder;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -76,13 +75,11 @@ public class ReceiveBuffer {
      */
     public void release() {
         if (headBuf != null) {
-            ReferenceCountUtil.touch(headBuf, "ReceiveBuffer release headBuf " + headBuf);
             headBuf.release();
             headBuf = null;
         }
 
         while (head != null) {
-            ReferenceCountUtil.touch(headBuf, "ReceiveBuffer release head " + head);
             head.release();
             head = head.next;
         }
@@ -122,7 +119,6 @@ public class ReceiveBuffer {
     public void receive(final ChannelHandlerContext ctx,
                         final TransmissionControlBlock tcb,
                         final Segment seg) {
-        ReferenceCountUtil.touch(seg, "ReceiveBuffer receive " + seg.toString());
         final ByteBuf content = seg.content();
         if (content.isReadable()) {
             // (T/TCP or TCP Fast Open not implemented; SYN/FIN flag might require special attention)
