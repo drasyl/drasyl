@@ -23,7 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -127,7 +127,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             final Set<InetSocketAddress> recipientAddressCandidates = recipient.inetAddressCandidates();
 
             // send recipient's information to sender
-            final UniteMessage senderUnite = UniteMessage.of(config(ctx).getNetworkId(), senderKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), recipientKey, recipientAddressCandidates);
+            final UniteMessage senderUnite = UniteMessage.of(config(ctx).getNetworkId(), senderKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), recipientKey, recipientAddressCandidates);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, sender::publicInetAddress);
             ctx.write(new InetAddressedMessage<>(senderUnite, sender.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
@@ -136,7 +136,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             });
 
             // send sender's information to recipient
-            final UniteMessage recipientUnite = UniteMessage.of(config(ctx).getNetworkId(), recipientKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), senderKey, senderAddressCandidates);
+            final UniteMessage recipientUnite = UniteMessage.of(config(ctx).getNetworkId(), recipientKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), senderKey, senderAddressCandidates);
             LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, recipient::publicInetAddress);
             ctx.write(new InetAddressedMessage<>(recipientUnite, recipient.publicInetAddress())).addListener(future -> {
                 if (!future.isSuccess()) {

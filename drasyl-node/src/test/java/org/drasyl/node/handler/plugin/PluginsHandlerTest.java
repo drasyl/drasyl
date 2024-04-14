@@ -22,7 +22,7 @@
 package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.identity.Identity;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.node.DrasylConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -44,6 +44,8 @@ class PluginsHandlerTest {
     private DrasylConfig config;
     @Mock
     private DrasylPlugin plugin;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannel channel;
 
     @BeforeEach
     void setUp() {
@@ -54,6 +56,8 @@ class PluginsHandlerTest {
     class ChannelRegistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(ctx.channel()).thenReturn(channel);
+
             final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelRegistered(ctx);
@@ -66,6 +70,8 @@ class PluginsHandlerTest {
     class ChannelActive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(ctx.channel()).thenReturn(channel);
+
             final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelActive(ctx);
@@ -78,6 +84,8 @@ class PluginsHandlerTest {
     class ChannelInactive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(ctx.channel()).thenReturn(channel);
+
             final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelInactive(ctx);
@@ -90,6 +98,8 @@ class PluginsHandlerTest {
     class ChannelUnregistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+            when(ctx.channel()).thenReturn(channel);
+
             final PluginsHandler handler = new PluginsHandler(config);
 
             handler.channelUnregistered(ctx);

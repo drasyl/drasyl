@@ -28,6 +28,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.channel.IdentityChannel;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.ArrayUtil;
 
 import java.net.SocketAddress;
@@ -37,7 +39,7 @@ import java.util.Queue;
 /**
  * A {@link EmbeddedChannel} that record all received user events.
  */
-public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
+public class UserEventAwareEmbeddedChannel extends EmbeddedChannel implements IdentityChannel {
     private static final SocketAddress LOCAL_ADDRESS = new EmbeddedSocketAddress();
     private final ChannelConfig config;
     private final SocketAddress localAddress;
@@ -46,6 +48,13 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
                                          final SocketAddress localAddress,
                                          final ChannelHandler... handlers) {
         super(ArrayUtil.concat(handlers, new ChannelHandler[]{ new UserEventAcceptor() }));
+        this.config = config;
+        this.localAddress = localAddress;
+    }
+
+    public UserEventAwareEmbeddedChannel(final ChannelConfig config,
+                                         final SocketAddress localAddress) {
+        super(new ChannelHandler[]{ new UserEventAcceptor() });
         this.config = config;
         this.localAddress = localAddress;
     }
@@ -77,8 +86,22 @@ public class UserEventAwareEmbeddedChannel extends EmbeddedChannel {
     }
 
     @Override
+    public Identity identity() {
+        if (localAddress instanceof Identity) {
+            return (Identity) localAddress;
+        }
+        return null;
+    }
+
+    @Override
     protected SocketAddress localAddress0() {
-        return isActive() ? localAddress : null;
+        if (isActive()) {
+            if (localAddress instanceof Identity) {
+                return ((Identity) localAddress).getAddress();
+            }
+            return localAddress;
+        }
+        return null;
     }
 
     /**

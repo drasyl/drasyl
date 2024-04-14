@@ -66,7 +66,7 @@ import static java.util.Objects.requireNonNull;
  * @see DrasylServerChannel
  */
 @UnstableApi
-public class DrasylChannel extends AbstractChannel {
+public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
@@ -118,6 +118,7 @@ public class DrasylChannel extends AbstractChannel {
         return true;
     }
 
+    @Override
     public Identity identity() {
         return identity;
     }

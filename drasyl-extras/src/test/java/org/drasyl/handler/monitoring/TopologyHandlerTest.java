@@ -23,6 +23,7 @@ package org.drasyl.handler.monitoring;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -70,7 +71,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleAddPathAndSuperPeerEvent(final @Mock AddPathAndSuperPeerEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(superPeers).put(any(), any());
@@ -78,7 +79,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleRemoveSuperPeerAndPathEvent(final @Mock RemoveSuperPeerAndPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(superPeers).remove(any());
@@ -86,7 +87,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleAddPathAndChildrenEvent(final @Mock AddPathAndChildrenEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(childrenPeers).put(any(), any());
@@ -94,7 +95,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleRemoveChildrenAndPathEvent(final @Mock RemoveChildrenAndPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(childrenPeers).remove(any());
@@ -102,7 +103,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleAddPathEvent(final @Mock AddPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(peers).put(any(), any());
@@ -110,7 +111,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleRemovePathEvent(final @Mock RemovePathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(peers).remove(any());

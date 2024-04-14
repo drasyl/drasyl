@@ -67,7 +67,7 @@ import static java.util.Objects.requireNonNull;
  * @see DrasylChannel
  */
 @UnstableApi
-public class DrasylServerChannel extends AbstractServerChannel {
+public class DrasylServerChannel extends AbstractServerChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
 
     enum State {OPEN, ACTIVE, CLOSED}
@@ -77,7 +77,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     private volatile State state;
     private volatile Identity identity; // NOSONAR
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
-    final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
+    final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>(); // FIXME: kann vermutlich durch PeersManager ersetzt werden
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -98,6 +98,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
         return true;
     }
 
+    @Override
     public Identity identity() {
         return identity;
     }
@@ -232,6 +233,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.
      */
+    // FIXME: brauchen wir den noch?
     private static class ChildChannelRouter extends ChannelDuplexHandler {
         private final SetMultimap<DrasylAddress, Object> paths;
 

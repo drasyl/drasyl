@@ -29,6 +29,8 @@ import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -58,18 +60,25 @@ class InternetDiscoveryChildrenHandlerTest {
     private DrasylServerChannelConfig config;
     @Mock
     private LongSupplier currentTime;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     @Test
-    void shouldContactSuperPeersOnChannelActive(@Mock final IdentityPublicKey publicKey,
-                                                @Mock(answer = RETURNS_DEEP_STUBS) final SuperPeer superPeer) {
-        when(publicKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+    void shouldContactSuperPeersOnChannelActive(@Mock final IdentityPublicKey superPeerKey,
+                                                @Mock final InetSocketAddress superPeerAddress) {
+        final Map<IdentityPublicKey, InetSocketAddress> superPeers = Map.of(superPeerKey, superPeerAddress);
+        when(config.getSuperPeers()).thenReturn(superPeers);
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
+        when(superPeerKey.toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(identity.getIdentityPublicKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
+        when(identity.getIdentitySecretKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
 
-        final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(publicKey, superPeer);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(currentTime, 0L, null);
 
         // channel active
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);
+        channel.pipeline().addFirst(handler);
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
             final Object msg = channel.readOutbound();
@@ -84,13 +93,16 @@ class InternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey publicKey,
+    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey superPeerKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeer,
-                                                         @Mock final AcknowledgementMessage acknowledgementMsg,
-                                                         @Mock final InetSocketAddress inetAddress) throws Exception {
-        final Map<IdentityPublicKey, InetSocketAddress> superPeers = Map.of(publicKey, superPeer);
-        when(acknowledgementMsg.getSender()).thenReturn(publicKey);
+                                                         @Mock(answer = RETURNS_DEEP_STUBS) final AcknowledgementMessage acknowledgementMsg,
+                                                         @Mock final InetSocketAddress inetAddress,
+                                                         @Mock final DrasylAddress myPublicKey) throws Exception {
+        final Map<IdentityPublicKey, InetSocketAddress> superPeers = Map.of(superPeerKey, superPeer);
+        when(acknowledgementMsg.getSender()).thenReturn(superPeerKey);
         when(acknowledgementMsg.getTime()).thenReturn(1L);
+        when(identity.getAddress()).thenReturn(myPublicKey);
+        when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(currentTime.getAsLong()).thenReturn(2L);
         when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
         when(config.getSuperPeers()).thenReturn(superPeers);
@@ -99,8 +111,8 @@ class InternetDiscoveryChildrenHandlerTest {
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(currentTime, 0L, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
-        channel.pipeline().addLast(handler);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 

@@ -26,8 +26,8 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
@@ -74,7 +74,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private final long initialPingDelayMillis;
     Future<?> heartbeatDisposable;
     protected InetSocketAddress bindAddress;
-    private boolean initialized;
 
     @SuppressWarnings("java:S107")
     InternetDiscoveryChildrenHandler(final LongSupplier currentTime,
@@ -159,8 +158,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      */
 
     void startHeartbeat(final ChannelHandlerContext ctx) {
-        if (!initialized) {
-            initialized = true;
+        if (heartbeatDisposable == null) {
             superPeers = config(ctx).getSuperPeers().entrySet().stream()
                     .collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), e.getValue())));
             LOG.debug("Start Heartbeat job.");
@@ -212,11 +210,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final HelloMessage msg;
         if (isChildrenJoin) {
             // hello message is used to register at super peer as children
-            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), DEFAULT_CHILDREN_TIME, ((DrasylServerChannel) ctx.channel()).identity().getIdentitySecretKey(), privateInetAddresses);
+            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), DEFAULT_CHILDREN_TIME, ((IdentityChannel) ctx.channel()).identity().getIdentitySecretKey(), privateInetAddresses);
         }
         else {
             // hello message is used to announce us at peer
-            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork());
+            msg = HelloMessage.of(config(ctx).getNetworkId(), publicKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork());
         }
 
         LOG.trace("Send Hello `{}` (children = {}) for peer `{}` to `{}`.", () -> msg, () -> isChildrenJoin, () -> publicKey, () -> inetAddress);

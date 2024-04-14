@@ -22,6 +22,7 @@
 package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -61,6 +62,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PeersManagerHandlerTest {
@@ -68,6 +70,8 @@ class PeersManagerHandlerTest {
     private Set<DrasylAddress> children;
     private Set<DrasylAddress> superPeers;
     private PeersManagerHandler underTest;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannel channel;
 
     @BeforeEach
     void setUp() {
@@ -156,6 +160,8 @@ class PeersManagerHandlerTest {
         void shouldEmitNodeOfflineEventWhenRemovingLastSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                  @Mock final IdentityPublicKey publicKey,
                                                                  @Mock final Object path) {
+            when(ctx.channel()).thenReturn(channel);
+
             superPeers.add(publicKey);
 
             underTest.userEventTriggered(ctx, RemoveSuperPeerAndPathEvent.of(publicKey, path));
@@ -184,6 +190,8 @@ class PeersManagerHandlerTest {
                                           @Mock final IdentityPublicKey publicKey,
                                           @Mock final InetSocketAddress inetAddress,
                                           @Mock final Object path) {
+            when(ctx.channel()).thenReturn(channel);
+
             underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path, 123L));
 
             assertEquals(Set.of(publicKey), superPeers);
@@ -195,6 +203,8 @@ class PeersManagerHandlerTest {
                                                                      @Mock final IdentityPublicKey publicKey,
                                                                      @Mock final InetSocketAddress inetAddress,
                                                                      @Mock final Object path) {
+            when(ctx.channel()).thenReturn(channel);
+
             underTest.userEventTriggered(ctx, AddPathAndSuperPeerEvent.of(publicKey, inetAddress, path, 123L));
 
             verify(ctx).fireUserEventTriggered(argThat((ArgumentMatcher<Object>) e -> PeerDirectEvent.of(Peer.of(publicKey)).equals(e)));

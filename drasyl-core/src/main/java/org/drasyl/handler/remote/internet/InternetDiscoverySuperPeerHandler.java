@@ -25,14 +25,12 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -91,8 +89,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         );
     }
 
+    @SuppressWarnings("unused")
     public InternetDiscoverySuperPeerHandler(final byte hopLimit) {
         this(HopCount.of(hopLimit));
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isActive()) {
+            startStalePeerCheck(ctx);
+        }
     }
 
     /*
@@ -150,12 +156,6 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         relayMessage(ctx, addressedMsg, inetAddress);
     }
 
-    private boolean isRoutableOutboundMessage(final Object msg) {
-        return msg instanceof OverlayAddressedMessage<?> &&
-                ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage &&
-                childrenPeers.containsKey(((ApplicationMessage) ((OverlayAddressedMessage<?>) msg).content()).getRecipient());
-    }
-
     @SuppressWarnings("java:S2325")
     protected void relayMessage(final ChannelHandlerContext ctx,
                                 final InetAddressedMessage<RemoteMessage> addressedMsg,
@@ -178,8 +178,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
      */
 
     void startStalePeerCheck(final ChannelHandlerContext ctx) {
-        LOG.debug("Start StalePeerCheck job.");
-        stalePeerCheckDisposable = ctx.executor().scheduleWithFixedDelay(() -> doStalePeerCheck(ctx), randomLong(config(ctx).getHelloInterval().toMillis()), config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
+        if (stalePeerCheckDisposable == null) {
+            LOG.debug("Start StalePeerCheck job.");
+            stalePeerCheckDisposable = ctx.executor().scheduleWithFixedDelay(() -> doStalePeerCheck(ctx), randomLong(config(ctx).getHelloInterval().toMillis()), config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
+        }
     }
 
     void stopStalePeerCheck() {
@@ -228,7 +230,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         }
 
         // reply with Acknowledgement
-        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), ((DrasylServerChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylServerChannel) ctx.channel()).identity().getProofOfWork(), msg.getTime());
+        final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), msg.getTime());
         LOG.trace("Send Acknowledgement for peer `{}` to `{}`.", msg::getSender, () -> inetAddress);
         ctx.writeAndFlush(new InetAddressedMessage<>(acknowledgementMsg, inetAddress));
     }
