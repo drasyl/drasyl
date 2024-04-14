@@ -25,8 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.ReferenceCountUtil;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -80,13 +78,10 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
                 drasylChannel.finishRead();
             }
             else {
-                parent.serve(appMsg.getSender()).addListener(new GenericFutureListener<Future<? super DrasylChannel>>() {
-                    @Override
-                    public void operationComplete(Future<? super DrasylChannel> future) throws Exception {
-                        final DrasylChannel drasylChannel = (DrasylChannel) future.get();
-                        drasylChannel.queueRead(appMsg.getPayload());
-                        drasylChannel.finishRead();
-                    }
+                parent.serve(appMsg.getSender()).addListener(future -> {
+                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                    drasylChannel1.queueRead(appMsg.getPayload());
+                    drasylChannel1.finishRead();
                 });
             }
         }
