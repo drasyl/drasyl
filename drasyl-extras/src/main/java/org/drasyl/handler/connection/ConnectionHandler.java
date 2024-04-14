@@ -2207,7 +2207,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
                 // RFC 5681:    congestion window in order to reflect the additional segment that
                 // RFC 5681:    has left the network.
-                LOG.trace("{} Congestion Control: Fast Recovery: Got additional duplicate ACK (after the third). Increment cwnd by SMSS.", ctx.channel());
+                LOG.trace("{} Congestion Control: Fast Recovery: Got additional duplicate ACK (#{}). Increment cwnd by SMSS.", ctx.channel(), tcb.duplicateAcks());
                 tcb.cwnd(ctx, tcb.cwnd() + tcb.smss());
 
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
