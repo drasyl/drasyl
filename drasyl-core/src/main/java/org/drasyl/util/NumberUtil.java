@@ -215,10 +215,48 @@ public final class NumberUtil {
      * Returns the smallest given number.
      *
      * @return the smallest number in {@code numbers}.
+     */
+    public static int min(final int a, final int b) {
+        return Math.min(a, b);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     */
+    public static int min(final int a, final int b, final int c) {
+        return Math.min(Math.min(a, b), c);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
      * @throws java.util.NoSuchElementException if no numbers were given
      */
     public static int min(final int... numbers) {
         return Arrays.stream(numbers).min().getAsInt();
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long min(final long a, final long b) {
+        return Math.min(a, b);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long min(final long a, final long b, final long c) {
+        return Math.min(Math.min(a, b), c);
     }
 
     /**
@@ -257,8 +295,28 @@ public final class NumberUtil {
      * @return the largest number in {@code numbers}.
      * @throws java.util.NoSuchElementException if no numbers were given
      */
+    public static long max(final long a, final long b) {
+        return Math.max(a, b);
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
     public static long max(final long... numbers) {
         return Arrays.stream(numbers).max().getAsLong();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double max(final double a, final double b) {
+        return Math.max(a, b);
     }
 
     /**
