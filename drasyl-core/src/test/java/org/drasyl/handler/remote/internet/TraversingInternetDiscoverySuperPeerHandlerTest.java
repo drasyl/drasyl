@@ -81,6 +81,7 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
         final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache = new HashSet<>();
+        when(config.getHelloInterval().toMillis()).thenReturn(2L);
 
         final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(currentTime, hopLimit, childrenPeers, null, uniteAttemptsCache);
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);

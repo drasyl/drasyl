@@ -34,7 +34,6 @@ import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -70,7 +69,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @SuppressWarnings("java:S107")
     TraversingInternetDiscoveryChildrenHandler(final LongSupplier currentTime,
                                                final long initialPingDelayMillis,
-                                               final Map<IdentityPublicKey, SuperPeer> superPeers,
                                                final Future<?> heartbeatDisposable,
                                                final Map<DrasylAddress, TraversingPeer> traversingPeers) {
         super(currentTime, initialPingDelayMillis, heartbeatDisposable);
