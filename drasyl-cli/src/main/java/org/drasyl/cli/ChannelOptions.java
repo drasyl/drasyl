@@ -104,6 +104,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
             description = "Disables arming (authenticating/encrypting) of all protocol messages. Ensure other nodes have arming disabled as well."
     )
     protected boolean protocolArmDisabled;
+    protected EventLoopGroup childChannelLoopGroup;
 
     @SuppressWarnings("java:S107")
     protected ChannelOptions(final PrintStream out,
@@ -198,7 +199,10 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     }
 
     protected EventLoopGroup getChildChannelLoopGroup() {
-        return EventLoopGroupUtil.getBestEventLoopGroup();
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup();
+        }
+        return childChannelLoopGroup;
     }
 
     protected EventLoop getUdpChannelLoop() {

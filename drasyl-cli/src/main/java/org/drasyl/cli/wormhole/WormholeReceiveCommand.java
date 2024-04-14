@@ -78,7 +78,10 @@ public class WormholeReceiveCommand extends ChannelOptions {
 
     protected EventLoopGroup getChildChannelLoopGroup() {
         // we have only one peer
-        return EventLoopGroupUtil.getBestEventLoopGroup(1);
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        }
+        return childChannelLoopGroup;
     }
 
     @Override
