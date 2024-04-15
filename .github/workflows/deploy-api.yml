@@ -48,7 +48,7 @@ jobs:
         with:
           name: Java API
           path: ${{ steps.vars.outputs.short_ref }}
-      - uses: stefanzweifel/git-auto-commit-action@v5.0.0
+      - uses: stefanzweifel/git-auto-commit-action@v5.0.1
         with:
           commit_message: Update Java API for branch ${{ steps.vars.outputs.short_ref }}
           commit_user_name: drasyl-bot
