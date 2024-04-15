@@ -49,7 +49,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     }
 
     public SegmentCodec() {
-        this(false); // FIXME: später wieder einschalten
+        this(true);
     }
 
     @Override
