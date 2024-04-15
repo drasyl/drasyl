@@ -23,14 +23,9 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
-import io.netty.util.ReferenceCountUtil;
-import io.netty.util.internal.PlatformDependent;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-
-import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 
@@ -42,7 +37,6 @@ import static java.util.Objects.requireNonNull;
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final ChannelHandlerContext drasylCtx;
-    private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
 
     public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
         this.drasylCtx = requireNonNull(drasylCtx);
@@ -58,63 +52,5 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     public void channelReadComplete(final ChannelHandlerContext ctx) {
         drasylCtx.fireChannelReadComplete();
         ctx.fireChannelReadComplete();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        releaseOutboundBuffer();
-
-        ctx.fireChannelInactive();
-    }
-
-    Queue<Object> outboundBuffer() {
-        return outboundBuffer;
-    }
-
-    void finishWrite(final ChannelHandlerContext ctx) {
-        // check whether the channel is currently reading; if so, we must schedule the event in the
-        // event loop to maintain the read/write order.
-        if (ctx.executor().inEventLoop()) {
-            finishWrite0(ctx);
-        }
-        else {
-            runFinishWriteTask(ctx);
-        }
-    }
-
-    private void finishWrite0(final ChannelHandlerContext ctx) {
-        if (!outboundBuffer.isEmpty()) {
-            writeOutbound(ctx);
-        }
-
-    }
-
-    private void runFinishWriteTask(final ChannelHandlerContext ctx) {
-        ctx.executor().execute(() -> this.finishWrite0(ctx));
-    }
-
-    void writeOutbound(final ChannelHandlerContext ctx) {
-        final ChannelPipeline pipeline = ctx.pipeline();
-        do {
-            final Object toSend = outboundBuffer.poll();
-            if (toSend == null) {
-                break;
-            }
-            pipeline.write(toSend).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> toSend, future::cause);
-                }
-            });
-        } while (true); // TODO: use isWritable?
-
-        // all messages written, fire flush event
-        pipeline.flush();
-    }
-
-    private void releaseOutboundBuffer() {
-        Object msg;
-        while ((msg = outboundBuffer.poll()) != null) {
-            ReferenceCountUtil.release(msg);
-        }
     }
 }
