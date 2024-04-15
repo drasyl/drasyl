@@ -25,10 +25,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 
@@ -48,18 +46,15 @@ import static java.util.Objects.requireNonNull;
 public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
     protected final Map<DrasylAddress, InetSocketAddress> superPeers;
     protected final Map<DrasylAddress, InetSocketAddress> childrenPeers;
-    protected final Map<DrasylAddress, InetSocketAddress> peers;
 
     protected TopologyHandler(final Map<DrasylAddress, InetSocketAddress> superPeers,
-                              final Map<DrasylAddress, InetSocketAddress> childrenPeers,
-                              final Map<DrasylAddress, InetSocketAddress> peers) {
+                              final Map<DrasylAddress, InetSocketAddress> childrenPeers) {
         this.superPeers = requireNonNull(superPeers);
         this.childrenPeers = requireNonNull(childrenPeers);
-        this.peers = requireNonNull(peers);
     }
 
     protected TopologyHandler() {
-        this(new HashMap<>(), new HashMap<>(), new HashMap<>());
+        this(new HashMap<>(), new HashMap<>());
     }
 
     @Override
@@ -81,36 +76,26 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
             else if (evt instanceof RemoveChildrenAndPathEvent) {
                 childrenPeers.remove(e.getAddress());
             }
-            // "normal" peers
-            else if (evt instanceof AddPathEvent) {
-                peers.put(e.getAddress(), ((AddPathEvent) e).getInetAddress());
-            }
-            else if (evt instanceof RemovePathEvent) {
-                peers.remove(e.getAddress());
-            }
         }
 
         ctx.fireUserEventTriggered(evt);
     }
 
     protected Topology topology(final ChannelHandlerContext ctx) {
-        return new Topology((DrasylAddress) ctx.channel().localAddress(), superPeers, childrenPeers, peers);
+        return new Topology((DrasylAddress) ctx.channel().localAddress(), superPeers, childrenPeers);
     }
 
     public static class Topology {
         private final DrasylAddress address;
         private final Map<DrasylAddress, InetSocketAddress> superPeers;
         private final Map<DrasylAddress, InetSocketAddress> childrenPeers;
-        private final Map<DrasylAddress, InetSocketAddress> peers;
 
         public Topology(final DrasylAddress address,
                         final Map<DrasylAddress, InetSocketAddress> superPeers,
-                        final Map<DrasylAddress, InetSocketAddress> childrenPeers,
-                        final Map<DrasylAddress, InetSocketAddress> peers) {
+                        final Map<DrasylAddress, InetSocketAddress> childrenPeers) {
             this.address = requireNonNull(address);
             this.superPeers = requireNonNull(superPeers);
             this.childrenPeers = requireNonNull(childrenPeers);
-            this.peers = requireNonNull(peers);
         }
 
         public DrasylAddress address() {
@@ -125,10 +110,6 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
             return Map.copyOf(childrenPeers);
         }
 
-        public Map<DrasylAddress, InetSocketAddress> peers() {
-            return Map.copyOf(peers);
-        }
-
         @Override
         public boolean equals(final Object o) {
             if (this == o) {
@@ -138,12 +119,12 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
                 return false;
             }
             final Topology topology = (Topology) o;
-            return Objects.equals(address, topology.address) && Objects.equals(superPeers, topology.superPeers) && Objects.equals(childrenPeers, topology.childrenPeers) && Objects.equals(peers, topology.peers);
+            return Objects.equals(address, topology.address) && Objects.equals(superPeers, topology.superPeers) && Objects.equals(childrenPeers, topology.childrenPeers);
         }
 
         @Override
         public int hashCode() {
-            return Objects.hash(address, superPeers, childrenPeers, peers);
+            return Objects.hash(address, superPeers, childrenPeers);
         }
 
         @Override
@@ -152,7 +133,6 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
                     "address=" + address +
                     ", superPeers=" + superPeers.size() +
                     ", childrenPeers=" + childrenPeers.size() +
-                    ", peers=" + peers.size() +
                     '}';
         }
     }

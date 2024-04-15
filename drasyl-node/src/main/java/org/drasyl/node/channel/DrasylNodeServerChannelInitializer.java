@@ -161,14 +161,16 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteTcpFallbackEnabled()) {
             if (!config.isRemoteSuperPeerEnabled()) {
                 ch.pipeline().addLast(new TcpServer(
-                        new NioEventLoopGroup(1), config.getRemoteTcpFallbackServerBindHost(),
+                        new NioEventLoopGroup(1),
+                        config.getRemoteTcpFallbackServerBindHost(),
                         config.getRemoteTcpFallbackServerBindPort(),
                         ch.config().getHelloTimeout()
                 ));
             }
             else {
                 ch.pipeline().addLast(new TcpClient(
-                        new NioEventLoopGroup(1), config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
+                        new NioEventLoopGroup(1),
+                        config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
                         config.getRemoteTcpFallbackClientTimeout(),
                         config.getRemoteTcpFallbackClientAddress()
                 ));

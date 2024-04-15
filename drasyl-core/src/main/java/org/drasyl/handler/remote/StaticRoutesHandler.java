@@ -24,8 +24,6 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylServerChannelConfig;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -63,14 +61,12 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
         staticRoutes.forEach((peer, endpoint) -> {
-            config(ctx).getPeersManager().addPath(peer, PATH_ID, endpoint, PATH_PRIORITY);
-            ctx.fireUserEventTriggered(AddPathEvent.of(peer, endpoint, PATH_ID));
+            config(ctx).getPeersManager().addClientPath(ctx, peer, PATH_ID, endpoint, PATH_PRIORITY);
         });
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
-        config(ctx).getPeersManager().removePaths(PATH_ID);
+        config(ctx).getPeersManager().removeClientPaths(ctx, PATH_ID);
     }
 
     private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {

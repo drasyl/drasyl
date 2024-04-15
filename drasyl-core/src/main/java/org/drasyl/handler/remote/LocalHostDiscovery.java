@@ -25,8 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
@@ -167,8 +166,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemovePathEvent.of(peer, PATH_ID)));
-        config(ctx).getPeersManager().removePaths(PATH_ID);
+        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, PATH_ID)));
+        config(ctx).getPeersManager().removePaths(ctx, PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }
@@ -281,16 +280,14 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
 
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, PATH_ID));
+                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, PATH_ID));
                 i.remove();
             }
         }
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
-            if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, address, PATH_PRIORITY)) {
-                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, PATH_ID));
-            }
+            config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, address, PATH_PRIORITY);
         }));
     }
 

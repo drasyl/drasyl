@@ -165,7 +165,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
             for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
                 final IdentityPublicKey publicKey = entry.getKey();
-                config(ctx).getPeersManager().removePath(publicKey, PATH_ID);
+                config(ctx).getPeersManager().removePath(ctx, publicKey, PATH_ID);
             }
             heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
         }
@@ -252,10 +252,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
         // we don't have a super peer yet, so this is now our best one
         if (!config(ctx).getPeersManager().hasDefaultPeer()) {
-            config(ctx).getPeersManager().setDefaultPath(publicKey);
+            config(ctx).getPeersManager().setDefaultPath(ctx, publicKey);
         }
 
-        if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
+        if (config(ctx).getPeersManager().addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
             ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH_ID, rtt));
         }
         else {
@@ -279,7 +279,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 }
             }
             else {
-                if (peersManager.removePath(publicKey, PATH_ID)) {
+                if (peersManager.removePath(ctx, publicKey, PATH_ID)) {
                     ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH_ID));
                 }
             }
@@ -288,10 +288,10 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         if (!Objects.equals(peersManager.getDefaultPeer(), newBestSuperPeer)) {
             final DrasylAddress oldBestSuperPeer = peersManager.getDefaultPeer();
             if (newBestSuperPeer != null) {
-                peersManager.setDefaultPath(newBestSuperPeer);
+                peersManager.setDefaultPath(ctx, newBestSuperPeer);
             }
             else {
-                peersManager.unsetDefaultPath();
+                peersManager.unsetDefaultPath(ctx);
             }
             if (LOG.isTraceEnabled()) {
                 if (newBestSuperPeer != null) {

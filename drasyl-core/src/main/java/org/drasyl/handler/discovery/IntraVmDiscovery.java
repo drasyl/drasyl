@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
-    private static final Object path = IntraVmDiscovery.class;
+    private static final Class<?> PATH_ID = IntraVmDiscovery.class;
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
     private boolean initialized;
 
@@ -116,8 +116,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             final Integer networkId = key.first();
             final DrasylAddress publicKey = key.second();
             if (config(myCtx).getNetworkId() == networkId) {
-                otherCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of((DrasylAddress) myCtx.channel().localAddress(), null, path, 0L));
-                myCtx.channel().pipeline().fireUserEventTriggered(AddPathEvent.of(publicKey, null, path, 0L));
+                config(otherCtx).getPeersManager().addLocalClientPath(otherCtx, (DrasylAddress) myCtx.channel().localAddress(), PATH_ID);
+                config(myCtx).getPeersManager().addLocalClientPath(myCtx, (DrasylAddress) otherCtx.channel().localAddress(), PATH_ID);
             }
         });
         discoveries.put(
@@ -137,8 +137,8 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             final Integer otherNetworkId = key.first();
             final DrasylAddress publicKey = key.second();
             if (config(myCtx).getNetworkId() == otherNetworkId) {
-                otherCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of((DrasylAddress) myCtx.channel().localAddress(), path));
-                myCtx.channel().pipeline().fireUserEventTriggered(RemovePathEvent.of(publicKey, path));
+                config(otherCtx).getPeersManager().removeLocalClientPath(otherCtx, (DrasylAddress) myCtx.channel().localAddress(), PATH_ID);
+                config(myCtx).getPeersManager().removeLocalClientPath(myCtx, (DrasylAddress) otherCtx.channel().localAddress(), PATH_ID);
             }
         });
 

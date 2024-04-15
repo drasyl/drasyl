@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -202,7 +201,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (childrenPeer.isStale()) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (config(ctx).getPeersManager().removePath(address, PATH_ID)) {
+                if (config(ctx).getPeersManager().removePath(ctx, address, PATH_ID)) {
                     ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH_ID));
                 }
             }
@@ -225,9 +224,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
-        if (config(ctx).getPeersManager().addPath(msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY)) {
-            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(msg.getSender(), inetAddress, PATH_ID));
-        }
+        config(ctx).getPeersManager().addClientPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY);
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), msg.getTime());

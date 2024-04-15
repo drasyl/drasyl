@@ -87,7 +87,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 if (stale) {
                     final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
                     LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
-                    peersManager.removePath(publicKey, PATH_ID);
+                    peersManager.removePath(ctx, publicKey, PATH_ID);
                 }
             }
 

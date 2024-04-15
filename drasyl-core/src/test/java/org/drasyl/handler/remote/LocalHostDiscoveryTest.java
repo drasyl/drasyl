@@ -27,7 +27,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -210,7 +210,7 @@ class LocalHostDiscoveryTest {
 
             verify(watchDisposable).cancel(false);
             verify(postDisposable).cancel(false);
-            verify(config.getPeersManager()).removePaths(PATH_ID);
+            verify(config.getPeersManager()).removePaths(ctx, PATH_ID);
         }
     }
 
@@ -221,7 +221,8 @@ class LocalHostDiscoveryTest {
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws IOException {
             when(ctx.channel().config()).thenReturn(config);
             when(fileReader.apply(any())).thenReturn(Set.of(new InetSocketAddress("192.168.188.23", 12345)));
-            when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenCallRealMethod();
 
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.txt");
             Files.createDirectory(path.getParent());
@@ -230,9 +231,9 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, ofMinutes(5), dir, watchDisposable, postDisposable);
             handler.scan(ctx);
 
-            verify(config.getPeersManager()).addPath(IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_PRIORITY);
+            verify(config.getPeersManager()).addClientPath(ctx, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_PRIORITY);
 
-            verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
+            verify(ctx).fireUserEventTriggered(any(AddPathAndChildrenEvent.class));
         }
     }
 }

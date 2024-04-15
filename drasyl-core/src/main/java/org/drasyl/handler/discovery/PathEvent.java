@@ -29,9 +29,7 @@ import org.drasyl.identity.DrasylAddress;
  *
  * @see AddPathAndChildrenEvent
  * @see AddPathAndSuperPeerEvent
- * @see AddPathEvent
  * @see RemoveChildrenAndPathEvent
- * @see RemovePathEvent
  * @see RemoveSuperPeerAndPathEvent
  */
 public interface PathEvent {

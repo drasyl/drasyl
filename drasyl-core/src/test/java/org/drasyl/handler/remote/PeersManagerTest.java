@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.remote;
 
+import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,6 +37,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PeersManagerTest {
@@ -45,26 +48,33 @@ class PeersManagerTest {
     @Nested
     class AddPath {
         @Test
-        void shouldReturnTrueIfPathIsNew(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
+        void shouldReturnTrueIfPathIsNew(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                         @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint1,
                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2,
-                                         @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint3) {
+                                         @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint3,
+                                         @Mock DrasylServerChannel drasylServerChannel) {
+            when(ctx.channel()).thenReturn(drasylServerChannel);
+
             final PeersManager peersManager = new PeersManager();
 
-            assertTrue(peersManager.addPath(peer, PATH_ID_1, endpoint1, (short) 5));
-            assertTrue(peersManager.addPath(peer, PATH_ID_2, endpoint2, (short) 7));
-            assertTrue(peersManager.addPath(peer, PATH_ID_3, endpoint3, (short) 6));
-            assertFalse(peersManager.addPath(peer, PATH_ID_3, endpoint3, (short) 6));
+            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5));
+            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7));
+            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
+            assertFalse(peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
         }
 
         @Test
-        void shouldUpdateEndpoint(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
+        void shouldUpdateEndpoint(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                  @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint1,
-                                  @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2) {
+                                  @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2,
+                                  @Mock DrasylServerChannel drasylServerChannel) {
+            when(ctx.channel()).thenReturn(drasylServerChannel);
             final PeersManager peersManager = new PeersManager();
 
-            peersManager.addPath(peer, PATH_ID_1, endpoint1, (short) 5);
-            peersManager.addPath(peer, PATH_ID_1, endpoint2, (short) 5);
+            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
+            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint2, (short) 5);
 
             assertEquals(endpoint2, peersManager.getEndpoint(peer, PATH_ID_1));
         }
@@ -73,33 +83,40 @@ class PeersManagerTest {
     @Nested
     class RemovePath {
         @Test
-        void shouldReturnTrueIfPathHasBeenRemoved(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
+        void shouldReturnTrueIfPathHasBeenRemoved(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
+                                                  @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
+                                                  @Mock DrasylServerChannel drasylServerChannel) {
+            when(ctx.channel()).thenReturn(drasylServerChannel);
             final PeersManager peersManager = new PeersManager();
-            peersManager.addPath(peer, PATH_ID_1, endpoint, (short) 5);
-            peersManager.addPath(peer, PATH_ID_3, endpoint, (short) 6);
-            peersManager.addPath(peer, PATH_ID_2, endpoint, (short) 7);
+            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint, (short) 5);
+            peersManager.addPath(ctx, peer, PATH_ID_3, endpoint, (short) 6);
+            peersManager.addPath(ctx, peer, PATH_ID_2, endpoint, (short) 7);
 
-            assertTrue(peersManager.removePath(peer, PATH_ID_1));
-            assertFalse(peersManager.removePath(peer, PATH_ID_1));
-            assertTrue(peersManager.removePath(peer, PATH_ID_2));
-            assertTrue(peersManager.removePath(peer, PATH_ID_3));
-            assertFalse(peersManager.removePath(peer, PATH_ID_1));
+            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_1));
+            assertFalse(peersManager.removePath(ctx, peer, PATH_ID_1));
+            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_2));
+            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_3));
+            assertFalse(peersManager.removePath(ctx, peer, PATH_ID_1));
         }
     }
 
     @Nested
     class GetEndpoints {
         @Test
-        void shouldOrderEndpointsByPriority(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
+        void shouldOrderEndpointsByPriority(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peer,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint1,
                                             @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2,
-                                            @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint3) {
+                                            @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint3,
+                                            @Mock DrasylServerChannel drasylServerChannel) {
+            when(ctx.channel()).thenReturn(drasylServerChannel);
+
             final PeersManager peersManager = new PeersManager();
 
-            peersManager.addPath(peer, PATH_ID_1, endpoint1, (short) 5);
-            peersManager.addPath(peer, PATH_ID_2, endpoint2, (short) 7);
-            peersManager.addPath(peer, PATH_ID_3, endpoint3, (short) 6);
+            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
+            peersManager.addPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7);
+            peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6);
 
             assertEquals(List.of(endpoint1, endpoint3, endpoint2), peersManager.getEndpoints(peer));
         }

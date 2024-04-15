@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.remote.internet;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
@@ -93,7 +94,8 @@ class InternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey superPeerKey,
+    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                         @Mock final IdentityPublicKey superPeerKey,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeer,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final AcknowledgementMessage acknowledgementMsg,
                                                          @Mock final InetSocketAddress inetAddress,
@@ -104,7 +106,7 @@ class InternetDiscoveryChildrenHandlerTest {
         when(identity.getAddress()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(currentTime.getAsLong()).thenReturn(2L);
-        when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addSuperPeerPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
         when(config.getSuperPeers()).thenReturn(superPeers);
         when(config.getHelloInterval().toMillis()).thenReturn(5_000L);
         when(config.getMaxMessageAge().toMillis()).thenReturn(10L);

@@ -23,12 +23,8 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.PathRttEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -170,7 +166,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (!traversingPeer.isReachable() && traversingPeer.addInetAddressCandidate(inetAddress)) {
             // send Hello immediately to speed up traversal
-            ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
+            config(ctx).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
             traversingPeer.helloSent();
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -196,12 +192,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        if (config(ctx).getPeersManager().addPath(publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
-            ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, inetAddress, PATH_ID, rtt));
-        }
-        else {
-            ctx.fireUserEventTriggered(PathRttEvent.of(publicKey, inetAddress, PATH_ID, rtt));
-        }
+        config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY, rtt);
     }
 
     /*
@@ -221,9 +212,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (traversingPeer.isStale()) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager().removePath(address, PATH_ID)) {
-                    ctx.fireUserEventTriggered(RemovePathEvent.of(address, PATH_ID));
-                }
+                config(ctx).getPeersManager().removePath(ctx, address, PATH_ID);
             }
             else {
                 // send Discovery

@@ -21,6 +21,11 @@
  */
 package org.drasyl.handler.remote;
 
+import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
+import org.drasyl.handler.discovery.PathRttEvent;
+import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
@@ -41,6 +46,7 @@ public class PeersManager {
     private final Map<DrasylAddress, Peer> peers = new HashMap<>();
     private final Map<DrasylAddress, PeerPath> paths = new HashMap<>();
     private final SetMultimap<DrasylAddress, Class<?>> ids = new HashSetMultimap<>();
+    private final Map<DrasylAddress, Integer> localPaths = new HashMap<>();
     private final long helloTimeoutMillis;
     private DrasylAddress defaultPath;
 
@@ -54,10 +60,16 @@ public class PeersManager {
         );
     }
 
-    public boolean addPath(final DrasylAddress peer,
+    /**
+     * @throws UnresolvedAddressException
+     */
+    public boolean addPath(final ChannelHandlerContext ctx,
+                           final DrasylAddress peer,
                            final Class<?> id,
                            final InetSocketAddress endpoint,
                            final short priority) {
+        assert ctx.channel() instanceof DrasylServerChannel;
+
         if (endpoint.isUnresolved()) {
             throw new UnresolvedAddressException();
         }
@@ -98,8 +110,72 @@ public class PeersManager {
         return true;
     }
 
-    public boolean removePath(final DrasylAddress peer,
+    public boolean addSuperPeerPath(final ChannelHandlerContext ctx,
+                                    final DrasylAddress peer,
+                                    final Class<?> id,
+                                    final InetSocketAddress endpoint,
+                                    final short priority) {
+        return addPath(ctx, peer, id, endpoint, priority);
+    }
+
+    public boolean addClientPath(final ChannelHandlerContext ctx,
+                                 final DrasylAddress peer,
+                                 final Class<?> id,
+                                 final InetSocketAddress endpoint,
+                                 final short priority,
+                                 final long rtt) {
+        if (addPath(ctx, peer, id, endpoint, priority)) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, endpoint, id));
+            return true;
+        }
+        ctx.fireUserEventTriggered(PathRttEvent.of(peer, endpoint, id, rtt));
+        return false;
+    }
+
+    public boolean addClientPath(final ChannelHandlerContext ctx,
+                                 final DrasylAddress peer,
+                                 final Class<?> id,
+                                 final InetSocketAddress endpoint,
+                                 final short priority) {
+        if (addPath(ctx, peer, id, endpoint, priority)) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, endpoint, id));
+            return true;
+        }
+        return false;
+    }
+
+    public void addLocalClientPath(final ChannelHandlerContext ctx,
+                                   final DrasylAddress peer,
+                                   final Class<?> id) {
+        assert ctx.channel() instanceof DrasylServerChannel;
+
+        int count = localPaths.computeIfAbsent(peer, k -> 0);
+        localPaths.put(peer, count + 1);
+        if (count == 0) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, null, "local"));
+        }
+    }
+
+    public void removeLocalClientPath(final ChannelHandlerContext ctx,
+                                      final DrasylAddress peer,
+                                      final Class<?> id) {
+        assert ctx.channel() instanceof DrasylServerChannel;
+
+        int count = localPaths.get(peer);
+        if (count == 1) {
+            localPaths.remove(peer);
+            ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, "local"));
+        }
+        else {
+            localPaths.put(peer, count - 1);
+        }
+    }
+
+    public boolean removePath(final ChannelHandlerContext ctx,
+                              final DrasylAddress peer,
                               final Class<?> id) {
+        assert ctx.channel() instanceof DrasylServerChannel;
+
         if (!ids.remove(peer, id)) {
             return false;
         }
@@ -128,9 +204,9 @@ public class PeersManager {
         return false;
     }
 
-    public void removePaths(final Class<?> id) {
+    public void removePaths(final ChannelHandlerContext ctx, final Class<?> id) {
         final Set<DrasylAddress> peers = Set.copyOf(ids.keySet());
-        peers.forEach(peer -> removePath(peer, id));
+        peers.forEach(peer -> removePath(ctx, peer, id));
     }
 
     public InetSocketAddress resolve(final DrasylAddress peer) {
@@ -210,11 +286,15 @@ public class PeersManager {
         return defaultPath != null;
     }
 
-    public void setDefaultPath(final DrasylAddress defaultPath) {
+    public void setDefaultPath(final ChannelHandlerContext ctx,
+                               final DrasylAddress defaultPath) {
+        assert ctx.channel() instanceof DrasylServerChannel;
+
         this.defaultPath = requireNonNull(defaultPath);
     }
 
-    public void unsetDefaultPath() {
+    public void unsetDefaultPath(final ChannelHandlerContext ctx) {
+        assert ctx.channel() instanceof DrasylServerChannel;
         defaultPath = null;
     }
 
@@ -230,6 +310,19 @@ public class PeersManager {
             current = current.next;
         }
         return endpoints;
+    }
+
+    public void removeClientPaths(ChannelHandlerContext ctx, Class<?> id) {
+        final Set<DrasylAddress> peers = Set.copyOf(ids.keySet());
+        peers.forEach(peer -> removeClientPath(ctx, peer, id));
+    }
+
+    public boolean removeClientPath(ChannelHandlerContext ctx, DrasylAddress peer, Class<?> id) {
+        if (removePath(ctx, peer, id)) {
+            ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, id));
+            return true;
+        }
+        return false;
     }
 
     static class Peer {

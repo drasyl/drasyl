@@ -24,8 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelHandler;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -40,6 +39,9 @@ import static org.drasyl.handler.remote.StaticRoutesHandler.PATH_ID;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,6 +51,9 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
+        when(config.getPeersManager().addPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort())).thenCallRealMethod();
+
         final InetSocketAddress address = new InetSocketAddress(22527);
 
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
@@ -56,7 +61,7 @@ class StaticRoutesHandlerTest {
         try {
             channel.pipeline().fireChannelActive();
 
-            assertThat(channel.readEvent(), instanceOf(AddPathEvent.class));
+            assertThat(channel.readEvent(), instanceOf(AddPathAndChildrenEvent.class));
         }
         finally {
             channel.close();
@@ -67,14 +72,13 @@ class StaticRoutesHandlerTest {
     void shouldClearRoutesOnChannelInactive(@Mock final IdentityPublicKey publicKey,
                                             @Mock final InetSocketAddress address) {
         when(config.getPeersManager().getPeers(PATH_ID)).thenReturn(Set.of(publicKey));
-
         final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, handler);
         try {
             channel.userEvents().clear();
             channel.pipeline().fireChannelInactive();
 
-            assertThat(channel.readEvent(), instanceOf(RemovePathEvent.class));
+            verify(config.getPeersManager()).removeClientPaths(any(), any());
         }
         finally {
             channel.close();

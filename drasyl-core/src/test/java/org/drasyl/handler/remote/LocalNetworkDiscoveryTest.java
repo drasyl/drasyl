@@ -29,8 +29,7 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
+import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
@@ -54,6 +53,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -136,8 +136,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.doHeartbeat(ctx);
 
-            verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
-            verify(config.getPeersManager()).removePath(any(), any());
+            verify(config.getPeersManager()).removeClientPath(any(), any(), any());
             verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof HelloMessage && m.recipient().equals(MULTICAST_ADDRESS)));
         }
     }
@@ -160,13 +159,11 @@ class LocalNetworkDiscoveryTest {
         void shouldClearRoutes(@Mock final IdentityPublicKey publicKey,
                                @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().config()).thenReturn(config);
-            when(config.getPeersManager().getPeers(any())).thenReturn(Set.of(publicKey));
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.clearRoutes(ctx);
 
-            verify(ctx).fireUserEventTriggered(any(RemovePathEvent.class));
-            verify(config.getPeersManager()).removePaths(any());
+            verify(config.getPeersManager()).removeClientPaths(any(), any());
         }
     }
 
@@ -176,7 +173,8 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().config()).thenReturn(config);
-            when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenCallRealMethod();
 
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
@@ -184,7 +182,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
-            verify(ctx).fireUserEventTriggered(any(AddPathEvent.class));
+            verify(ctx).fireUserEventTriggered(any(AddPathAndChildrenEvent.class));
         }
 
         @Test
@@ -198,7 +196,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
-            verify(ctx, never()).fireUserEventTriggered(any(AddPathEvent.class));
+            verify(ctx, never()).fireUserEventTriggered(any(AddPathAndChildrenEvent.class));
         }
 
         @Test

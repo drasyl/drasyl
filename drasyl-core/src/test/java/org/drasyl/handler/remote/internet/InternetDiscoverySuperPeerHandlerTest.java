@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.remote.internet;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
@@ -80,7 +81,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
-        when(config.getPeersManager().removePath(any(), any())).thenReturn(true);
+        when(config.getPeersManager().removePath(any(), any(), any())).thenReturn(true);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
@@ -102,7 +103,8 @@ class InternetDiscoverySuperPeerHandlerTest {
     }
 
     @Test
-    void shouldHandleHelloMessageWithChildrenTime(@Mock final IdentityPublicKey publicKey,
+    void shouldHandleHelloMessageWithChildrenTime(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
+                                                  @Mock final IdentityPublicKey publicKey,
                                                   @Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                                   @Mock final InetSocketAddress inetAddress) {
         when(currentTime.getAsLong()).thenReturn(11L);
@@ -113,7 +115,8 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         when(config.getHelloInterval().toMillis()).thenReturn(2L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
-        when(config.getPeersManager().addPath(any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort())).thenCallRealMethod();
         when(identity.getAddress()).thenReturn(myPublicKey);
         when(config.getMaxMessageAge().toMillis()).thenReturn(1L);
 
