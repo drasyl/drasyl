@@ -33,6 +33,8 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -43,6 +45,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.nio.channels.ClosedChannelException;
 import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
@@ -164,6 +167,11 @@ public class UdpServer extends ChannelDuplexHandler {
         this(group, new InetSocketAddress(bindPort));
     }
 
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.pendingWrites = new PendingWriteQueue(ctx);
+    }
+
     @SuppressWarnings("java:S1905")
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
@@ -187,6 +195,7 @@ public class UdpServer extends ChannelDuplexHandler {
             channel.close();
             channel = null;
         }
+        pendingWrites.removeAndFailAll(new ClosedChannelException());
     }
 
     @SuppressWarnings("unchecked")
@@ -195,9 +204,12 @@ public class UdpServer extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            final UdpServerToDrasylHandler handler = channel.pipeline().get(UdpServerToDrasylHandler.class);
-            if (handler != null) {
-                handler.outboundBuffer().add(msg);
+            if (channel.isWritable()) {
+                LOG.trace("Write Datagram {}", msg);
+                channel.write(msg).addListener(new PromiseNotifier<>(promise));
+            }
+            else {
+                pendingWrites.add(msg, promise);
             }
         }
         else {
@@ -207,12 +219,35 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        final UdpServerToDrasylHandler handler = channel.pipeline().get(UdpServerToDrasylHandler.class);
-        if (handler != null) {
-            handler.finishWrite(channel.pipeline().context(UdpServerToDrasylHandler.class));
+        channel.flush();
+        ctx.flush();
+    }
+
+    /**
+     * ensure this method is called by same ctx (thread) from which PendingWrites was created.
+     */
+    void writePendingWrites(final ChannelHandlerContext ctx) {
+        if (!ctx.executor().inEventLoop()) {
+            // make sure this method is always called from the channel's thread.
+            ctx.executor().execute(() -> writePendingWrites(ctx));
+            return;
         }
 
-        ctx.flush();
+        // pass all pending writes to the UDP channel while it writable
+        while (channel != null && channel.isWritable()) {
+            final Object currentWrite = pendingWrites.current();
+
+            if (currentWrite == null) {
+                break;
+            }
+
+            // make sure PendingWriteQueue#remove() will not release currentWrite
+            ReferenceCountUtil.retain(currentWrite);
+            final ChannelPromise promise = pendingWrites.remove();
+
+            LOG.trace("Write Datagram {}", currentWrite);
+            channel.writeAndFlush(currentWrite).addListener(new PromiseNotifier<>(promise));
+        }
     }
 
     /**
