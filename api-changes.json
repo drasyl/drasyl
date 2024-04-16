@@ -727,6 +727,33 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.AddPathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.numberOfParametersChanged",
+          "old": "method void org.drasyl.handler.discovery.IntraVmDiscovery::<init>(int)",
+          "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::<init>()",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.RemovePathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.nonFinalClassInheritsFromNewClass",
+          "old": "class org.drasyl.identity.Identity",
+          "new": "class org.drasyl.identity.Identity",
+          "superClass": "java.net.SocketAddress",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
