@@ -126,7 +126,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(peersHandler);
 
         ch.pipeline().addLast(new PeersManagerHandler());
-        ch.pipeline().addLast(new PluginsHandler(config));
+        ch.pipeline().addLast(new PluginsHandler(config, node.identity()));
 
         if (TELEMETRY_ENABLED) {
             ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));

@@ -21,7 +21,6 @@
  */
 package org.drasyl.node.plugin.groups.client;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
@@ -30,11 +29,9 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.node.plugin.groups.client.GroupsClientPlugin.GROUPS_CLIENT_HANDLER;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.ArgumentMatchers.isA;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
@@ -51,15 +48,13 @@ class GroupsClientPluginTest {
     private PluginEnvironment env;
 
     @Test
-    void shouldAddHandlerToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
+    void shouldAddHandlerToPipeline() {
         final GroupsClientPlugin plugin = new GroupsClientPlugin(groupsClientConfig);
         when(env.getPipeline()).thenReturn(pipeline);
-        when(pipeline.context(any(Class.class))).thenReturn(ctx);
-        when(ctx.name()).thenReturn("handler");
 
         plugin.onBeforeStart(env);
 
-        verify(pipeline).addAfter(any(), eq(GROUPS_CLIENT_HANDLER), isA(GroupsClientHandler.class));
+        verify(pipeline, times(3)).addLast(any());
     }
 
     @Test
@@ -69,7 +64,7 @@ class GroupsClientPluginTest {
 
         plugin.onBeforeShutdown(env);
 
-        verify(pipeline).remove(GROUPS_CLIENT_HANDLER);
+        verify(pipeline, times(3)).remove(any(Class.class));
     }
 
     @Test

@@ -297,23 +297,18 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
         writeInProgress = true;
         try {
-            // if we write directly to another DrasylChannel in the future, we will have to take
-            // another look at the LocalChannel implementation and how a closed target channel is
-            // handled there. This is currently irrelevant to us, as we only write to the
-            // DrasylServerChannel, which is always the last to be closed.
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
                 if (buf == null) {
                     break;
                 }
 
+                // FIXME: add IntraVmRouting (make multiple producer queue, handle closed target channels, look at LocalChannel implementation for inspiration)
+
                 // map remoteAddress to udp endpoint
                 final PeersManager peersManager = parent().config().getPeersManager();
                 peersManager.applicationMessageSentOrReceived(remoteAddress);
-                InetSocketAddress endpoint = peersManager.getEndpoint(remoteAddress);
-                if (endpoint == null) {
-                    endpoint = peersManager.getEndpoint(peersManager.getDefaultPeer());
-                }
+                final InetSocketAddress endpoint = peersManager.getEndpoint(remoteAddress);
                 if (endpoint != null) {
                     // convert to remote message
                     final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
@@ -379,7 +374,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
      * @return {@code true} if remote peer is reachable via a direct path.
      */
     public boolean isDirectPathPresent() {
-        return ((DrasylServerChannel) parent()).paths.get(remoteAddress) != null;
+        return parent().config().getPeersManager().hasPath(remoteAddress);
     }
 
     private class DrasylChannelUnsafe extends AbstractUnsafe {

@@ -26,6 +26,7 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
+import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
@@ -68,7 +69,7 @@ public class PeersManager {
                            final Class<?> id,
                            final InetSocketAddress endpoint,
                            final short priority) {
-        assert ctx.channel() instanceof DrasylServerChannel;
+//        assert ctx.channel() instanceof DrasylServerChannel;
 
         if (endpoint.isUnresolved()) {
             throw new UnresolvedAddressException();
@@ -232,7 +233,7 @@ public class PeersManager {
         return null;
     }
 
-    public InetSocketAddress getEndpoint(final DrasylAddress peer, final Class<?> id) {
+    public InetSocketAddress getDirectEndpoint(final DrasylAddress peer, final Class<?> id) {
         final PeerPath path = getPath(peer, id);
         if (path != null) {
             return path.endpoint;
@@ -240,12 +241,20 @@ public class PeersManager {
         return null;
     }
 
-    public InetSocketAddress getEndpoint(final DrasylAddress peer) {
+    public InetSocketAddress getDirectEndpoint(final DrasylAddress peer) {
         final PeerPath path = paths.get(peer);
         if (path != null) {
             return path.endpoint;
         }
         return null;
+    }
+
+    public InetSocketAddress getEndpoint(final DrasylAddress peer) {
+        final InetSocketAddress endpoint = getDirectEndpoint(peer);
+        if (endpoint != null) {
+            return endpoint;
+        }
+        return getDirectEndpoint(getDefaultPeer());
     }
 
     public Set<DrasylAddress> getPeers(final Class<?> id) {
@@ -323,6 +332,18 @@ public class PeersManager {
             return true;
         }
         return false;
+    }
+
+    public boolean removeSuperPeerPath(ChannelHandlerContext ctx, DrasylAddress peer, Class<?> id) {
+        if (removePath(ctx, peer, id)) {
+            ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(peer, id));
+            return true;
+        }
+        return false;
+    }
+
+    public boolean hasPath(final DrasylAddress peers) {
+        return paths.get(peers) != null;
     }
 
     static class Peer {

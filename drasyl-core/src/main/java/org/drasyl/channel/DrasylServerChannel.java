@@ -24,6 +24,8 @@ package org.drasyl.channel;
 import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
@@ -42,8 +44,6 @@ import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.util.HashSetMultimap;
-import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -75,7 +75,6 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private volatile State state;
     private volatile Identity identity; // NOSONAR
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
-    final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>(); // FIXME: kann vermutlich durch PeersManager ersetzt werden
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -128,7 +127,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
-                ch.pipeline().addLast(new ChildChannelRouter(paths));
+                ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
             }
         });
@@ -231,13 +230,9 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.
      */
-    // FIXME: brauchen wir den noch?
     private static class ChildChannelRouter extends ChannelDuplexHandler {
-        private final SetMultimap<DrasylAddress, Object> paths;
-
         @SuppressWarnings("java:S2384")
-        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
-            this.paths = requireNonNull(paths);
+        ChildChannelRouter() {
         }
 
         @Override
@@ -293,11 +288,14 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             requireNonNull(address);
             requireNonNull(path);
 
-            final boolean firstPath = paths.get(address).isEmpty();
             final Channel channel = getChildChannel(ctx, address);
-            if (paths.put(address, path) && firstPath && channel != null) {
+            if (config(ctx).getPeersManager().hasPath(address) && channel != null) {
                 channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
             }
+        }
+
+        private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+            return (DrasylServerChannelConfig) ctx.channel().config();
         }
 
         private void removePath(final ChannelHandlerContext ctx,
@@ -307,7 +305,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             requireNonNull(path);
 
             final Channel channel = getChildChannel(ctx, address);
-            if (paths.remove(address, path) && paths.get(address).isEmpty() && channel != null) {
+            if (!config(ctx).getPeersManager().hasPath(address) && channel != null) {
                 channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
             }
         }
@@ -330,11 +328,17 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
             if (oldValue != null) {
-                oldValue.close();
-                // wait for close to complete!?
+                // wait for close to complete!
+                oldValue.close().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        ctx.fireChannelRead(msg);
+                    }
+                });
             }
-
-            ctx.fireChannelRead(msg);
+            else {
+                ctx.fireChannelRead(msg);
+            }
         }
     }
 }

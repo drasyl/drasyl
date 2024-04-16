@@ -212,7 +212,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (traversingPeer.isStale()) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                config(ctx).getPeersManager().removePath(ctx, address, PATH_ID);
+                config(ctx).getPeersManager().removeSuperPeerPath(ctx, address, PATH_ID);
             }
             else {
                 // send Discovery

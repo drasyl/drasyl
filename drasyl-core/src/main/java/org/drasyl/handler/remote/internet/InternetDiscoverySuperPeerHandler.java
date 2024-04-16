@@ -28,7 +28,6 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
@@ -201,9 +200,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (childrenPeer.isStale()) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                if (config(ctx).getPeersManager().removePath(ctx, address, PATH_ID)) {
-                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(address, PATH_ID));
-                }
+                config(ctx).getPeersManager().removeClientPath(ctx, address, PATH_ID);
             }
         }
     }

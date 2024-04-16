@@ -23,6 +23,7 @@ package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -46,6 +47,8 @@ class PluginsHandlerTest {
     private DrasylPlugin plugin;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylServerChannel channel;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     @BeforeEach
     void setUp() {
@@ -58,7 +61,7 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelRegistered(ctx);
 
@@ -72,7 +75,7 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelActive(ctx);
 
@@ -86,7 +89,7 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelInactive(ctx);
 
@@ -100,7 +103,7 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config);
+            final PluginsHandler handler = new PluginsHandler(config, identity);
 
             handler.channelUnregistered(ctx);
 

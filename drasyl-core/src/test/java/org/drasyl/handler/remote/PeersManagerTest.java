@@ -76,7 +76,7 @@ class PeersManagerTest {
             peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
             peersManager.addPath(ctx, peer, PATH_ID_1, endpoint2, (short) 5);
 
-            assertEquals(endpoint2, peersManager.getEndpoint(peer, PATH_ID_1));
+            assertEquals(endpoint2, peersManager.getDirectEndpoint(peer, PATH_ID_1));
         }
     }
 

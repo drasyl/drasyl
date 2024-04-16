@@ -82,6 +82,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
         when(config.getPeersManager().removePath(any(), any(), any())).thenReturn(true);
+        when(config.getPeersManager().removeClientPath(any(), any(), any())).thenCallRealMethod();
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);

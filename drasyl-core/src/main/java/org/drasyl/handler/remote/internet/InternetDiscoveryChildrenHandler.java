@@ -162,11 +162,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             superPeers = config(ctx).getSuperPeers().entrySet().stream()
                     .collect(Collectors.toMap(Entry::getKey, e -> new SuperPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), e.getValue())));
             LOG.debug("Start Heartbeat job.");
-            // populate initial state (RemoveSuperPeerAndPathEvent) for all super peers to our path event filter
-            for (final Entry<IdentityPublicKey, SuperPeer> entry : superPeers.entrySet()) {
-                final IdentityPublicKey publicKey = entry.getKey();
-                config(ctx).getPeersManager().removePath(ctx, publicKey, PATH_ID);
-            }
             heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
         }
     }
@@ -279,7 +274,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 }
             }
             else {
-                if (peersManager.removePath(ctx, publicKey, PATH_ID)) {
+                if (peersManager.removeClientPath(ctx, publicKey, PATH_ID)) {
                     ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(publicKey, PATH_ID));
                 }
             }

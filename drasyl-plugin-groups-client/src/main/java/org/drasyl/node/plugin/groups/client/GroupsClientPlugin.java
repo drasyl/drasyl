@@ -22,7 +22,6 @@
 package org.drasyl.node.plugin.groups.client;
 
 import com.typesafe.config.Config;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
@@ -35,7 +34,6 @@ import org.drasyl.util.logging.LoggerFactory;
  * as leaving and joining nodes.
  */
 public class GroupsClientPlugin implements DrasylPlugin {
-    public static final String GROUPS_CLIENT_HANDLER = "GROUPS_CLIENT_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientPlugin.class);
     private final GroupsClientConfig config;
 
@@ -56,15 +54,17 @@ public class GroupsClientPlugin implements DrasylPlugin {
     public void onBeforeStart(final PluginEnvironment environment) {
         LOG.debug("Start Groups Client Plugin with options: {}", config);
 
-        environment.getPipeline().addAfter(environment.getPipeline().context(ApplicationMessageToPayloadCodec.class).name(), GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
-        environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_MANAGER_DECODER", new GroupsServerMessageDecoder());
-        environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_CLIENT_ENCODER", new GroupsClientMessageEncoder());
+        environment.getPipeline().addLast(new GroupsClientMessageEncoder());
+        environment.getPipeline().addLast(new GroupsServerMessageDecoder());
+        environment.getPipeline().addLast(new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
     }
 
     @Override
     public void onBeforeShutdown(final PluginEnvironment environment) {
         LOG.debug("Stop Groups Client Plugin.");
 
-        environment.getPipeline().remove(GROUPS_CLIENT_HANDLER);
+        environment.getPipeline().remove(GroupsClientHandler.class);
+        environment.getPipeline().remove(GroupsClientMessageEncoder.class);
+        environment.getPipeline().remove(GroupsServerMessageDecoder.class);
     }
 }

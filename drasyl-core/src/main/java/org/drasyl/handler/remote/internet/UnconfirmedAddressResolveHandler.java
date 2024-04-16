@@ -87,7 +87,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 if (stale) {
                     final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
                     LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
-                    peersManager.removePath(ctx, publicKey, PATH_ID);
+                    config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
                 }
             }
 
@@ -95,5 +95,9 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 scheduleHousekeepingTask(ctx);
             }
         }, expireCacheAfter, MILLISECONDS);
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }
