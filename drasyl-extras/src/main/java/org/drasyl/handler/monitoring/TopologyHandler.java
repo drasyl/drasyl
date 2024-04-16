@@ -29,6 +29,7 @@ import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.net.InetSocketAddress;
 import java.util.HashMap;
@@ -42,6 +43,7 @@ import static java.util.Objects.requireNonNull;
  * Other handler can implement this class and retrieve the topology by calling
  * {@link #topology(ChannelHandlerContext)}.
  */
+@UnstableApi
 @SuppressWarnings("java:S118")
 public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
     protected final Map<DrasylAddress, InetSocketAddress> superPeers;

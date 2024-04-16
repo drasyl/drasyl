@@ -26,6 +26,7 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.time.Duration;
 
@@ -33,6 +34,7 @@ import java.time.Duration;
  * Arms (encrypt) outbound and disarms (decrypt) inbound messages. Messages that could not be
  * (dis-)armed are dropped. Uses only long time keys.
  */
+@UnstableApi
 @SuppressWarnings("java:S110")
 public class LongTimeArmHandler extends AbstractArmHandler {
     protected LongTimeArmHandler(final Crypto crypto,

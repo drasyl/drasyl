@@ -28,6 +28,7 @@ import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -41,6 +42,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java">Jadex</a>
  */
+@UnstableApi
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);

@@ -37,6 +37,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.serialization.Serializer;
 import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -68,6 +69,7 @@ import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @SuppressWarnings("java:S118")
 @AutoValue
 public abstract class DrasylConfig {

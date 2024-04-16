@@ -25,6 +25,7 @@ import com.typesafe.config.Config;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -33,6 +34,7 @@ import org.drasyl.util.logging.LoggerFactory;
  * startup to join groups. The manager can then inform the node about existing memberships as well
  * as leaving and joining nodes.
  */
+@UnstableApi
 public class GroupsClientPlugin implements DrasylPlugin {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientPlugin.class);
     private final GroupsClientConfig config;

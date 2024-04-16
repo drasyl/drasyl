@@ -38,6 +38,7 @@ import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -55,6 +56,7 @@ import static java.util.Objects.requireNonNull;
  * <li>...a {@link org.drasyl.node.event.NodeOnlineEvent} if this node is registered to at least one super peer.
  * <li>...a {@link org.drasyl.node.event.NodeOfflineEvent} when this node is not longer registered to any super peer.
  */
+@UnstableApi
 public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
     private final SetMultimap<DrasylAddress, Object> paths;
     private final Set<DrasylAddress> children;
