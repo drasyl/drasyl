@@ -250,7 +250,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             config(ctx).getPeersManager().setDefaultPath(ctx, publicKey);
         }
 
-        if (config(ctx).getPeersManager().addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY)) {
+        if (config(ctx).getPeersManager().addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY, rtt)) {
             ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(publicKey, inetAddress, PATH_ID, rtt));
         }
         else {

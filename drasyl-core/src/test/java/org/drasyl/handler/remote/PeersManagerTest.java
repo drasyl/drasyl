@@ -58,10 +58,10 @@ class PeersManagerTest {
 
             final PeersManager peersManager = new PeersManager();
 
-            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5));
-            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7));
-            assertTrue(peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
-            assertFalse(peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
+            assertTrue(peersManager.addSuperPeerPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5));
+            assertTrue(peersManager.addSuperPeerPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7));
+            assertTrue(peersManager.addSuperPeerPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
+            assertFalse(peersManager.addSuperPeerPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6));
         }
 
         @Test
@@ -73,8 +73,8 @@ class PeersManagerTest {
             when(ctx.channel()).thenReturn(drasylServerChannel);
             final PeersManager peersManager = new PeersManager();
 
-            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
-            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint2, (short) 5);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_1, endpoint2, (short) 5);
 
             assertEquals(endpoint2, peersManager.getDirectEndpoint(peer, PATH_ID_1));
         }
@@ -89,15 +89,15 @@ class PeersManagerTest {
                                                   @Mock DrasylServerChannel drasylServerChannel) {
             when(ctx.channel()).thenReturn(drasylServerChannel);
             final PeersManager peersManager = new PeersManager();
-            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint, (short) 5);
-            peersManager.addPath(ctx, peer, PATH_ID_3, endpoint, (short) 6);
-            peersManager.addPath(ctx, peer, PATH_ID_2, endpoint, (short) 7);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_1, endpoint, (short) 5);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_3, endpoint, (short) 6);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_2, endpoint, (short) 7);
 
-            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_1));
-            assertFalse(peersManager.removePath(ctx, peer, PATH_ID_1));
-            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_2));
-            assertTrue(peersManager.removePath(ctx, peer, PATH_ID_3));
-            assertFalse(peersManager.removePath(ctx, peer, PATH_ID_1));
+            assertTrue(peersManager.removeSuperPeerPath(ctx, peer, PATH_ID_1));
+            assertFalse(peersManager.removeSuperPeerPath(ctx, peer, PATH_ID_1));
+            assertTrue(peersManager.removeSuperPeerPath(ctx, peer, PATH_ID_2));
+            assertTrue(peersManager.removeSuperPeerPath(ctx, peer, PATH_ID_3));
+            assertFalse(peersManager.removeSuperPeerPath(ctx, peer, PATH_ID_1));
         }
     }
 
@@ -114,9 +114,9 @@ class PeersManagerTest {
 
             final PeersManager peersManager = new PeersManager();
 
-            peersManager.addPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
-            peersManager.addPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7);
-            peersManager.addPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_1, endpoint1, (short) 5);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_2, endpoint2, (short) 7);
+            peersManager.addSuperPeerPath(ctx, peer, PATH_ID_3, endpoint3, (short) 6);
 
             assertEquals(List.of(endpoint1, endpoint3, endpoint2), peersManager.getEndpoints(peer));
         }

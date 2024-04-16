@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -81,8 +80,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(childrenPeer.isStale()).thenReturn(true);
-        when(config.getPeersManager().removePath(any(), any(), any())).thenReturn(true);
-        when(config.getPeersManager().removeClientPath(any(), any(), any())).thenCallRealMethod();
+        when(config.getPeersManager().removeClientPath(any(), any(), any())).thenReturn(true);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
@@ -93,6 +91,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
             final Object evt = channel.readEvent();
+            verify(config.getPeersManager()).removeClientPath(any(), any(), any());
             assertThat(evt, instanceOf(RemoveChildrenAndPathEvent.class));
         });
         assertTrue(childrenPeers.isEmpty());
@@ -116,8 +115,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         when(config.getHelloInterval().toMillis()).thenReturn(2L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
-        when(config.getPeersManager().addPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort())).thenCallRealMethod();
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
         when(identity.getAddress()).thenReturn(myPublicKey);
         when(config.getMaxMessageAge().toMillis()).thenReturn(1L);
 
@@ -127,7 +125,7 @@ class InternetDiscoverySuperPeerHandlerTest {
 
         channel.writeInbound(msg);
 
-        assertThat(channel.readEvent(), instanceOf(AddPathAndChildrenEvent.class));
+        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyShort());
         final InetAddressedMessage<AcknowledgementMessage> replyMsg = channel.readOutbound();
         assertThat(replyMsg.content(), instanceOf(AcknowledgementMessage.class));
         assertSame(replyMsg.recipient(), inetAddress);

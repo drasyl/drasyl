@@ -173,8 +173,7 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().config()).thenReturn(config);
-            when(config.getPeersManager().addPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
-            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenCallRealMethod();
+            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
 
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
@@ -182,7 +181,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
-            verify(ctx).fireUserEventTriggered(any(AddPathAndChildrenEvent.class));
+            verify(config.getPeersManager()).addClientPath(eq(ctx), any(), any(), any(), anyShort());
         }
 
         @Test

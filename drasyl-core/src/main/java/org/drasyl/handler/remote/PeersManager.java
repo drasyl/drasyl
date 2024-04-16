@@ -22,14 +22,12 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
+import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.HashSetMultimap;
-import org.drasyl.util.SetMultimap;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.UnresolvedAddressException;
@@ -38,18 +36,16 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
 
 public class PeersManager {
-    private final Map<DrasylAddress, Peer> peers = new HashMap<>();
-    private final Map<DrasylAddress, PeerPath> paths = new HashMap<>();
-    private final SetMultimap<DrasylAddress, Class<?>> ids = new HashSetMultimap<>();
-    private final Map<DrasylAddress, Integer> localPaths = new HashMap<>();
+    private final Map<DrasylAddress, AbstractPeer> peers = new HashMap<>();
     private final long helloTimeoutMillis;
-    private DrasylAddress defaultPath;
+    private DrasylAddress defaultPeer;
 
     public PeersManager(final long helloTimeoutMillis) {
         this.helloTimeoutMillis = requirePositive(helloTimeoutMillis);
@@ -61,192 +57,87 @@ public class PeersManager {
         );
     }
 
-    /**
-     * @throws UnresolvedAddressException
-     */
-    public boolean addPath(final ChannelHandlerContext ctx,
-                           final DrasylAddress peer,
-                           final Class<?> id,
-                           final InetSocketAddress endpoint,
-                           final short priority) {
-//        assert ctx.channel() instanceof DrasylServerChannel;
-
-        if (endpoint.isUnresolved()) {
-            throw new UnresolvedAddressException();
+    public boolean addSuperPeerPath(final ChannelHandlerContext ctx,
+                                    final DrasylAddress peerKey,
+                                    final Class<?> id,
+                                    final InetSocketAddress endpoint,
+                                    final short priority,
+                                    long rtt) {
+        final AbstractPeer peer = peers.computeIfAbsent(peerKey, key -> new SuperPeer());
+        if (!(peer instanceof SuperPeer)) {
+            throw new IllegalStateException();
         }
 
-        if (!ids.put(peer, id)) {
-            // update endpoint?
-            PeerPath current = paths.get(peer);
-            while (current != null) {
-                if (current.id == id) {
-                    // FIXME: change only attribute or replace whole path? and return true?
-                    current.endpoint = endpoint;
-                    break;
-                }
-                current = current.next;
-            }
-
-            return false;
+        if (peer.addPath(ctx, id, endpoint, priority)) {
+            ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(peerKey, endpoint, id, rtt));
+            return true;
         }
-
-        final PeerPath newPath = new PeerPath(id, endpoint, priority);
-
-        final PeerPath head = paths.get(peer);
-        if (head == null || head.priority > newPath.priority) {
-            // replace head
-            newPath.next = head;
-            paths.put(peer, newPath);
+        else if (rtt >= 0) {
+            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
         }
-        else {
-            PeerPath current = head;
-            while (current.next != null && current.next.priority <= newPath.priority) {
-                current = current.next;
-            }
-
-            newPath.next = current.next;
-            current.next = newPath;
-        }
-
-        return true;
+        return false;
     }
 
     public boolean addSuperPeerPath(final ChannelHandlerContext ctx,
-                                    final DrasylAddress peer,
+                                    final DrasylAddress peerKey,
                                     final Class<?> id,
                                     final InetSocketAddress endpoint,
                                     final short priority) {
-        return addPath(ctx, peer, id, endpoint, priority);
+        return addSuperPeerPath(ctx, peerKey, id, endpoint, priority, -1);
     }
 
     public boolean addClientPath(final ChannelHandlerContext ctx,
-                                 final DrasylAddress peer,
+                                 final DrasylAddress peerKey,
                                  final Class<?> id,
                                  final InetSocketAddress endpoint,
                                  final short priority,
                                  final long rtt) {
-        if (addPath(ctx, peer, id, endpoint, priority)) {
-            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, endpoint, id));
+        final AbstractPeer peer = peers.computeIfAbsent(peerKey, key -> new ClientPeer());
+        if (!(peer instanceof ClientPeer)) {
+            throw new IllegalStateException();
+        }
+
+        if (peer.addPath(ctx, id, endpoint, priority)) {
+            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peerKey, endpoint, id));
             return true;
         }
-        ctx.fireUserEventTriggered(PathRttEvent.of(peer, endpoint, id, rtt));
+        else if (rtt >= 0) {
+            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
+        }
         return false;
     }
 
     public boolean addClientPath(final ChannelHandlerContext ctx,
-                                 final DrasylAddress peer,
+                                 final DrasylAddress peerKey,
                                  final Class<?> id,
                                  final InetSocketAddress endpoint,
                                  final short priority) {
-        if (addPath(ctx, peer, id, endpoint, priority)) {
-            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, endpoint, id));
-            return true;
-        }
-        return false;
-    }
-
-    public void addLocalClientPath(final ChannelHandlerContext ctx,
-                                   final DrasylAddress peer,
-                                   final Class<?> id) {
-        assert ctx.channel() instanceof DrasylServerChannel;
-
-        final int count = localPaths.computeIfAbsent(peer, k -> 0);
-        localPaths.put(peer, count + 1);
-        if (count == 0) {
-            ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, null, "local"));
-        }
-    }
-
-    public void removeLocalClientPath(final ChannelHandlerContext ctx,
-                                      final DrasylAddress peer,
-                                      final Class<?> id) {
-        assert ctx.channel() instanceof DrasylServerChannel;
-
-        final int count = localPaths.get(peer);
-        if (count == 1) {
-            localPaths.remove(peer);
-            ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, "local"));
-        }
-        else {
-            localPaths.put(peer, count - 1);
-        }
-    }
-
-    public boolean removePath(final ChannelHandlerContext ctx,
-                              final DrasylAddress peer,
-                              final Class<?> id) {
-        assert ctx.channel() instanceof DrasylServerChannel;
-
-        if (!ids.remove(peer, id)) {
-            return false;
-        }
-
-        PeerPath prev = null;
-        PeerPath current = paths.get(peer);
-        while (current != null) {
-            if (current.id == id) {
-                if (prev != null) {
-                    prev.next = current.next;
-                }
-                else if (current.next != null) {
-                    paths.put(peer, current.next);
-                }
-                else {
-                    paths.remove(peer);
-                }
-
-                return true;
-            }
-
-            prev = current;
-            current = current.next;
-        }
-
-        return false;
+        return addClientPath(ctx, peerKey, id, endpoint, priority, -1);
     }
 
     public void removePaths(final ChannelHandlerContext ctx, final Class<?> id) {
-        final Set<DrasylAddress> peers = Set.copyOf(ids.keySet());
-        peers.forEach(peer -> removePath(ctx, peer, id));
+        final Set<AbstractPeer> peersCopy = Set.copyOf(peers.values());
+        peersCopy.forEach(peer -> peer.removePath(ctx, id));
     }
 
-    public InetSocketAddress resolve(final DrasylAddress peer) {
-        final PeerPath path = paths.get(peer);
-        if (path != null) {
-            return path.endpoint;
+    public InetSocketAddress getDirectEndpoint(final DrasylAddress peerKey, final Class<?> id) {
+        final AbstractPeer peer = peers.get(peerKey);
+        if (peer != null) {
+            return peer.getDirectEndpoint(id);
         }
         else {
             return null;
         }
     }
 
-    private PeerPath getPath(final DrasylAddress peer, final Class<?> id) {
-        PeerPath current = paths.get(peer);
-        while (current != null) {
-            if (current.id == id) {
-                return current;
-            }
-
-            current = current.next;
+    public InetSocketAddress getDirectEndpoint(final DrasylAddress peerKey) {
+        final AbstractPeer peer = peers.get(peerKey);
+        if (peer != null) {
+            return peer.resolve();
         }
-
-        return null;
-    }
-
-    public InetSocketAddress getDirectEndpoint(final DrasylAddress peer, final Class<?> id) {
-        final PeerPath path = getPath(peer, id);
-        if (path != null) {
-            return path.endpoint;
+        else {
+            return null;
         }
-        return null;
-    }
-
-    public InetSocketAddress getDirectEndpoint(final DrasylAddress peer) {
-        final PeerPath path = paths.get(peer);
-        if (path != null) {
-            return path.endpoint;
-        }
-        return null;
     }
 
     public InetSocketAddress getEndpoint(final DrasylAddress peer) {
@@ -254,17 +145,21 @@ public class PeersManager {
         if (endpoint != null) {
             return endpoint;
         }
-        return getDirectEndpoint(getDefaultPeer());
+        else {
+            return getDirectEndpoint(getDefaultPeer());
+        }
     }
 
     public Set<DrasylAddress> getPeers(final Class<?> id) {
-        final Set<DrasylAddress> peers = new HashSet<>();
-        for (final DrasylAddress peer : ids.keySet()) {
-            if (ids.get(peer).contains(id)) {
-                peers.add(peer);
+        final Set<DrasylAddress> peerKeys = new HashSet<>();
+        for (final Entry<DrasylAddress, AbstractPeer> entry : peers.entrySet()) {
+            final DrasylAddress peerKey = entry.getKey();
+            final AbstractPeer peer = entry.getValue();
+            if (peer.pathIds.contains(id)) {
+                peerKeys.add(peerKey);
             }
         }
-        return peers;
+        return peerKeys;
     }
 
     public void helloMessageReceived(final DrasylAddress peer, final Class<?> id) {
@@ -273,7 +168,7 @@ public class PeersManager {
     }
 
     public void applicationMessageSentOrReceived(final DrasylAddress peerKey) {
-        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer());
+        final AbstractPeer peer = peers.computeIfAbsent(peerKey, key -> new AbstractPeer());
         peer.applicationMessageSentOrReceived();
     }
 
@@ -287,71 +182,208 @@ public class PeersManager {
     }
 
     public long lastApplicationMessageSentOrReceivedTime(final DrasylAddress peerKey) {
-        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer());
+        final AbstractPeer peer = peers.computeIfAbsent(peerKey, key -> new AbstractPeer());
         return peer.lastApplicationMessageSentOrReceivedTime;
     }
 
     public boolean hasDefaultPeer() {
-        return defaultPath != null;
+        return defaultPeer != null;
     }
 
     public void setDefaultPath(final ChannelHandlerContext ctx,
                                final DrasylAddress defaultPath) {
-        assert ctx.channel() instanceof DrasylServerChannel;
-
-        this.defaultPath = requireNonNull(defaultPath);
+        this.defaultPeer = requireNonNull(defaultPath);
     }
 
     public void unsetDefaultPath(final ChannelHandlerContext ctx) {
-        assert ctx.channel() instanceof DrasylServerChannel;
-        defaultPath = null;
+        defaultPeer = null;
     }
 
     public DrasylAddress getDefaultPeer() {
-        return defaultPath;
+        return defaultPeer;
     }
 
-    public List<InetSocketAddress> getEndpoints(final DrasylAddress peer) {
-        final List<InetSocketAddress> endpoints = new ArrayList<>();
-        PeerPath current = paths.get(peer);
-        while (current != null) {
-            endpoints.add(current.endpoint);
-            current = current.next;
-        }
-        return endpoints;
+    public List<InetSocketAddress> getEndpoints(final DrasylAddress peerKey) {
+        final AbstractPeer peer = peers.computeIfAbsent(peerKey, key -> new AbstractPeer());
+        return peer.getEndpoints();
     }
 
-    public void removeClientPaths(ChannelHandlerContext ctx, Class<?> id) {
-        final Set<DrasylAddress> peers = Set.copyOf(ids.keySet());
-        peers.forEach(peer -> removeClientPath(ctx, peer, id));
+    public void removeClientPaths(final ChannelHandlerContext ctx, final Class<?> id) {
+        final Set<DrasylAddress> peerKeys = Set.copyOf(peers.keySet());
+        peerKeys.forEach(peerKey -> removeClientPath(ctx, peerKey, id));
     }
 
-    public boolean removeClientPath(ChannelHandlerContext ctx, DrasylAddress peer, Class<?> id) {
-        if (removePath(ctx, peer, id)) {
-            ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, id));
+    public boolean removeClientPath(final ChannelHandlerContext ctx, final DrasylAddress peerKey, final Class<?> id) {
+        final AbstractPeer peer = peers.get(peerKey);
+        if (peer != null && peer.removePath(ctx, id)) {
+            ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peerKey, id));
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
-    public boolean removeSuperPeerPath(ChannelHandlerContext ctx, DrasylAddress peer, Class<?> id) {
-        if (removePath(ctx, peer, id)) {
-            ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(peer, id));
+    public boolean removeSuperPeerPath(ChannelHandlerContext ctx, DrasylAddress peerKey, Class<?> id) {
+        final AbstractPeer peer = peers.get(peerKey);
+        if (peer != null && peer.removePath(ctx, id)) {
+            ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(peerKey, id));
             return true;
         }
-        return false;
+        else {
+            return false;
+        }
     }
 
-    public boolean hasPath(final DrasylAddress peers) {
-        return paths.get(peers) != null;
+    public boolean hasPath(final DrasylAddress peerKey) {
+        AbstractPeer peer = peers.get(peerKey);
+        if (peer != null) {
+            return peer.hasPath();
+        }
+        else {
+            return false;
+        }
     }
 
-    static class Peer {
+    private PeerPath getPath(final DrasylAddress peerKey, final Class<?> id) {
+        final AbstractPeer peer = peers.get(peerKey);
+        if (peer != null) {
+            return peer.getPath(id);
+        }
+        return null;
+    }
+
+    static class AbstractPeer {
+        private PeerPath bestPath;
+        private final Set<Class<?>> pathIds = new HashSet<>();
         private long lastApplicationMessageSentOrReceivedTime;
 
         public void applicationMessageSentOrReceived() {
             lastApplicationMessageSentOrReceivedTime = System.currentTimeMillis();
         }
+
+        public boolean addPath(final ChannelHandlerContext ctx,
+                               final Class<?> id,
+                               final InetSocketAddress endpoint,
+                               final short priority) {
+            if (endpoint != null && endpoint.isUnresolved()) {
+                throw new UnresolvedAddressException();
+            }
+
+            if (!pathIds.add(id)) {
+                // update endpoint?
+                PeerPath current = bestPath;
+                while (current != null) {
+                    if (current.id == id) {
+                        // FIXME: change only attribute or replace whole path? and return true?
+                        current.endpoint = endpoint;
+                        break;
+                    }
+                    current = current.next;
+                }
+
+                return false;
+            }
+
+            final PeerPath newPath = new PeerPath(id, endpoint, priority);
+
+            final PeerPath head = bestPath;
+            if (head == null || head.priority > newPath.priority) {
+                // replace head
+                newPath.next = head;
+                bestPath = newPath;
+            }
+            else {
+                PeerPath current = head;
+                while (current.next != null && current.next.priority <= newPath.priority) {
+                    current = current.next;
+                }
+
+                newPath.next = current.next;
+                current.next = newPath;
+            }
+
+            return true;
+        }
+
+        public boolean removePath(final ChannelHandlerContext ctx, final Class<?> id) {
+            if (!pathIds.remove(id)) {
+                return false;
+            }
+
+            PeerPath prev = null;
+            PeerPath current = bestPath;
+            while (current != null) {
+                if (current.id == id) {
+                    if (prev != null) {
+                        prev.next = current.next;
+                    }
+                    else if (current.next != null) {
+                        bestPath = current.next;
+                    }
+                    else {
+                        bestPath = null;
+                    }
+
+                    return true;
+                }
+
+                prev = current;
+                current = current.next;
+            }
+
+            return false;
+        }
+
+        public InetSocketAddress resolve() {
+            if (bestPath != null) {
+                return bestPath.endpoint;
+            }
+            else {
+                return null;
+            }
+        }
+
+        public PeerPath getPath(final Class<?> id) {
+            PeerPath current = bestPath;
+            while (current != null) {
+                if (current.id == id) {
+                    return current;
+                }
+
+                current = current.next;
+            }
+
+            return null;
+        }
+
+        public InetSocketAddress getDirectEndpoint(final Class<?> id) {
+            final PeerPath path = getPath(id);
+            if (path != null) {
+                return path.endpoint;
+            }
+            return null;
+        }
+
+        public List<InetSocketAddress> getEndpoints() {
+            final List<InetSocketAddress> endpoints = new ArrayList<>();
+            PeerPath current = bestPath;
+            while (current != null) {
+                endpoints.add(current.endpoint);
+                current = current.next;
+            }
+            return endpoints;
+        }
+
+        public boolean hasPath() {
+            return bestPath != null;
+        }
+    }
+
+    static class SuperPeer extends AbstractPeer {
+    }
+
+    static class ClientPeer extends AbstractPeer {
     }
 
     static class PeerPath {
@@ -365,7 +397,7 @@ public class PeersManager {
                         final InetSocketAddress endpoint,
                         final short priority) {
             this.id = requireNonNull(id);
-            this.endpoint = requireNonNull(endpoint);
+            this.endpoint = endpoint;
             this.priority = priority;
         }
 

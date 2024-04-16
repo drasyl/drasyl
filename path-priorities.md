@@ -1,5 +1,6 @@
 | Priority | Location                                                                                                                                                     |
 |---------:|--------------------------------------------------------------------------------------------------------------------------------------------------------------|
+|     `20` | [IntraVmDiscovery](drasyl-core/src/main/java/org/drasyl/handler/discovery/IntraVmDiscovery.java)                                                             |
 |     `70` | [StaticRoutesHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/StaticRoutesHandler.java)                                                          |
 |     `80` | [LocalHostDiscovery](drasyl-core/src/main/java/org/drasyl/handler/remote/LocalHostDiscovery.java)                                                            |
 |     `90` | [LocalNetworkDiscovery](drasyl-core/src/main/java/org/drasyl/handler/remote/LocalNetworkDiscovery.java)                                                      |

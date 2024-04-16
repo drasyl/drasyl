@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.TraversingPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -174,8 +173,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(config.getPeersManager().addPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort(), anyLong())).thenCallRealMethod();
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort(), anyLong())).thenReturn(true);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
@@ -185,7 +183,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        assertThat(channel.readEvent(), instanceOf(AddPathAndChildrenEvent.class));
+        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyShort(), anyLong());
         verify(traversingPeer).acknowledgementReceived(any());
     }
 
