@@ -226,7 +226,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return udpEventLoopSupplier;
     }
 
-    public Class<? extends DatagramChannel> getUdpChannelClass() { return udpChannelClass; }
+    public Class<? extends DatagramChannel> getUdpChannelClass() {
+        return udpChannelClass;
+    }
 
     public Bootstrap getUdpBootstrap() {
         return udpBootstrap;

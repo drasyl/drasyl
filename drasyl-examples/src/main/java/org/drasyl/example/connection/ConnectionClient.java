@@ -38,7 +38,6 @@ import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;

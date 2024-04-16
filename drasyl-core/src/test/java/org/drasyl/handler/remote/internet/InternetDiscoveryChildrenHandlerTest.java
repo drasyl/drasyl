@@ -74,7 +74,6 @@ class InternetDiscoveryChildrenHandlerTest {
         when(identity.getIdentityPublicKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
         when(identity.getIdentitySecretKey().toByteArray()).thenReturn(new byte[]{ 1, 2, 3 });
 
-
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(currentTime, 0L, null);
 
         // channel active

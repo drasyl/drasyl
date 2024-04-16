@@ -150,7 +150,7 @@ public class PeersManager {
                                    final Class<?> id) {
         assert ctx.channel() instanceof DrasylServerChannel;
 
-        int count = localPaths.computeIfAbsent(peer, k -> 0);
+        final int count = localPaths.computeIfAbsent(peer, k -> 0);
         localPaths.put(peer, count + 1);
         if (count == 0) {
             ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peer, null, "local"));
@@ -162,7 +162,7 @@ public class PeersManager {
                                       final Class<?> id) {
         assert ctx.channel() instanceof DrasylServerChannel;
 
-        int count = localPaths.get(peer);
+        final int count = localPaths.get(peer);
         if (count == 1) {
             localPaths.remove(peer);
             ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, "local"));

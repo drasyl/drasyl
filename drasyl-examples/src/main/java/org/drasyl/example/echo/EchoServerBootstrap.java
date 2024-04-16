@@ -34,7 +34,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
