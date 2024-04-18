@@ -107,7 +107,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         for (final Iterator<DrasylAddress> it = config(ctx).getPeersManager().getPeers(PATH_ID).iterator();
              it.hasNext(); ) {
             final DrasylAddress publicKey = it.next();
-            final boolean stale = config(ctx).getPeersManager().isStale(publicKey, PATH_ID);
+            final boolean stale = config(ctx).getPeersManager().isStale(ctx, publicKey, PATH_ID);
 
             if (stale) {
                 final long lastInboundHelloTime = config(ctx).getPeersManager().lastHelloMessageReceivedTime(publicKey, PATH_ID);

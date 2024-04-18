@@ -209,7 +209,7 @@ class LocalHostDiscoveryTest {
 
             verify(watchDisposable).cancel(false);
             verify(postDisposable).cancel(false);
-            verify(config.getPeersManager()).removePaths(ctx, PATH_ID);
+            verify(config.getPeersManager()).removeClientPaths(ctx, PATH_ID);
         }
     }
 

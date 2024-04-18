@@ -166,8 +166,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        config(ctx).getPeersManager().getPeers(PATH_ID).forEach(peer -> ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peer, PATH_ID)));
-        config(ctx).getPeersManager().removePaths(ctx, PATH_ID);
+        config(ctx).getPeersManager().removeClientPaths(ctx, PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }

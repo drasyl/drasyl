@@ -239,7 +239,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                                               final AcknowledgementMessage msg,
                                               final InetSocketAddress inetAddress) {
         final DrasylAddress publicKey = msg.getSender();
-        final long rtt = currentTime.getAsLong() - msg.getTime();
+        final int rtt = (int) (currentTime.getAsLong() - msg.getTime());
         LOG.trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
 
         final SuperPeer superPeer = superPeers.get(publicKey);

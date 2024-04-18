@@ -82,7 +82,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
             final Iterator<DrasylAddress> iterator = peersManager.getPeers(PATH_ID).iterator();
             while (iterator.hasNext()) {
                 final DrasylAddress publicKey = iterator.next();
-                final boolean stale = peersManager.isStale(publicKey, PATH_ID);
+                final boolean stale = peersManager.isStale(ctx, publicKey, PATH_ID);
 
                 if (stale) {
                     final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
