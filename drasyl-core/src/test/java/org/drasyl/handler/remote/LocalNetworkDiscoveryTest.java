@@ -131,7 +131,7 @@ class LocalNetworkDiscoveryTest {
             when(ctx.channel()).thenReturn(channel);
             when(channel.config()).thenReturn(config);
             when(config.getPeersManager().getPeers(any())).thenReturn(Set.of(publicKey));
-            when(config.getPeersManager().isStale(ctx, any(), any())).thenReturn(true);
+            when(config.getPeersManager().isStale(any(), any(), any())).thenReturn(true);
 
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.doHeartbeat(ctx);

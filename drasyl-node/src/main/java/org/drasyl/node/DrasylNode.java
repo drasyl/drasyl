@@ -457,7 +457,6 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S1905", "java:S2142" })
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
-
             try {
                 final Long offset;
                 // check system time

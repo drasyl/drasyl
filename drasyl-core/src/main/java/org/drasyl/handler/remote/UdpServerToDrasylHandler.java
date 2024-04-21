@@ -29,7 +29,6 @@ import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -69,8 +68,9 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             peersManager.applicationMessageSentOrReceived(appMsg.getSender());
 
             // UnconfirmedAddressResolveHandler discovery
-            peersManager.addClientPath(ctx, appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
-            peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
+            // FIXME:
+            //peersManager.addClientPath(ctx, appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
+            //peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {

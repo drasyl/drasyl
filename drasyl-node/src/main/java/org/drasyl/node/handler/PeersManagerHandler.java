@@ -26,8 +26,10 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
+import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.event.Node;
@@ -80,7 +82,13 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
                                    final Object evt) {
         if (evt instanceof PathEvent) {
             final PathEvent e = (PathEvent) evt;
-            if (e instanceof AddPathAndSuperPeerEvent) {
+            if (e instanceof AddPathEvent) {
+                addPath(ctx, e.getAddress(), e.getPath());
+            }
+            else if (e instanceof RemovePathEvent) {
+                removePath(ctx, e.getAddress(), e.getPath());
+            }
+            else if (e instanceof AddPathAndSuperPeerEvent) {
                 addPathAndSuperPeer(ctx, e.getAddress(), e.getPath());
             }
             else if (e instanceof RemoveSuperPeerAndPathEvent) {
@@ -95,6 +103,28 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         }
 
         ctx.fireUserEventTriggered(evt);
+    }
+
+    private void addPath(final ChannelHandlerContext ctx,
+                         final DrasylAddress publicKey,
+                         final Object path) {
+        requireNonNull(publicKey);
+
+        final boolean firstPath = paths.get(publicKey).isEmpty();
+        if (paths.put(publicKey, path) && firstPath) {
+            ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
+        }
+    }
+
+    private void removePath(final ChannelHandlerContext ctx,
+                            final DrasylAddress publicKey,
+                            final Object path) {
+        requireNonNull(publicKey);
+        requireNonNull(path);
+
+        if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
+            ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
+        }
     }
 
     private void addPathAndSuperPeer(final ChannelHandlerContext ctx,

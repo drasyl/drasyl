@@ -25,7 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
@@ -46,7 +46,6 @@ import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -273,14 +272,11 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        for (final Iterator<DrasylAddress> i = config(ctx).getPeersManager().getPeers(PATH_ID).iterator();
-             i.hasNext(); ) {
-            final DrasylAddress publicKey = i.next();
-
+        Set<DrasylAddress> peers = config(ctx).getPeersManager().getPeers(PATH_ID);
+        for (final DrasylAddress publicKey : peers) {
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(publicKey, PATH_ID));
-                i.remove();
+                config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
             }
         }
 
@@ -319,8 +315,8 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof UdpServer.UdpServerBound) {
-            startDiscovery(ctx, ((UdpServer.UdpServerBound) evt).getBindAddress());
+        if (evt instanceof UdpServerBound) {
+            startDiscovery(ctx, ((UdpServerBound) evt).getBindAddress());
         }
 
         ctx.fireUserEventTriggered(evt);

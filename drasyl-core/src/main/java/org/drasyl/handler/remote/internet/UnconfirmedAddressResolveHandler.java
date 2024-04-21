@@ -85,8 +85,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 final boolean stale = peersManager.isStale(ctx, publicKey, PATH_ID);
 
                 if (stale) {
-                    final long lastInboundHelloTime = peersManager.lastHelloMessageReceivedTime(publicKey, PATH_ID);
-                    LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - lastInboundHelloTime);
+                    LOG.debug("Path to peer {} is stale. Remove it.", publicKey);
                     config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
                 }
             }

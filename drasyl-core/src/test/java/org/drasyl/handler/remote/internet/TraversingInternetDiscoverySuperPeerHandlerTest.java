@@ -51,6 +51,8 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -73,8 +75,8 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
                                                                             @Mock final InetSocketAddress inetAddress) {
         final InetSocketAddress childrenAInetAddress = new InetSocketAddress(22527);
         final InetSocketAddress childrenBInetAddress = new InetSocketAddress(22528);
-        when(childrenPeerA.publicInetAddress()).thenReturn(childrenAInetAddress);
-        when(childrenPeerB.publicInetAddress()).thenReturn(childrenBInetAddress);
+        when(config.getPeersManager().resolveInetAddress(eq(publicKeyA), any())).thenReturn(childrenAInetAddress);
+        when(config.getPeersManager().resolveInetAddress(eq(publicKeyB), any())).thenReturn(childrenBInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKeyA, childrenPeerA, publicKeyB, childrenPeerB));
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);

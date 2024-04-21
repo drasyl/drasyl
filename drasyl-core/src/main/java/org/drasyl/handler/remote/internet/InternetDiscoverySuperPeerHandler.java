@@ -28,6 +28,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
@@ -149,8 +150,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                               final InetAddressedMessage<RemoteMessage> addressedMsg) {
         // for one of my children? -> try to relay
         final DrasylAddress address = addressedMsg.content().getRecipient();
-        final ChildrenPeer childrenPeer = childrenPeers.get(address);
-        final InetSocketAddress inetAddress = childrenPeer.publicInetAddress();
+        final InetSocketAddress inetAddress = config(ctx).getPeersManager().resolveInetAddress(address, PATH_ID);
         relayMessage(ctx, addressedMsg, inetAddress);
     }
 
@@ -191,16 +191,16 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     }
 
     void doStalePeerCheck(final ChannelHandlerContext ctx) {
+        final PeersManager peersManager = config(ctx).getPeersManager();
         for (final Iterator<Entry<DrasylAddress, ChildrenPeer>> it = childrenPeers.entrySet().iterator();
              it.hasNext(); ) {
             final Entry<DrasylAddress, ChildrenPeer> entry = it.next();
             final DrasylAddress address = entry.getKey();
-            final ChildrenPeer childrenPeer = entry.getValue();
 
-            if (childrenPeer.isStale()) {
+            if (peersManager.isStale(ctx, address, PATH_ID)) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                config(ctx).getPeersManager().removeClientPath(ctx, address, PATH_ID);
+                peersManager.removeClientPath(ctx, address, PATH_ID);
             }
         }
     }
@@ -219,9 +219,10 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                     final InetSocketAddress inetAddress) {
         LOG.trace("Got Hello from `{}`.", msg.getSender());
 
-        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(currentTime, config(ctx).getHelloTimeout().toMillis(), inetAddress, msg.getEndpoints()));
+        final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
         config(ctx).getPeersManager().addClientPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY);
+        config(ctx).getPeersManager().helloMessageReceived(msg.getSender(), PATH_ID);
 
         // reply with Acknowledgement
         final AcknowledgementMessage acknowledgementMsg = AcknowledgementMessage.of(config(ctx).getNetworkId(), msg.getSender(), ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), msg.getTime());
@@ -248,48 +249,19 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     }
 
     protected static class ChildrenPeer {
-        private final LongSupplier currentTime;
-        private final long pingTimeoutMillis;
         private InetSocketAddress publicInetAddress;
         private Set<InetSocketAddress> privateInetAddresses;
-        long lastHelloTime;
 
-        ChildrenPeer(final LongSupplier currentTime,
-                     final long pingTimeoutMillis,
-                     final InetSocketAddress publicInetAddress,
-                     final Set<InetSocketAddress> privateInetAddresses,
-                     final long lastHelloTime) {
-            this.currentTime = requireNonNull(currentTime);
-            this.pingTimeoutMillis = pingTimeoutMillis;
+        ChildrenPeer(final InetSocketAddress publicInetAddress,
+                     final Set<InetSocketAddress> privateInetAddresses) {
             this.publicInetAddress = requireNonNull(publicInetAddress);
             this.privateInetAddresses = requireNonNull(privateInetAddresses);
-            this.lastHelloTime = lastHelloTime;
-        }
-
-        ChildrenPeer(final LongSupplier currentTime,
-                     final long pingTimeoutMillis,
-                     final InetSocketAddress publicInetAddress,
-                     final Set<InetSocketAddress> privateInetAddresses) {
-            this(currentTime, pingTimeoutMillis, publicInetAddress, privateInetAddresses, 0L);
-        }
-
-        public InetSocketAddress publicInetAddress() {
-            return publicInetAddress;
-        }
-
-        public Set<InetSocketAddress> privateInetAddresses() {
-            return privateInetAddresses;
         }
 
         public void helloReceived(final InetSocketAddress inetAddress,
                                   final Set<InetSocketAddress> privateInetAddresses) {
-            this.lastHelloTime = currentTime.getAsLong();
             this.publicInetAddress = requireNonNull(inetAddress);
             this.privateInetAddresses = requireNonNull(privateInetAddresses);
-        }
-
-        public boolean isStale() {
-            return lastHelloTime < currentTime.getAsLong() - pingTimeoutMillis;
         }
 
         public Set<InetSocketAddress> inetAddressCandidates() {

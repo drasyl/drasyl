@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler.SuperPeer;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler.TraversingPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -49,7 +48,6 @@ import java.util.function.LongSupplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -77,7 +75,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey superPeerKey,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeerAddress) {
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getHelloTimeout().toMillis()).thenReturn(10L);
         when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
@@ -85,6 +82,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
+        when(config.getPeersManager().getEndpoints(any()).contains(any())).thenReturn(true);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, null, traversingPeers);
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
@@ -100,14 +98,12 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
     @Test
     void shouldDropUniteMessageNotFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final UniteMessage uniteMsg,
-                                                @Mock final SuperPeer superPeer,
                                                 @Mock final InetSocketAddress otherPeerInetAddress,
                                                 @Mock final InetSocketAddress superPeerInetAddress,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey superPeerKey,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeerAddress) {
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getHelloTimeout().toMillis()).thenReturn(10L);
         when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
@@ -134,7 +130,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey superPeerKey,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeerAddress) {
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getHelloTimeout().toMillis()).thenReturn(10L);
         when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         when(config.getMaxMessageAge().toMillis()).thenReturn(10L);
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
@@ -142,7 +137,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(helloMsg.getSender()).thenReturn(traversingPeerPublicKey);
         when(helloMsg.getTime()).thenReturn(5L);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getHelloTimeout().toMillis()).thenReturn(10L);
         when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
@@ -167,7 +161,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                               @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey superPeerKey,
                                                               @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeerAddress) {
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getHelloTimeout().toMillis()).thenReturn(10L);
         when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         when(config.getMaxMessageAge().toMillis()).thenReturn(10L);
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
@@ -201,24 +194,10 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, config.getPeersManager());
+                final TraversingPeer traversingPeer = new TraversingPeer(new HashSet<>(Set.of(inetAddressA)));
 
                 assertTrue(traversingPeer.addInetAddressCandidate(inetAddressB));
                 assertTrue(traversingPeer.inetAddressCandidates().contains(inetAddressB));
-            }
-        }
-
-        @Nested
-        class DiscoverySent {
-            @Test
-            void shouldRecordFirstDiscoveryTime(@Mock final InetSocketAddress inetAddress) {
-                when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
-
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, address, config.getPeersManager());
-                traversingPeer.helloSent();
-                traversingPeer.helloSent();
-
-                assertEquals(1L, traversingPeer.firstHelloTime);
             }
         }
 
@@ -228,18 +207,12 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordLastAcknowledgementTimeAndInetAddress() {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
-                when(currentTime.getAsLong()).thenReturn(1L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, address, config.getPeersManager());
+                final TraversingPeer traversingPeer = new TraversingPeer(new HashSet<>(Set.of(inetAddressA)));
                 traversingPeer.acknowledgementReceived(inetAddressB);
 
-                assertEquals(1L, traversingPeer.lastAcknowledgementTime);
                 assertSame(inetAddressB, traversingPeer.primaryAddress());
             }
-        }
-
-        @Nested
-        class IsStale {
         }
     }
 }

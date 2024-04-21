@@ -27,6 +27,7 @@ import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URL;
+import java.net.UnknownHostException;
 
 /**
  * Utility class for operations on {@link URL}s.
@@ -109,5 +110,10 @@ public final class InetSocketAddressUtil {
             return a.equals(b);
         }
         return a.getPort() == b.getPort() && a.getHostString().equals(b.getHostString());
+    }
+
+    public static InetSocketAddress resolve(@NonNull final InetSocketAddress address) throws UnknownHostException {
+        final InetAddress resolvedHost = DnsResolver.resolve(address.getHostString());
+        return new InetSocketAddress(resolvedHost, address.getPort());
     }
 }

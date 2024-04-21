@@ -26,7 +26,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -36,7 +35,6 @@ import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,14 +43,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -79,7 +74,7 @@ class InternetDiscoverySuperPeerHandlerTest {
     void shouldCheckForStaleChildrenOnChannelActive(@Mock final IdentityPublicKey publicKey,
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
-        when(childrenPeer.isStale()).thenReturn(true);
+        when(config.getPeersManager().isStale(any(), any(), any())).thenReturn(true);
         when(config.getPeersManager().removeClientPath(any(), any(), any())).thenReturn(true);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
 
@@ -90,9 +85,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         channel.pipeline().addFirst(handler);
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
-            final Object evt = channel.readEvent();
             verify(config.getPeersManager()).removeClientPath(any(), any(), any());
-            assertThat(evt, instanceOf(RemoveChildrenAndPathEvent.class));
         });
         assertTrue(childrenPeers.isEmpty());
 
@@ -184,7 +177,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                   @Mock final InetSocketAddress inetAddress,
                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
+        when(config.getPeersManager().resolveInetAddress(any(), any())).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
@@ -209,7 +202,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                                                   @Mock final InetSocketAddress inetAddress,
                                                                                   @Mock final InetSocketAddress childrenInetAddress) {
-        when(childrenPeer.publicInetAddress()).thenReturn(childrenInetAddress);
+        when(config.getPeersManager().resolveInetAddress(any(), any())).thenReturn(childrenInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(applicationMsg.getRecipient()).thenReturn(publicKey);
         when(hopLimit.compareTo(any())).thenReturn(0);
@@ -241,49 +234,5 @@ class InternetDiscoverySuperPeerHandlerTest {
 
         assertNull(channel.readOutbound());
         verify(applicationMsg).release();
-    }
-
-    @Nested
-    class ChildrenPeerTest {
-        @Mock
-        private LongSupplier currentTime;
-        @Mock
-        private InetSocketAddress inetAddress;
-        @Mock
-        private Set<InetSocketAddress> privateInetAddresses;
-
-        @Nested
-        class DiscoveryReceived {
-            @Test
-            void shouldRecordLatestDiscoveryTime() {
-                when(currentTime.getAsLong()).thenReturn(1L);
-
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 0L, inetAddress, privateInetAddresses);
-                childrenPeer.helloReceived(inetAddress, privateInetAddresses);
-
-                assertEquals(1L, childrenPeer.lastHelloTime);
-            }
-        }
-
-        @Nested
-        class IsStale {
-            @Test
-            void shouldReturnFalseIfDiscoveryHasNotTimedOut() {
-                when(currentTime.getAsLong()).thenReturn(55L);
-
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, privateInetAddresses, 50L);
-
-                assertFalse(childrenPeer.isStale());
-            }
-
-            @Test
-            void shouldReturnTrueIfDiscoveryHasBeenTimedOut() {
-                when(currentTime.getAsLong()).thenReturn(55L);
-
-                final ChildrenPeer childrenPeer = new ChildrenPeer(currentTime, 10L, inetAddress, privateInetAddresses, 5L);
-
-                assertTrue(childrenPeer.isStale());
-            }
-        }
     }
 }

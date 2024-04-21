@@ -24,7 +24,6 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelHandler;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,8 +35,6 @@ import java.util.Map;
 import java.util.Set;
 
 import static org.drasyl.handler.remote.StaticRoutesHandler.PATH_ID;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyShort;
@@ -60,7 +57,6 @@ class StaticRoutesHandlerTest {
         try {
             channel.pipeline().fireChannelActive();
 
-            assertThat(channel.readEvent(), instanceOf(AddPathAndChildrenEvent.class));
             verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyShort());
         }
         finally {

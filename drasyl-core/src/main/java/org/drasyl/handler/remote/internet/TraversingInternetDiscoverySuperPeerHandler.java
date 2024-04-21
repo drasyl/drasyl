@@ -128,19 +128,21 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
 
             // send recipient's information to sender
             final UniteMessage senderUnite = UniteMessage.of(config(ctx).getNetworkId(), senderKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), recipientKey, recipientAddressCandidates);
-            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, sender::publicInetAddress);
-            ctx.write(new InetAddressedMessage<>(senderUnite, sender.publicInetAddress())).addListener(future -> {
+            final InetSocketAddress senderInetAddress = config(ctx).getPeersManager().resolveInetAddress(senderKey, PATH_ID);
+            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> senderInetAddress);
+            ctx.write(new InetAddressedMessage<>(senderUnite, senderInetAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, sender::publicInetAddress, future::cause);
+                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, () -> senderInetAddress, future::cause);
                 }
             });
 
             // send sender's information to recipient
             final UniteMessage recipientUnite = UniteMessage.of(config(ctx).getNetworkId(), recipientKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), senderKey, senderAddressCandidates);
-            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, recipient::publicInetAddress);
-            ctx.write(new InetAddressedMessage<>(recipientUnite, recipient.publicInetAddress())).addListener(future -> {
+            final InetSocketAddress recipientInetAddress = config(ctx).getPeersManager().resolveInetAddress(recipientKey, PATH_ID);
+            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> recipientInetAddress);
+            ctx.write(new InetAddressedMessage<>(recipientUnite, recipientInetAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, recipient::publicInetAddress, future::cause);
+                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, () -> recipientInetAddress, future::cause);
                 }
             });
 
