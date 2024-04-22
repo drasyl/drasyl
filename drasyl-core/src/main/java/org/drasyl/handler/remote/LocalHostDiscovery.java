@@ -272,17 +272,19 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        Set<DrasylAddress> peers = config(ctx).getPeersManager().getPeers(PATH_ID);
+        final PeersManager peersManager = config(ctx).getPeersManager();
+        Set<DrasylAddress> peers = peersManager.getPeers(PATH_ID);
         for (final DrasylAddress publicKey : peers) {
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
+                peersManager.removeClientPath(ctx, publicKey, PATH_ID);
             }
         }
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
-            config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, address, PATH_PRIORITY);
+            LOG.trace("Add new address `{}` for peer `{}`.", address, publicKey);
+            peersManager.addClientPath(ctx, publicKey, PATH_ID, address, PATH_PRIORITY);
         }));
     }
 

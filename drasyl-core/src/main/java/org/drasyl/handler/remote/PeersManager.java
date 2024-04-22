@@ -523,10 +523,6 @@ public class PeersManager {
             return false;
         }
 
-        PeerPath getPath(final Class<?> id) {
-            return paths.get(id);
-        }
-
         boolean isStale(final ChannelHandlerContext ctx,
                         final Class<?> id) {
             final PeerPath path = paths.get(id);
@@ -600,37 +596,14 @@ public class PeersManager {
     }
 
     static class SuperPeer extends Peer {
-        SuperPeer(final LongSupplier currentTime,
-                  final Map<Class<?>, PeerPath> paths,
-                  final PeerPath firstPath,
-                  final long lastApplicationMessageSentOrReceivedTime) {
-            super(currentTime, paths, firstPath, lastApplicationMessageSentOrReceivedTime);
-        }
-
         SuperPeer(final LongSupplier currentTime) {
             super(currentTime);
-        }
-
-        SuperPeer(final Map<Class<?>, PeerPath> paths,
-                  final PeerPath firstPath) {
-            super(paths, firstPath);
         }
     }
 
     static class ClientPeer extends Peer {
-        ClientPeer(final LongSupplier currentTime,
-                   final Map<Class<?>, PeerPath> paths,
-                   final PeerPath firstPath) {
-            super(currentTime, paths, firstPath);
-        }
-
         ClientPeer(final LongSupplier currentTime) {
             super(currentTime);
-        }
-
-        ClientPeer(final Map<Class<?>, PeerPath> paths,
-                   final PeerPath firstPath) {
-            super(paths, firstPath);
         }
     }
 
@@ -674,6 +647,10 @@ public class PeersManager {
                     ", endpoint=" + endpoint +
                     ", priority=" + priority +
                     ", next=" + next +
+                    ", lastHelloMessageReceivedTime=" + lastHelloMessageReceivedTime +
+                    ", firstHelloMessageSentTime=" + firstHelloMessageSentTime +
+                    ", lastAcknowledgementMessageReceivedTime=" + lastAcknowledgementMessageReceivedTime +
+                    ", rtt=" + rtt +
                     '}';
         }
 
@@ -704,12 +681,12 @@ public class PeersManager {
             lastHelloMessageReceivedTime = currentTime.getAsLong();
         }
 
-        public void acknowledgementMessageReceived(final int rtt) {
+        void acknowledgementMessageReceived(final int rtt) {
             lastAcknowledgementMessageReceivedTime = currentTime.getAsLong();
             this.rtt = rtt;
         }
 
-        public int rtt() {
+        int rtt() {
             return rtt;
         }
 
@@ -721,14 +698,14 @@ public class PeersManager {
             return lastAcknowledgementMessageReceivedTime >= currentTime.getAsLong() - ((DrasylServerChannel) ctx.channel()).config().getHelloTimeout().toMillis();
         }
 
-        public boolean isNew(final ChannelHandlerContext ctx) {
+        boolean isNew(final ChannelHandlerContext ctx) {
             return firstHelloMessageSentTime >= currentTime.getAsLong() - ((DrasylServerChannel) ctx.channel()).config().getHelloTimeout().toMillis();
         }
 
         /**
          * Triggers a new resolve of the endpoint.
          */
-        public InetSocketAddress resolveEndpoint() {
+        InetSocketAddress resolveEndpoint() {
             try {
                 endpoint = InetSocketAddressUtil.resolve(endpoint);
             }
