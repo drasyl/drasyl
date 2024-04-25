@@ -37,6 +37,8 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler.PATH_ID;
+import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler.PATH_PRIORITY;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
@@ -68,9 +70,8 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             peersManager.applicationMessageSentOrReceived(appMsg.getSender());
 
             // UnconfirmedAddressResolveHandler discovery
-            // FIXME:
-            //peersManager.addClientPath(ctx, appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID, ((InetAddressedMessage<?>) msg).sender(), UnconfirmedAddressResolveHandler.PATH_PRIORITY);
-            //peersManager.helloMessageReceived(appMsg.getSender(), UnconfirmedAddressResolveHandler.PATH_ID); // consider every message as hello. this is fine here
+            peersManager.addUndefinedPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender(), PATH_PRIORITY);
+            peersManager.helloMessageReceived(appMsg.getSender(), PATH_ID); // consider every message as hello. this is fine here
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {

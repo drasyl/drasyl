@@ -243,6 +243,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         peersManager.acknowledgementMessageReceived(publicKey, PATH_ID, rtt);
 
         // we don't have a super peer yet, so this is now our best one
+        // FIXME: in eine methode for "transadtion"?
         if (!peersManager.hasDefaultPeer()) {
             peersManager.setDefaultPeer(publicKey);
         }
@@ -273,7 +274,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
                 LOG.trace("New best super peer ({}ms RTT)  `{}`", bestRtt, newBestSuperPeer);
             }
         }
-        else if (peersManager.unsetDefaultPeer()) {
+        else if (peersManager.unsetDefaultPeer() != null) {
             LOG.trace("All super peers stale!");
         }
     }

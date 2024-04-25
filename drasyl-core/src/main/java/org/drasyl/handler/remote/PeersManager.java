@@ -22,12 +22,12 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
@@ -47,13 +47,16 @@ import java.util.Set;
 import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.CLIENT;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.SUPER;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.UNDEFINED;
 
 public class PeersManager {
     private static final Logger LOG = LoggerFactory.getLogger(PeersManager.class);
     private static final int NO_RTT = -1;
     private final LongSupplier currentTime;
     private final Map<DrasylAddress, Peer> peers;
-    private DrasylAddress defaultPeerKey;
+    DrasylAddress defaultPeerKey;
 
     PeersManager(final LongSupplier currentTime,
                  final Map<DrasylAddress, Peer> peers,
@@ -63,8 +66,13 @@ public class PeersManager {
         this.defaultPeerKey = defaultPeerKey;
     }
 
+    PeersManager(final Map<DrasylAddress, Peer> peers,
+                 final DrasylAddress defaultPeerKey) {
+        this(System::currentTimeMillis, peers, defaultPeerKey);
+    }
+
     PeersManager(final Map<DrasylAddress, Peer> peers) {
-        this(System::currentTimeMillis, peers, null);
+        this(peers, null);
     }
 
     public PeersManager() {
@@ -95,11 +103,18 @@ public class PeersManager {
         final Peer peer = peers.get(peerKey);
         if (peer != null) {
             final InetSocketAddress endpoint = peer.resolve();
-            if (endpoint == null && defaultPeerKey != null) {
-                final Peer defaultPeer = peers.get(defaultPeerKey);
-                return defaultPeer.resolve();
+            if (endpoint != null) {
+                return endpoint;
             }
-            return endpoint;
+            return resolveDefault();
+        }
+        return resolveDefault();
+    }
+
+    private InetSocketAddress resolveDefault() {
+        if (defaultPeerKey != null) {
+            final Peer defaultPeer = peers.get(defaultPeerKey);
+            return defaultPeer.resolve();
         }
         return null;
     }
@@ -122,16 +137,78 @@ public class PeersManager {
         return defaultPeerKey != null;
     }
 
-    public DrasylAddress setDefaultPeer(final DrasylAddress defaultPeer) {
-        final DrasylAddress previousDefaultPeer = defaultPeerKey;
-        this.defaultPeerKey = requireNonNull(defaultPeer);
+    public DrasylAddress setDefaultPeer(final DrasylAddress defaultPeerKey) {
+        final DrasylAddress previousDefaultPeer = this.defaultPeerKey;
+        this.defaultPeerKey = requireNonNull(defaultPeerKey);
         return previousDefaultPeer;
     }
 
-    public boolean unsetDefaultPeer() {
+    public DrasylAddress unsetDefaultPeer() {
         final DrasylAddress previousDefaultPeer = defaultPeerKey;
         defaultPeerKey = null;
-        return previousDefaultPeer != null;
+        return previousDefaultPeer;
+    }
+
+    /*
+     * Paths
+     */
+    private boolean addPath(final ChannelHandlerContext ctx,
+                            final PeerRole role,
+                            final DrasylAddress peerKey,
+                            final Class<?> id,
+                            final InetSocketAddress endpoint,
+                            final short priority,
+                            final int rtt) {
+        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer(currentTime, key, role));
+        if (peer.role() != UNDEFINED && peer.role() != role) {
+            throw new IllegalStateException();
+        }
+        if (role != UNDEFINED) {
+            peer.role = role;
+        }
+
+        if (peer.addPath(id, endpoint, priority)) {
+            if (peer.pathCount() == 1) {
+                ctx.fireUserEventTriggered(peer.addPeerEvent(endpoint, id, rtt));
+            }
+            else {
+                ctx.fireUserEventTriggered(peer.addPathEvent(endpoint, id, rtt));
+            }
+            return true;
+        }
+        else if (rtt >= 0) {
+            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
+        }
+        return false;
+    }
+
+    private boolean removePath(final ChannelHandlerContext ctx,
+                               final PeerRole role,
+                               final DrasylAddress peerKey,
+                               final Class<?> id) {
+        final Peer peer = peers.get(peerKey);
+        if (peer != null) {
+            if (peer.role() != UNDEFINED && peer.role() != role) {
+                throw new IllegalStateException();
+            }
+
+            if (peer.removePath(id)) {
+                if (peer.hasPath()) {
+                    ctx.fireUserEventTriggered(peer.removePathEvent(id));
+                }
+                else {
+                    peers.remove(peerKey);
+                    ctx.fireUserEventTriggered(peer.removePeerEvent(id));
+                }
+                return true;
+            }
+            else {
+                return false;
+            }
+        }
+        else {
+            return false;
+        }
     }
 
     /*
@@ -144,24 +221,7 @@ public class PeersManager {
                                     final InetSocketAddress endpoint,
                                     final short priority,
                                     final int rtt) {
-        final Peer peer = peers.computeIfAbsent(peerKey, key -> new SuperPeer(currentTime));
-        if (!(peer instanceof SuperPeer)) {
-            throw new IllegalStateException();
-        }
-
-        if (peer.addPath(id, endpoint, priority)) {
-            if (peer.getPathCount() == 1) {
-                ctx.fireUserEventTriggered(AddPathAndSuperPeerEvent.of(peerKey, endpoint, id, rtt));
-            }
-            else {
-                ctx.fireUserEventTriggered(AddPathEvent.of(peerKey, endpoint, id, rtt));
-            }
-            return true;
-        }
-        else if (rtt >= 0) {
-            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
-        }
-        return false;
+        return addPath(ctx, SUPER, peerKey, id, endpoint, priority, rtt);
     }
 
     public boolean addSuperPeerPath(final ChannelHandlerContext ctx,
@@ -172,32 +232,10 @@ public class PeersManager {
         return addSuperPeerPath(ctx, peerKey, id, endpoint, priority, NO_RTT);
     }
 
-    public boolean removeSuperPeerPath(ChannelHandlerContext ctx,
-                                       DrasylAddress peerKey,
-                                       Class<?> id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            if (!(peer instanceof SuperPeer)) {
-                throw new IllegalStateException();
-            }
-
-            if (peer.removePath(id)) {
-                if (peer.hasPath()) {
-                    ctx.fireUserEventTriggered(RemovePathEvent.of(peerKey, id));
-                }
-                else {
-                    peers.remove(peerKey);
-                    ctx.fireUserEventTriggered(RemoveSuperPeerAndPathEvent.of(peerKey, id));
-                }
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
+    public boolean removeSuperPeerPath(final ChannelHandlerContext ctx,
+                                       final DrasylAddress peerKey,
+                                       final Class<?> id) {
+        return removePath(ctx, SUPER, peerKey, id);
     }
 
     public void removeSuperPeerPaths(final ChannelHandlerContext ctx,
@@ -215,25 +253,8 @@ public class PeersManager {
                                  final Class<?> id,
                                  final InetSocketAddress endpoint,
                                  final short priority,
-                                 final long rtt) {
-        final Peer peer = peers.computeIfAbsent(peerKey, key -> new ClientPeer(currentTime));
-        if (!(peer instanceof ClientPeer)) {
-            throw new IllegalStateException();
-        }
-
-        if (peer.addPath(id, endpoint, priority)) {
-            if (peer.getPathCount() == 1) {
-                ctx.fireUserEventTriggered(AddPathAndChildrenEvent.of(peerKey, endpoint, id));
-            }
-            else {
-                ctx.fireUserEventTriggered(AddPathEvent.of(peerKey, endpoint, id, rtt));
-            }
-            return true;
-        }
-        else if (rtt >= 0) {
-            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
-        }
-        return false;
+                                 final int rtt) {
+        return addPath(ctx, CLIENT, peerKey, id, endpoint, priority, rtt);
     }
 
     public boolean addClientPath(final ChannelHandlerContext ctx,
@@ -247,35 +268,21 @@ public class PeersManager {
     public boolean removeClientPath(final ChannelHandlerContext ctx,
                                     final DrasylAddress peerKey,
                                     final Class<?> id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            if (!(peer instanceof ClientPeer)) {
-                throw new IllegalStateException();
-            }
-
-            if (peer.removePath(id)) {
-                if (peer.hasPath()) {
-                    ctx.fireUserEventTriggered(RemovePathEvent.of(peerKey, id));
-                }
-                else {
-                    peers.remove(peerKey);
-                    ctx.fireUserEventTriggered(RemoveChildrenAndPathEvent.of(peerKey, id));
-                }
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
+        return removePath(ctx, CLIENT, peerKey, id);
     }
 
     public void removeClientPaths(final ChannelHandlerContext ctx,
                                   final Class<?> id) {
         final Set<DrasylAddress> peerKeys = Set.copyOf(peers.keySet());
         peerKeys.forEach(peerKey -> removeClientPath(ctx, peerKey, id));
+    }
+
+    public boolean addUndefinedPath(final ChannelHandlerContext ctx,
+                                    final DrasylAddress peerKey,
+                                    final Class<?> id,
+                                    final InetSocketAddress endpoint,
+                                    final short priority) {
+        return addPath(ctx, UNDEFINED, peerKey, id, endpoint, priority, NO_RTT);
     }
 
     /*
@@ -287,7 +294,7 @@ public class PeersManager {
         for (final Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
             final DrasylAddress peerKey = entry.getKey();
             final Peer peer = entry.getValue();
-            if (peer.getPaths().containsKey(id)) {
+            if (peer.paths().containsKey(id)) {
                 peerKeys.add(peerKey);
             }
         }
@@ -305,8 +312,8 @@ public class PeersManager {
     }
 
     public boolean isReachable(final ChannelHandlerContext ctx,
-                           final DrasylAddress peerKey,
-                           final Class<?> id) {
+                               final DrasylAddress peerKey,
+                               final Class<?> id) {
         final Peer peer = peers.get(peerKey);
         if (peer != null) {
             return peer.isReachable(ctx, id);
@@ -387,36 +394,48 @@ public class PeersManager {
 
     static class Peer {
         private final LongSupplier currentTime;
+        private final DrasylAddress address;
         private final Map<Class<?>, PeerPath> paths;
         PeerPath firstPath;
+        private PeerRole role;
         private long lastApplicationMessageSentOrReceivedTime;
 
         Peer(final LongSupplier currentTime,
+             final DrasylAddress address,
              final Map<Class<?>, PeerPath> paths,
              final PeerPath firstPath,
+             final PeerRole role,
              final long lastApplicationMessageSentOrReceivedTime) {
-            this.currentTime = currentTime;
+            this.currentTime = requireNonNull(currentTime);
+            this.address = requireNonNull(address);
             this.firstPath = firstPath;
             this.paths = requireNonNull(paths);
+            this.role = requireNonNull(role);
             this.lastApplicationMessageSentOrReceivedTime = lastApplicationMessageSentOrReceivedTime;
         }
 
         Peer(final LongSupplier currentTime,
+             final DrasylAddress address,
              final Map<Class<?>, PeerPath> paths,
-             final PeerPath firstPath) {
-            this(currentTime, paths, firstPath, 0);
+             final PeerPath firstPath,
+             final PeerRole role) {
+            this(currentTime, address, paths, firstPath, role, 0);
         }
 
-        Peer(final LongSupplier currentTime) {
-            this(currentTime, new HashMap<>(), null);
+        Peer(final LongSupplier currentTime,
+             final DrasylAddress address,
+             final PeerRole role) {
+            this(currentTime, address, new HashMap<>(), null, role);
         }
 
-        public Peer(final Map<Class<?>, PeerPath> paths,
-                    final PeerPath firstPath) {
-            this(System::currentTimeMillis, paths, firstPath, 0);
+        Peer(final DrasylAddress address,
+             final Map<Class<?>, PeerPath> paths,
+             final PeerPath firstPath,
+             final PeerRole role) {
+            this(System::currentTimeMillis, address, paths, firstPath, role, 0);
         }
 
-        int getPathCount() {
+        int pathCount() {
             return paths.size();
         }
 
@@ -424,7 +443,7 @@ public class PeersManager {
             return firstPath != null;
         }
 
-        Map<Class<?>, PeerPath> getPaths() {
+        Map<Class<?>, PeerPath> paths() {
             return paths;
         }
 
@@ -437,12 +456,16 @@ public class PeersManager {
             }
         }
 
+        public PeerRole role() {
+            return role;
+        }
+
         void applicationMessageSentOrReceived() {
             lastApplicationMessageSentOrReceivedTime = currentTime.getAsLong();
         }
 
         boolean hasApplicationTraffic(final ChannelHandlerContext ctx) {
-            final long pathIdleTimeMillis = ((DrasylServerChannel) ctx.channel()).config().getPathIdleTime().toMillis();
+            final long pathIdleTimeMillis = ((DrasylServerChannelConfig) ctx.channel().config()).getPathIdleTime().toMillis();
             return lastApplicationMessageSentOrReceivedTime >= currentTime.getAsLong() - pathIdleTimeMillis;
         }
 
@@ -593,17 +616,46 @@ public class PeersManager {
             }
             return null;
         }
-    }
 
-    static class SuperPeer extends Peer {
-        SuperPeer(final LongSupplier currentTime) {
-            super(currentTime);
+        public PathEvent addPeerEvent(final InetSocketAddress endpoint,
+                                      final Class<?> id,
+                                      final int rtt) {
+            if (role == SUPER) {
+                return AddPathAndSuperPeerEvent.of(address, endpoint, id, rtt);
+            }
+            else {
+                return AddPathAndChildrenEvent.of(address, endpoint, id);
+            }
+        }
+
+        public PathEvent addPathEvent(final InetSocketAddress endpoint,
+                                      final Class<?> id,
+                                      final int rtt) {
+            return AddPathEvent.of(address, endpoint, id, rtt);
+        }
+
+        public PathEvent removePathEvent(final Class<?> id) {
+            return RemovePathEvent.of(address, id);
+        }
+
+        public PathEvent removePeerEvent(final Class<?> id) {
+            return RemoveSuperPeerAndPathEvent.of(address, id);
         }
     }
 
-    static class ClientPeer extends Peer {
-        ClientPeer(final LongSupplier currentTime) {
-            super(currentTime);
+    enum PeerRole {
+        SUPER("S"),
+        CLIENT("C"),
+        UNDEFINED("");
+        private final String label;
+
+        PeerRole(final String label) {
+            this.label = requireNonNull(label);
+        }
+
+        @Override
+        public String toString() {
+            return label;
         }
     }
 
@@ -620,24 +672,33 @@ public class PeersManager {
         long lastHelloMessageReceivedTime;
         long firstHelloMessageSentTime;
         long lastAcknowledgementMessageReceivedTime;
-        int rtt = NO_RTT;
+        int rtt;
 
+        @SuppressWarnings("java:S107")
         PeerPath(final LongSupplier currentTime,
                  final Class<?> id,
                  final InetSocketAddress endpoint,
                  final short priority,
-                 final PeerPath next) {
+                 final PeerPath next,
+                 final long lastHelloMessageReceivedTime,
+                 final long firstHelloMessageSentTime,
+                 final long lastAcknowledgementMessageReceivedTime,
+                 final int rtt) {
             this.currentTime = requireNonNull(currentTime);
             this.id = requireNonNull(id);
             this.endpoint = endpoint;
             this.priority = priority;
             this.next = next;
+            this.lastHelloMessageReceivedTime = lastHelloMessageReceivedTime;
+            this.firstHelloMessageSentTime = firstHelloMessageSentTime;
+            this.lastAcknowledgementMessageReceivedTime = lastAcknowledgementMessageReceivedTime;
+            this.rtt = rtt;
         }
 
         PeerPath(final Class<?> id,
                  final InetSocketAddress endpoint,
                  final short priority) {
-            this(System::currentTimeMillis, id, endpoint, priority, null);
+            this(System::currentTimeMillis, id, endpoint, priority, null, 0, 0, 0, NO_RTT);
         }
 
         @Override
@@ -691,15 +752,15 @@ public class PeersManager {
         }
 
         boolean isStale(final ChannelHandlerContext ctx) {
-            return lastHelloMessageReceivedTime < currentTime.getAsLong() - ((DrasylServerChannel) ctx.channel()).config().getHelloTimeout().toMillis();
+            return lastHelloMessageReceivedTime < currentTime.getAsLong() - ((DrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
         }
 
         boolean isReachable(final ChannelHandlerContext ctx) {
-            return lastAcknowledgementMessageReceivedTime >= currentTime.getAsLong() - ((DrasylServerChannel) ctx.channel()).config().getHelloTimeout().toMillis();
+            return lastAcknowledgementMessageReceivedTime >= currentTime.getAsLong() - ((DrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
         }
 
         boolean isNew(final ChannelHandlerContext ctx) {
-            return firstHelloMessageSentTime >= currentTime.getAsLong() - ((DrasylServerChannel) ctx.channel()).config().getHelloTimeout().toMillis();
+            return firstHelloMessageSentTime >= currentTime.getAsLong() - ((DrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
         }
 
         /**
