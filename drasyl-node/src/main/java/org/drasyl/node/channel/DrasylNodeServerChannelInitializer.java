@@ -21,6 +21,7 @@
  */
 package org.drasyl.node.channel;
 
+import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
@@ -30,6 +31,7 @@ import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
@@ -70,11 +72,11 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.function.Function;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 
 /**
@@ -140,7 +142,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private void ipStage(final DrasylServerChannel ch) {
         // udp server
-        final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
         if (config.isRemoteExposeEnabled()) {
             // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
             ch.pipeline().addLast(new UdpServer(ctx -> new UdpServerChannelInitializer(ch) {
@@ -181,6 +182,15 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
             ch.pipeline().addLast(UDP_MULTICAST_SERVER);
         }
+
+        ch.pipeline().addLast(new ChannelHandlerAdapter() {
+            @Override
+            public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+                ctx.executor().scheduleAtFixedRate(() -> {
+                    System.out.println(((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager());
+                }, 1_000, 1_000, MILLISECONDS);
+            }
+        });
     }
 
     /**

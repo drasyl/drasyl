@@ -53,7 +53,7 @@ import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -108,7 +108,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         when(config.getHelloInterval().toMillis()).thenReturn(2L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort())).thenReturn(true);
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
         when(identity.getAddress()).thenReturn(myPublicKey);
         when(config.getMaxMessageAge().toMillis()).thenReturn(1L);
 
@@ -118,7 +118,7 @@ class InternetDiscoverySuperPeerHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyShort());
+        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyInt());
         final InetAddressedMessage<AcknowledgementMessage> replyMsg = channel.readOutbound();
         assertThat(replyMsg.content(), instanceOf(AcknowledgementMessage.class));
         assertSame(replyMsg.recipient(), inetAddress);

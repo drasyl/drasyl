@@ -54,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -82,7 +81,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
-        when(config.getPeersManager().getEndpoints(any()).contains(any())).thenReturn(true);
 
         final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, null, traversingPeers);
         final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
@@ -137,7 +135,6 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(helloMsg.getSender()).thenReturn(traversingPeerPublicKey);
         when(helloMsg.getTime()).thenReturn(5L);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
-        when(config.getSuperPeers()).thenReturn(Map.of(superPeerKey, superPeerAddress));
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
@@ -166,7 +163,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyShort(), anyInt())).thenReturn(true);
+        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
@@ -176,7 +173,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyShort(), anyInt());
+        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyInt());
         verify(traversingPeer).acknowledgementReceived(any());
     }
 
@@ -194,7 +191,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(new HashSet<>(Set.of(inetAddressA)));
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, new HashSet<>(Set.of(inetAddressA)));
 
                 assertTrue(traversingPeer.addInetAddressCandidate(inetAddressB));
                 assertTrue(traversingPeer.inetAddressCandidates().contains(inetAddressB));
@@ -208,7 +205,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(new HashSet<>(Set.of(inetAddressA)));
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, new HashSet<>(Set.of(inetAddressA)));
                 traversingPeer.acknowledgementReceived(inetAddressB);
 
                 assertSame(inetAddressB, traversingPeer.primaryAddress());

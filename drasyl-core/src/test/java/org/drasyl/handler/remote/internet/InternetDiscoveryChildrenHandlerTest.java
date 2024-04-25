@@ -46,7 +46,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -104,7 +104,6 @@ class InternetDiscoveryChildrenHandlerTest {
         when(config.getHelloInterval().toMillis()).thenReturn(5_000L);
         when(config.getMaxMessageAge().toMillis()).thenReturn(10L);
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
-        when(config.getPeersManager().getPeers(any()).contains(any())).thenReturn(true);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(currentTime, 0L, null);
         final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);
@@ -112,6 +111,6 @@ class InternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(config.getPeersManager()).addSuperPeerPath(any(), any(), any(), any(), anyShort());
+        verify(config.getPeersManager()).addSuperPeerPath(any(), any(), any(), any(), anyInt());
     }
 }

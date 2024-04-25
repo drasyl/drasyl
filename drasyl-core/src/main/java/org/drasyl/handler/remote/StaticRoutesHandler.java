@@ -37,8 +37,12 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public final class StaticRoutesHandler extends ChannelDuplexHandler {
-    static final Class<?> PATH_ID = StaticRoutesHandler.class;
-    static final short PATH_PRIORITY = 70;
+    static final PeersManager.PathId PATH_ID = new PeersManager.PathId() {
+        @Override
+        public short priority() {
+            return 70;
+        }
+    };
     private final Map<DrasylAddress, InetSocketAddress> staticRoutes;
 
     public StaticRoutesHandler(final Map<DrasylAddress, InetSocketAddress> staticRoutes) {
@@ -61,7 +65,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
         staticRoutes.forEach((peer, endpoint) -> {
-            config(ctx).getPeersManager().addClientPath(ctx, peer, PATH_ID, endpoint, PATH_PRIORITY);
+            config(ctx).getPeersManager().addClientPath(ctx, peer, PATH_ID, endpoint, PATH_ID.priority());
         });
     }
 

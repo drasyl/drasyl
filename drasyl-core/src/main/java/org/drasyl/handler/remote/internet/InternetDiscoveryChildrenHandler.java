@@ -30,11 +30,11 @@ import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.InetSocketAddressUtil;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -42,7 +42,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.UnknownHostException;
-import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.LongSupplier;
@@ -61,8 +60,12 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final long DEFAULT_CHILDREN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
-    static final Class<?> PATH_ID = InternetDiscoveryChildrenHandler.class;
-    static final short PATH_PRIORITY = 100;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 100;
+        }
+    };
     protected final LongSupplier currentTime;
     private final long initialPingDelayMillis;
     Future<?> heartbeatDisposable;
@@ -152,11 +155,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
 
     void startHeartbeat(final ChannelHandlerContext ctx) throws UnknownHostException {
         if (heartbeatDisposable == null) {
-            for (Entry<IdentityPublicKey, InetSocketAddress> entry : config(ctx).getSuperPeers().entrySet()) {
-                final IdentityPublicKey superPeerKey = entry.getKey();
-                final InetSocketAddress superPeerEndpoint = InetSocketAddressUtil.resolve(entry.getValue());
-                config(ctx).getPeersManager().addSuperPeerPath(ctx, superPeerKey, PATH_ID, superPeerEndpoint, PATH_PRIORITY);
-            }
             LOG.debug("Start Heartbeat job.");
             heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
         }
@@ -177,11 +175,17 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final Set<InetSocketAddress> privateInetAddresses = getPrivateAddresses();
 
         // ping super peers
-        final PeersManager peersManager = config(ctx).getPeersManager();
-        peersManager.getPeers(PATH_ID).forEach((publicKey -> {
+        config(ctx).getSuperPeers().entrySet().forEach((entry -> {
+            final DrasylAddress publicKey = entry.getKey();
+            InetSocketAddress endpoint = entry.getValue();
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
-            final InetSocketAddress resolvedAddress = peersManager.resolveInetAddress(publicKey, PATH_ID);
-            writeHelloMessage(ctx, publicKey, resolvedAddress, privateInetAddresses);
+            try {
+                endpoint = InetSocketAddressUtil.resolve(endpoint);
+            } catch (final UnknownHostException e) {
+                // ignore (continue to use previous resolved address
+            }
+            config(ctx).getPeersManager().helloMessageSent(publicKey, PATH_ID);
+            writeHelloMessage(ctx, publicKey, endpoint, privateInetAddresses);
         }));
         ctx.flush();
     }
@@ -226,7 +230,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private boolean isAcknowledgementMessageFromSuperPeer(ChannelHandlerContext ctx, final Object msg) {
         return msg instanceof InetAddressedMessage<?> &&
                 ((InetAddressedMessage<?>) msg).content() instanceof AcknowledgementMessage &&
-                config(ctx).getPeersManager().getPeers(PATH_ID).contains(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
+                config(ctx).getSuperPeers().keySet().contains(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getSender()) &&
                 ctx.channel().localAddress().equals(((InetAddressedMessage<AcknowledgementMessage>) msg).content().getRecipient()) &&
                 Math.abs(currentTime.getAsLong() - (((InetAddressedMessage<AcknowledgementMessage>) msg).content()).getTime()) <= config(ctx).getMaxMessageAge().toMillis();
     }
@@ -240,7 +244,6 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         LOG.trace("Got Acknowledgement ({}ms RTT) from super peer `{}`.", () -> rtt, () -> publicKey);
 
         final PeersManager peersManager = config(ctx).getPeersManager();
-        peersManager.acknowledgementMessageReceived(publicKey, PATH_ID, rtt);
 
         // we don't have a super peer yet, so this is now our best one
         // FIXME: in eine methode for "transadtion"?
@@ -248,7 +251,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             peersManager.setDefaultPeer(publicKey);
         }
 
-        peersManager.addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY, rtt);
+        peersManager.addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, rtt);
+        peersManager.acknowledgementMessageReceived(publicKey, PATH_ID, rtt);
 
         determineBestSuperPeer(ctx);
     }
@@ -258,7 +262,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         long bestRtt = Long.MAX_VALUE;
         final PeersManager peersManager = config(ctx).getPeersManager();
         for (final DrasylAddress publicKey : peersManager.getPeers(PATH_ID)) {
-            if (!peersManager.isStale(ctx, publicKey, PATH_ID)) {
+            if (peersManager.isReachable(ctx, publicKey, PATH_ID)) {
                 if (peersManager.rtt(publicKey, PATH_ID) < bestRtt) {
                     newBestSuperPeer = publicKey;
                     bestRtt = peersManager.rtt(publicKey, PATH_ID);

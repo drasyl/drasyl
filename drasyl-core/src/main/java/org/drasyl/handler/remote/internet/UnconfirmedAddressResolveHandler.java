@@ -25,6 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -41,8 +42,12 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @UnstableApi
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    public static final Class<?> PATH_ID = UnconfirmedAddressResolveHandler.class;
-    public static final short PATH_PRIORITY = 110;
+    public static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 110;
+        }
+    };
     private final long expireCacheAfter;
     private PeersManager peersManager;
 

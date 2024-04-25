@@ -50,8 +50,8 @@ import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -173,7 +173,7 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().config()).thenReturn(config);
-            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
 
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
@@ -181,7 +181,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
-            verify(config.getPeersManager()).addClientPath(eq(ctx), any(), any(), any(), anyShort());
+            verify(config.getPeersManager()).addClientPath(eq(ctx), any(), any(), any(), anyInt());
         }
 
         @Test

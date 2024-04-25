@@ -26,6 +26,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
@@ -58,8 +59,12 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings("unchecked")
 public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscoveryChildrenHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoveryChildrenHandler.class);
-    static final Class<?> PATH_ID = TraversingInternetDiscoveryChildrenHandler.class;
-    static final short PATH_PRIORITY = 95;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 95;
+        }
+    };
     private final Map<DrasylAddress, TraversingPeer> traversingPeers;
 
     @SuppressWarnings("java:S107")
@@ -110,7 +115,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         return msg instanceof InetAddressedMessage &&
                 ((InetAddressedMessage<?>) msg).content() instanceof UniteMessage &&
                 ctx.channel().localAddress().equals(((InetAddressedMessage<UniteMessage>) msg).content().getRecipient()) &&
-                config(ctx).getPeersManager().getEndpoints(PATH_ID).contains(((InetAddressedMessage<UniteMessage>) msg).content().getSender());
+                config(ctx).getSuperPeers().keySet().contains(((InetAddressedMessage<UniteMessage>) msg).content().getSender());
     }
 
     private void handleUniteMessage(final ChannelHandlerContext ctx, final UniteMessage msg) {
@@ -120,14 +125,12 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (config(ctx).getMaxPeers() == 0 || config(ctx).getMaxPeers() > traversingPeers.size()) {
             final TraversingPeer existingTraversingPeer = traversingPeers.get(address);
-            final TraversingPeer newTraversingPeer = new TraversingPeer(endpoints);
+            final TraversingPeer newTraversingPeer = new TraversingPeer(currentTime, endpoints);
 
             if (!Objects.equals(existingTraversingPeer, newTraversingPeer)) {
                 // new peer or endpoints have changes -> send Hello
                 LOG.debug("Try to reach peer `{}` at endpoints `{}`", address, endpoints);
                 traversingPeers.put(address, newTraversingPeer);
-                config(ctx).getPeersManager().applicationMessageSentOrReceived(address);
-                config(ctx).getPeersManager().helloMessageSent(address, PATH_ID);
                 for (final InetSocketAddress inetAddress : newTraversingPeer.inetAddressCandidates()) {
                     writeHelloMessage(ctx, address, inetAddress, null);
                 }
@@ -166,7 +169,8 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (!config(ctx).getPeersManager().isReachable(ctx, msg.getSender(), PATH_ID) && traversingPeer.addInetAddressCandidate(inetAddress)) {
             // send Hello immediately to speed up traversal
-            config(ctx).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
+            // FIXME: notwendig?
+            //config(ctx).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
             config(ctx).getPeersManager().helloMessageSent(msg.getSender(), PATH_ID);
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -191,9 +195,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
-        config(ctx).getPeersManager().acknowledgementMessageReceived(publicKey, PATH_ID);
 
-        config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, inetAddress, PATH_PRIORITY, rtt);
+        config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, inetAddress, rtt);
+        config(ctx).getPeersManager().acknowledgementMessageReceived(publicKey, PATH_ID);
     }
 
     /*
@@ -211,10 +215,10 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             final TraversingPeer traversingPeer = entry.getValue();
 
             final PeersManager peersManager = config(ctx).getPeersManager();
-            if (!peersManager.isNew(ctx, address, PATH_ID) && (!peersManager.hasApplicationTraffic(ctx, address) || !peersManager.isReachable(ctx, address, PATH_ID))) {
+            if (!traversingPeer.isNew(ctx) && (!peersManager.hasApplicationTraffic(ctx, address) || !peersManager.isReachable(ctx, address, PATH_ID))) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                peersManager.removeSuperPeerPath(ctx, address, PATH_ID);
+                peersManager.removeClientPath(ctx, address, PATH_ID);
             }
             else {
                 // send Hello
@@ -242,12 +246,17 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     }
 
     static class TraversingPeer {
+        private final LongSupplier currentTime;
         private final Set<InetSocketAddress> inetAddressCandidates;
+        private final long firstHelloTime;
         private InetSocketAddress primaryInetAddress;
 
         @SuppressWarnings("java:S107")
-        TraversingPeer(final Set<InetSocketAddress> inetAddressCandidates) {
+        TraversingPeer(final LongSupplier currentTime,
+                       final Set<InetSocketAddress> inetAddressCandidates) {
+            this.currentTime = requireNonNull(currentTime);
             this.inetAddressCandidates = requireNonNull(inetAddressCandidates);
+            firstHelloTime = currentTime.getAsLong();
         }
 
         public boolean addInetAddressCandidate(final InetSocketAddress inetAddress) {
@@ -269,6 +278,14 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
                 primaryInetAddress = inetAddress;
                 inetAddressCandidates.retainAll(Set.of(primaryInetAddress));
             }
+        }
+
+        /**
+         * Returns {@code true}, if we just started to ping (within the last
+         * {@link #pingTimeoutMillis} the peer.
+         */
+        public boolean isNew(final ChannelHandlerContext ctx) {
+            return firstHelloTime >= currentTime.getAsLong() - config(ctx).getHelloTimeout().toMillis();
         }
 
         @Override

@@ -27,6 +27,7 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.Pair;
 import org.drasyl.util.internal.UnstableApi;
@@ -47,8 +48,12 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
-    private static final Class<?> PATH_ID = IntraVmDiscovery.class;
-    static final short PATH_PRIORITY = 20;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 20;
+        }
+    };
     static Map<Pair<Integer, DrasylAddress>, ChannelHandlerContext> discoveries = new ConcurrentHashMap<>();
     private boolean initialized;
 
@@ -122,10 +127,10 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             if (config(myCtx).getNetworkId() == networkId) {
                 PeersManager peersManager1 = config(otherCtx).getPeersManager();
                 final DrasylAddress peerKey1 = (DrasylAddress) myCtx.channel().localAddress();
-                peersManager1.addClientPath(otherCtx, peerKey1, PATH_ID, null, PATH_PRIORITY);
+                peersManager1.addClientPath(otherCtx, peerKey1, PATH_ID, null, PATH_ID.priority());
                 PeersManager peersManager = config(myCtx).getPeersManager();
                 final DrasylAddress peerKey = (DrasylAddress) otherCtx.channel().localAddress();
-                peersManager.addClientPath(myCtx, peerKey, PATH_ID, null, PATH_PRIORITY);
+                peersManager.addClientPath(myCtx, peerKey, PATH_ID, null, PATH_ID.priority());
             }
         });
         discoveries.put(

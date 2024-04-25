@@ -29,6 +29,7 @@ import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
@@ -61,8 +62,12 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings("unchecked")
 public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoverySuperPeerHandler.class);
-    static final Class<?> PATH_ID = InternetDiscoverySuperPeerHandler.class;
-    static final short PATH_PRIORITY = 100;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 100;
+        }
+    };
     private final LongSupplier currentTime;
     protected final Map<DrasylAddress, ChildrenPeer> childrenPeers;
     private final HopCount hopLimit;
@@ -221,7 +226,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
-        config(ctx).getPeersManager().addClientPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_PRIORITY);
+        config(ctx).getPeersManager().addClientPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_ID.priority());
         config(ctx).getPeersManager().helloMessageReceived(msg.getSender(), PATH_ID);
 
         // reply with Acknowledgement

@@ -25,6 +25,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -71,8 +72,12 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
-    static final Class<?> PATH_ID = LocalHostDiscovery.class;
-    static final short PATH_PRIORITY = 80;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 80;
+        }
+    };
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".txt";
@@ -284,7 +289,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
             LOG.trace("Add new address `{}` for peer `{}`.", address, publicKey);
-            peersManager.addClientPath(ctx, publicKey, PATH_ID, address, PATH_PRIORITY);
+            peersManager.addClientPath(ctx, publicKey, PATH_ID, address, PATH_ID.priority());
         }));
     }
 

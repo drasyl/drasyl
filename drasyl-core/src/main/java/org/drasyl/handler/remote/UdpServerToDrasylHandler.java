@@ -38,7 +38,6 @@ import java.util.Queue;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler.PATH_ID;
-import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler.PATH_PRIORITY;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
@@ -67,10 +66,10 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
         LOG.trace("Read Datagram {}", msg);
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && parent.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
-            peersManager.applicationMessageSentOrReceived(appMsg.getSender());
+            peersManager.applicationMessageReceived(appMsg.getSender());
 
             // UnconfirmedAddressResolveHandler discovery
-            peersManager.addUndefinedPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender(), PATH_PRIORITY);
+            peersManager.tryAddClientPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender());
             peersManager.helloMessageReceived(appMsg.getSender(), PATH_ID); // consider every message as hello. this is fine here
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());

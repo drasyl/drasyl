@@ -27,6 +27,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -61,8 +62,12 @@ import static org.drasyl.util.RandomUtil.randomLong;
 @SuppressWarnings("java:S110")
 public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalNetworkDiscovery.class);
-    static final Class<?> PATH_ID = LocalNetworkDiscovery.class;
-    static final short PATH_PRIORITY = 90;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 90;
+        }
+    };
     private final InetSocketAddress recipient;
     private Future<?> scheduledPingFuture;
 
@@ -136,7 +141,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
-            config(ctx).getPeersManager().addClientPath(ctx, msgSender, PATH_ID, sender, PATH_PRIORITY);
+            config(ctx).getPeersManager().addClientPath(ctx, msgSender, PATH_ID, sender, PATH_ID.priority());
             config(ctx).getPeersManager().helloMessageReceived(msgSender, PATH_ID);
         }
 

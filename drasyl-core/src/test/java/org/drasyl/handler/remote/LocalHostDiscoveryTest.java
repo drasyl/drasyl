@@ -59,11 +59,10 @@ import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.handler.remote.LocalHostDiscovery.PATH_ID;
-import static org.drasyl.handler.remote.LocalHostDiscovery.PATH_PRIORITY;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
-import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doAnswer;
@@ -220,7 +219,7 @@ class LocalHostDiscoveryTest {
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws IOException {
             when(ctx.channel().config()).thenReturn(config);
             when(fileReader.apply(any())).thenReturn(Set.of(new InetSocketAddress("192.168.188.23", 12345)));
-            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyShort())).thenReturn(true);
+            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
 
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.txt");
             Files.createDirectory(path.getParent());
@@ -229,7 +228,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, ofMinutes(5), dir, watchDisposable, postDisposable);
             handler.scan(ctx);
 
-            verify(config.getPeersManager()).addClientPath(ctx, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_PRIORITY);
+            verify(config.getPeersManager()).addClientPath(ctx, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_ID.priority());
         }
     }
 }

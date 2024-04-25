@@ -307,7 +307,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
                 // map remoteAddress to udp endpoint
                 final PeersManager peersManager = parent().config().getPeersManager();
-                peersManager.applicationMessageSentOrReceived(remoteAddress);
+                peersManager.applicationMessageSent(remoteAddress);
                 final InetSocketAddress endpoint = peersManager.resolve(remoteAddress);
                 if (endpoint != null) {
                     // convert to remote message
