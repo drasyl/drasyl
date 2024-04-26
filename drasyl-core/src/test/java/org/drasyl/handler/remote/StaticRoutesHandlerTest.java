@@ -48,7 +48,7 @@ class StaticRoutesHandlerTest {
 
     @Test
     void shouldPopulateRoutesOnChannelActive(@Mock final IdentityPublicKey publicKey) {
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
+        when(config.getPeersManager().addChildrenPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
 
         final InetSocketAddress address = new InetSocketAddress(22527);
 
@@ -57,7 +57,7 @@ class StaticRoutesHandlerTest {
         try {
             channel.pipeline().fireChannelActive();
 
-            verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyInt());
+            verify(config.getPeersManager()).addChildrenPath(any(), any(), any(), any(), anyInt());
         }
         finally {
             channel.close();
@@ -74,7 +74,7 @@ class StaticRoutesHandlerTest {
             channel.userEvents().clear();
             channel.pipeline().fireChannelInactive();
 
-            verify(config.getPeersManager()).removeClientPaths(any(), any());
+            verify(config.getPeersManager()).removeChildrenPaths(any(), any());
         }
         finally {
             channel.close();

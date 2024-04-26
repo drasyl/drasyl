@@ -24,7 +24,6 @@ package org.drasyl.node.plugin.groups.client;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
@@ -41,36 +40,30 @@ import static org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder.MA
 /**
  * Decodes {@link ByteBuf}s  to {@link GroupsServerMessage}s.
  */
-class GroupsServerMessageDecoder extends MessageToMessageDecoder<OverlayAddressedMessage<ByteBuf>> {
-    @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf;
-    }
-
+class GroupsServerMessageDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final OverlayAddressedMessage<ByteBuf> msg,
+                          final ByteBuf byteBuf,
                           final List<Object> out) {
-        final ByteBuf byteBuf = msg.content();
         byteBuf.markReaderIndex();
         final int magicNumber = byteBuf.readInt();
 
         switch (magicNumber) {
             case MAGIC_NUMBER_JOINED:
-                out.add(msg.replace(MemberJoinedMessage.of(byteBuf)));
+                out.add(MemberJoinedMessage.of(byteBuf));
                 break;
             case MAGIC_NUMBER_LEFT:
-                out.add(msg.replace(MemberLeftMessage.of(byteBuf)));
+                out.add(MemberLeftMessage.of(byteBuf));
                 break;
             case MAGIC_NUMBER_WELCOME:
-                out.add(msg.replace(GroupWelcomeMessage.of(byteBuf)));
+                out.add(GroupWelcomeMessage.of(byteBuf));
                 break;
             case MAGIC_NUMBER_FAILED:
-                out.add(msg.replace(GroupJoinFailedMessage.of(byteBuf)));
+                out.add(GroupJoinFailedMessage.of(byteBuf));
                 break;
             default:
                 byteBuf.resetReaderIndex();
-                out.add(msg.retain());
+                out.add(byteBuf.retain());
         }
     }
 }

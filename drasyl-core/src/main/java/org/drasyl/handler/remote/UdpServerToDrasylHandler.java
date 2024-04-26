@@ -69,7 +69,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             peersManager.applicationMessageReceived(appMsg.getSender());
 
             // UnconfirmedAddressResolveHandler discovery
-            peersManager.tryAddClientPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender());
+            peersManager.tryAddChildrenPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender());
             peersManager.helloMessageReceived(appMsg.getSender(), PATH_ID); // consider every message as hello. this is fine here
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());

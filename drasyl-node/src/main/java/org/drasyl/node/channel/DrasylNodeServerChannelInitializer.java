@@ -65,7 +65,7 @@ import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.handler.PeersManagerHandler;
-import org.drasyl.node.handler.plugin.PluginsHandler;
+import org.drasyl.node.handler.plugin.PluginsServerHandler;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -128,7 +128,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.pipeline().addLast(peersHandler);
 
         ch.pipeline().addLast(new PeersManagerHandler());
-        ch.pipeline().addLast(new PluginsHandler(config, node.identity()));
+        ch.pipeline().addLast(new PluginsServerHandler(config, node.identity()));
 
         if (TELEMETRY_ENABLED) {
             ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));
@@ -182,15 +182,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
             ch.pipeline().addLast(UDP_MULTICAST_SERVER);
         }
-
-        ch.pipeline().addLast(new ChannelHandlerAdapter() {
-            @Override
-            public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-                ctx.executor().scheduleAtFixedRate(() -> {
-                    System.out.println(((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager());
-                }, 1_000, 1_000, MILLISECONDS);
-            }
-        });
     }
 
     /**

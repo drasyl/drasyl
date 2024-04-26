@@ -127,10 +127,10 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             if (config(myCtx).getNetworkId() == networkId) {
                 PeersManager peersManager1 = config(otherCtx).getPeersManager();
                 final DrasylAddress peerKey1 = (DrasylAddress) myCtx.channel().localAddress();
-                peersManager1.addClientPath(otherCtx, peerKey1, PATH_ID, null, PATH_ID.priority());
+                peersManager1.addChildrenPath(otherCtx, peerKey1, PATH_ID, null, PATH_ID.priority());
                 PeersManager peersManager = config(myCtx).getPeersManager();
                 final DrasylAddress peerKey = (DrasylAddress) otherCtx.channel().localAddress();
-                peersManager.addClientPath(myCtx, peerKey, PATH_ID, null, PATH_ID.priority());
+                peersManager.addChildrenPath(myCtx, peerKey, PATH_ID, null, PATH_ID.priority());
             }
         });
         discoveries.put(
@@ -152,10 +152,10 @@ public class IntraVmDiscovery extends ChannelDuplexHandler {
             if (config(myCtx).getNetworkId() == otherNetworkId) {
                 PeersManager peersManager1 = config(otherCtx).getPeersManager();
                 final DrasylAddress peerKey1 = (DrasylAddress) myCtx.channel().localAddress();
-                peersManager1.removeClientPath(otherCtx, peerKey1, PATH_ID);
+                peersManager1.removeChildrenPath(otherCtx, peerKey1, PATH_ID);
                 PeersManager peersManager = config(myCtx).getPeersManager();
                 final DrasylAddress peerKey = (DrasylAddress) otherCtx.channel().localAddress();
-                peersManager.removeClientPath(myCtx, peerKey, PATH_ID);
+                peersManager.removeChildrenPath(myCtx, peerKey, PATH_ID);
             }
         });
 

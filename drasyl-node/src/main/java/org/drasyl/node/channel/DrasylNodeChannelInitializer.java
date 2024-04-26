@@ -40,6 +40,7 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.node.handler.crypto.PFSArmHandler;
+import org.drasyl.node.handler.plugin.PluginsChildHandler;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -140,6 +141,7 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
      * This stage emits {@link org.drasyl.node.event.Event}s to {@link #node}.
      */
     protected void lastStage(final DrasylChannel ch) {
+        ch.pipeline().addLast(new PluginsChildHandler(config, node.identity()));
         ch.pipeline().addLast(new NodeEventHandler(node));
     }
 

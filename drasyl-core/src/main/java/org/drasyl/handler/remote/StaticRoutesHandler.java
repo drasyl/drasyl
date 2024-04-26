@@ -65,12 +65,12 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
 
     private void populateRoutes(final ChannelHandlerContext ctx) {
         staticRoutes.forEach((peer, endpoint) -> {
-            config(ctx).getPeersManager().addClientPath(ctx, peer, PATH_ID, endpoint, PATH_ID.priority());
+            config(ctx).getPeersManager().addChildrenPath(ctx, peer, PATH_ID, endpoint, PATH_ID.priority());
         });
     }
 
     private void clearRoutes(final ChannelHandlerContext ctx) {
-        config(ctx).getPeersManager().removeClientPaths(ctx, PATH_ID);
+        config(ctx).getPeersManager().removeChildrenPaths(ctx, PATH_ID);
     }
 
     private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {

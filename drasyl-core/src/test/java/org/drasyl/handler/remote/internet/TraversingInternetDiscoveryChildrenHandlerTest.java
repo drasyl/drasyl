@@ -163,7 +163,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
         when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
+        when(config.getPeersManager().addChildrenPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
@@ -173,7 +173,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyInt());
+        verify(config.getPeersManager()).addChildrenPath(any(), any(), any(), any(), anyInt());
         verify(traversingPeer).acknowledgementReceived(any());
     }
 

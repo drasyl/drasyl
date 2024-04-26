@@ -52,9 +52,9 @@ class GroupsClientPluginTest {
         final GroupsClientPlugin plugin = new GroupsClientPlugin(groupsClientConfig);
         when(env.getPipeline()).thenReturn(pipeline);
 
-        plugin.onBeforeStart(env);
+        plugin.onServerChannelRegistered(env);
 
-        verify(pipeline, times(3)).addLast(any());
+        verify(pipeline).addLast(any());
     }
 
     @Test
@@ -62,16 +62,16 @@ class GroupsClientPluginTest {
         final GroupsClientPlugin plugin = new GroupsClientPlugin(groupsClientConfig);
         when(env.getPipeline()).thenReturn(pipeline);
 
-        plugin.onBeforeShutdown(env);
+        plugin.onServerChannelInactive(env);
 
-        verify(pipeline, times(3)).remove(any(Class.class));
+        verify(pipeline).remove(any(Class.class));
     }
 
     @Test
     void shouldDoNothingOnNotUsedEvents() {
         final GroupsClientPlugin plugin = new GroupsClientPlugin(groupsClientConfig);
 
-        plugin.onAfterShutdown(env);
+        plugin.onServerChannelUnregistered(env);
 
         verifyNoInteractions(pipeline);
         verifyNoInteractions(config);

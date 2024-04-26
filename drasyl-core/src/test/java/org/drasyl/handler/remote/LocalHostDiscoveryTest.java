@@ -208,7 +208,7 @@ class LocalHostDiscoveryTest {
 
             verify(watchDisposable).cancel(false);
             verify(postDisposable).cancel(false);
-            verify(config.getPeersManager()).removeClientPaths(ctx, PATH_ID);
+            verify(config.getPeersManager()).removeChildrenPaths(ctx, PATH_ID);
         }
     }
 
@@ -219,7 +219,7 @@ class LocalHostDiscoveryTest {
                                  @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws IOException {
             when(ctx.channel().config()).thenReturn(config);
             when(fileReader.apply(any())).thenReturn(Set.of(new InetSocketAddress("192.168.188.23", 12345)));
-            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
+            when(config.getPeersManager().addChildrenPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
 
             final Path path = Paths.get(dir.toString(), "0", "02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b.txt");
             Files.createDirectory(path.getParent());
@@ -228,7 +228,7 @@ class LocalHostDiscoveryTest {
             final LocalHostDiscovery handler = new LocalHostDiscovery(fileReader, fileWriter, watchEnabled, ofMinutes(5), dir, watchDisposable, postDisposable);
             handler.scan(ctx);
 
-            verify(config.getPeersManager()).addClientPath(ctx, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_ID.priority());
+            verify(config.getPeersManager()).addChildrenPath(ctx, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), PATH_ID, new InetSocketAddress("192.168.188.23", 12345), PATH_ID.priority());
         }
     }
 }

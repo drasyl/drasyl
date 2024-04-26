@@ -91,7 +91,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
 
                 if (stale) {
                     LOG.debug("Path to peer {} is stale. Remove it.", publicKey);
-                    config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
+                    config(ctx).getPeersManager().removeChildrenPath(ctx, publicKey, PATH_ID);
                 }
             }
 

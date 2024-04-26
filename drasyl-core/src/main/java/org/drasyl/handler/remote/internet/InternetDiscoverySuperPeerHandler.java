@@ -205,7 +205,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
             if (peersManager.isStale(ctx, address, PATH_ID)) {
                 LOG.trace("Children peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                peersManager.removeClientPath(ctx, address, PATH_ID);
+                peersManager.removeChildrenPath(ctx, address, PATH_ID);
             }
         }
     }
@@ -226,7 +226,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
 
         final ChildrenPeer childrenPeer = childrenPeers.computeIfAbsent(msg.getSender(), k -> new ChildrenPeer(inetAddress, msg.getEndpoints()));
         childrenPeer.helloReceived(inetAddress, msg.getEndpoints());
-        config(ctx).getPeersManager().addClientPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_ID.priority());
+        config(ctx).getPeersManager().addChildrenPath(ctx, msg.getSender(), PATH_ID, inetAddress, PATH_ID.priority());
         config(ctx).getPeersManager().helloMessageReceived(msg.getSender(), PATH_ID);
 
         // reply with Acknowledgement

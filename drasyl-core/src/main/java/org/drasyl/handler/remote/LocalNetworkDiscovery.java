@@ -100,7 +100,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     void clearRoutes(final ChannelHandlerContext ctx) {
-        config(ctx).getPeersManager().removeClientPaths(ctx, PATH_ID);
+        config(ctx).getPeersManager().removeChildrenPaths(ctx, PATH_ID);
     }
 
     void doHeartbeat(final ChannelHandlerContext ctx) {
@@ -116,7 +116,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
 
             if (stale) {
                 LOG.debug("Path to peer {} is stale. Remove it.", publicKey);
-                config(ctx).getPeersManager().removeClientPath(ctx, publicKey, PATH_ID);
+                config(ctx).getPeersManager().removeChildrenPath(ctx, publicKey, PATH_ID);
             }
         }
     }
@@ -141,7 +141,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         final DrasylAddress msgSender = msg.getSender();
         if (!ctx.channel().localAddress().equals(msgSender)) {
             LOG.debug("Got local network discovery message for `{}` from address `{}`", msgSender, sender);
-            config(ctx).getPeersManager().addClientPath(ctx, msgSender, PATH_ID, sender, PATH_ID.priority());
+            config(ctx).getPeersManager().addChildrenPath(ctx, msgSender, PATH_ID, sender, PATH_ID.priority());
             config(ctx).getPeersManager().helloMessageReceived(msgSender, PATH_ID);
         }
 

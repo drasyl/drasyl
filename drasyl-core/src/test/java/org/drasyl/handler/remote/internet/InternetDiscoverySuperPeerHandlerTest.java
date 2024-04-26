@@ -75,7 +75,7 @@ class InternetDiscoverySuperPeerHandlerTest {
                                                     @Mock final ChildrenPeer childrenPeer) {
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKey, childrenPeer));
         when(config.getPeersManager().isStale(any(), any(), any())).thenReturn(true);
-        when(config.getPeersManager().removeClientPath(any(), any(), any())).thenReturn(true);
+        when(config.getPeersManager().removeChildrenPath(any(), any(), any())).thenReturn(true);
         when(config.getHelloInterval().toMillis()).thenReturn(1L);
 
         final InternetDiscoverySuperPeerHandler handler = new InternetDiscoverySuperPeerHandler(currentTime, childrenPeers, hopLimit, null);
@@ -85,7 +85,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         channel.pipeline().addFirst(handler);
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
-            verify(config.getPeersManager()).removeClientPath(any(), any(), any());
+            verify(config.getPeersManager()).removeChildrenPath(any(), any(), any());
         });
         assertTrue(childrenPeers.isEmpty());
 
@@ -108,7 +108,7 @@ class InternetDiscoverySuperPeerHandlerTest {
         when(helloMsg.getChildrenTime()).thenReturn(100L);
         when(config.getHelloInterval().toMillis()).thenReturn(2L);
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
-        when(config.getPeersManager().addClientPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
+        when(config.getPeersManager().addChildrenPath(any(), any(), any(), any(), anyInt())).thenReturn(true);
         when(identity.getAddress()).thenReturn(myPublicKey);
         when(config.getMaxMessageAge().toMillis()).thenReturn(1L);
 
@@ -118,7 +118,7 @@ class InternetDiscoverySuperPeerHandlerTest {
 
         channel.writeInbound(msg);
 
-        verify(config.getPeersManager()).addClientPath(any(), any(), any(), any(), anyInt());
+        verify(config.getPeersManager()).addChildrenPath(any(), any(), any(), any(), anyInt());
         final InetAddressedMessage<AcknowledgementMessage> replyMsg = channel.readOutbound();
         assertThat(replyMsg.content(), instanceOf(AcknowledgementMessage.class));
         assertSame(replyMsg.recipient(), inetAddress);

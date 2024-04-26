@@ -39,12 +39,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.LongSupplier;
 
-import static org.drasyl.handler.remote.PeersManager.PeerRole.LEAF;
-import static org.drasyl.handler.remote.PeersManager.PeerRole.ROOT;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.CHILDREN;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.SUPER_PEER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -52,6 +54,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,7 +62,12 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class PeersManagerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
+    private LongSupplier currentTime;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ReadWriteLock lock;
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Map<DrasylAddress, Peer> peers;
+    final int rtt = 10;
 
     @Nested
     class AddSuperPeerPath {
@@ -69,17 +77,18 @@ class PeersManagerTest {
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            final int rtt = 10;
             when(peers.computeIfAbsent(any(), any())).thenReturn(superPeer);
             when(superPeer.addPath(any(), any())).thenReturn(true);
             when(superPeer.pathCount()).thenReturn(1);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.addSuperPeerPath(ctx, peerKey, id, endpoint, rtt));
             verify(superPeer).addPath(id, endpoint);
             verify(ctx).fireUserEventTriggered(superPeer.addPeerEvent(endpoint, id, rtt));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -88,17 +97,18 @@ class PeersManagerTest {
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            final int rtt = 10;
             when(peers.computeIfAbsent(any(), any())).thenReturn(superPeer);
             when(superPeer.addPath(any(), any())).thenReturn(true);
             when(superPeer.pathCount()).thenReturn(2);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.addSuperPeerPath(ctx, peerKey, id, endpoint, rtt));
             verify(superPeer).addPath(id, endpoint);
             verify(ctx).fireUserEventTriggered(superPeer.addPathEvent(endpoint, id, rtt));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -107,16 +117,17 @@ class PeersManagerTest {
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            final int rtt = 10;
-            when(peers.computeIfAbsent(any(), any())).thenReturn(superPeer);
-            when(superPeer.addPath(any(), any())).thenReturn(false);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.hasPath(any(), any())).thenReturn(true);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(peerKey, superPeer), null);
 
             assertFalse(peersManager.addSuperPeerPath(ctx, peerKey, id, endpoint, rtt));
-            verify(superPeer).addPath(id, endpoint);
             verify(ctx).fireUserEventTriggered(any(PathRttEvent.class));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
@@ -124,14 +135,17 @@ class PeersManagerTest {
                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
-                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            final int rtt = 10;
-            when(peers.computeIfAbsent(any(), any())).thenReturn(clientPeer);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(peers.computeIfAbsent(any(), any())).thenReturn(childrenPeer);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertThrows(IllegalStateException.class, () -> peersManager.addSuperPeerPath(ctx, peerKey, id, endpoint, rtt));
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -142,17 +156,20 @@ class PeersManagerTest {
                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            when(peers.get(any())).thenReturn(superPeer);
             when(superPeer.removePath(any())).thenReturn(true);
+            when(superPeer.hasPath(any())).thenReturn(true);
             when(superPeer.hasPath()).thenReturn(false);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            peers = new HashMap<>(Map.of(peerKey, superPeer));
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.removeSuperPeerPath(ctx, peerKey, id));
-            verify(peers).remove(peerKey);
+            assertTrue(peers.isEmpty());
             verify(superPeer).removePath(id);
             verify(ctx).fireUserEventTriggered(superPeer.removePeerEvent(id));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -160,16 +177,18 @@ class PeersManagerTest {
                                                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            when(peers.get(any())).thenReturn(superPeer);
             when(superPeer.removePath(any())).thenReturn(true);
+            when(superPeer.hasPath(any())).thenReturn(true);
             when(superPeer.hasPath()).thenReturn(true);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, new HashMap<>(Map.of(peerKey, superPeer)), null);
 
             assertTrue(peersManager.removeSuperPeerPath(ctx, peerKey, id));
             verify(superPeer).removePath(id);
             verify(ctx).fireUserEventTriggered(superPeer.removePathEvent(id));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -177,28 +196,34 @@ class PeersManagerTest {
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            when(peers.get(any())).thenReturn(superPeer);
-            when(superPeer.removePath(any())).thenReturn(false);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
+            when(superPeer.hasPath(any())).thenReturn(false);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(peerKey, superPeer), null);
 
             assertFalse(peersManager.removeSuperPeerPath(ctx, peerKey, id));
-            verify(superPeer).removePath(id);
             verify(ctx, never()).fireUserEventTriggered(any());
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
         void shouldThrowExceptionIfPeerWasFormelyNotKnownAsSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            when(peers.get(any())).thenReturn(clientPeer);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(childrenPeer.role()).thenReturn(CHILDREN);
+            when(childrenPeer.hasPath(any())).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(peerKey, childrenPeer), null);
 
             assertThrows(IllegalStateException.class, () -> peersManager.removeSuperPeerPath(ctx, peerKey, id));
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -209,18 +234,19 @@ class PeersManagerTest {
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                        @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
-                                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            final int rtt = 10;
-            when(peers.computeIfAbsent(any(), any())).thenReturn(clientPeer);
-            when(clientPeer.addPath(any(), any())).thenReturn(true);
-            when(clientPeer.pathCount()).thenReturn(1);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(peers.computeIfAbsent(any(), any())).thenReturn(childrenPeer);
+            when(childrenPeer.addPath(any(), any())).thenReturn(true);
+            when(childrenPeer.pathCount()).thenReturn(1);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
-            assertTrue(peersManager.addClientPath(ctx, peerKey, id, endpoint, rtt));
-            verify(clientPeer).addPath(id, endpoint);
-            verify(ctx).fireUserEventTriggered(clientPeer.addPeerEvent(endpoint, id, rtt));
+            assertTrue(peersManager.addChildrenPath(ctx, peerKey, id, endpoint, rtt));
+            verify(childrenPeer).addPath(id, endpoint);
+            verify(ctx).fireUserEventTriggered(childrenPeer.addPeerEvent(endpoint, id, rtt));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -228,19 +254,20 @@ class PeersManagerTest {
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                             @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
-                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
+                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
 
-            final int rtt = 10;
-            when(peers.computeIfAbsent(any(), any())).thenReturn(clientPeer);
-            when(clientPeer.addPath(any(), any())).thenReturn(true);
-            when(clientPeer.pathCount()).thenReturn(2);
-            when(clientPeer.role()).thenReturn(LEAF);
+            when(peers.computeIfAbsent(any(), any())).thenReturn(childrenPeer);
+            when(childrenPeer.addPath(any(), any())).thenReturn(true);
+            when(childrenPeer.pathCount()).thenReturn(2);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
-            assertTrue(peersManager.addClientPath(ctx, peerKey, id, endpoint, rtt));
-            verify(clientPeer).addPath(id, endpoint);
-            verify(ctx).fireUserEventTriggered(clientPeer.addPathEvent(endpoint, id, rtt));
+            assertTrue(peersManager.addChildrenPath(ctx, peerKey, id, endpoint, rtt));
+            verify(childrenPeer).addPath(id, endpoint);
+            verify(ctx).fireUserEventTriggered(childrenPeer.addPathEvent(endpoint, id, rtt));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
@@ -248,17 +275,18 @@ class PeersManagerTest {
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
-                                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            final int rtt = 10;
-            when(peers.computeIfAbsent(any(), any())).thenReturn(clientPeer);
-            when(clientPeer.addPath(any(), any())).thenReturn(false);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(childrenPeer.hasPath(any(), any())).thenReturn(true);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, new HashMap<>(Map.of(peerKey, childrenPeer)), null);
 
-            assertFalse(peersManager.addClientPath(ctx, peerKey, id, endpoint, rtt));
-            verify(clientPeer).addPath(id, endpoint);
+            assertFalse(peersManager.addChildrenPath(ctx, peerKey, id, endpoint, rtt));
             verify(ctx).fireUserEventTriggered(any(PathRttEvent.class));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
@@ -267,13 +295,16 @@ class PeersManagerTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            final int rtt = 10;
             when(peers.computeIfAbsent(any(), any())).thenReturn(superPeer);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
-            assertThrows(IllegalStateException.class, () -> peersManager.addClientPath(ctx, peerKey, id, endpoint, rtt));
+            assertThrows(IllegalStateException.class, () -> peersManager.addChildrenPath(ctx, peerKey, id, endpoint, rtt));
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -283,51 +314,57 @@ class PeersManagerTest {
         void shouldTryToRemovePathAndReturnTrueAndEmitCorrectEventIfLastPathHasBeenRemoved(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                            @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            when(peers.get(any())).thenReturn(clientPeer);
-            when(clientPeer.removePath(any())).thenReturn(true);
-            when(clientPeer.hasPath()).thenReturn(false);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                                           @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(childrenPeer.removePath(any())).thenReturn(true);
+            when(childrenPeer.hasPath()).thenReturn(false);
+            when(childrenPeer.hasPath(any())).thenReturn(true);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            peers = new HashMap<>(Map.of(peerKey, childrenPeer));
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
-            assertTrue(peersManager.removeClientPath(ctx, peerKey, id));
-            verify(peers).remove(peerKey);
-            verify(clientPeer).removePath(id);
-            verify(ctx).fireUserEventTriggered(clientPeer.removePeerEvent(id));
+            assertTrue(peersManager.removeChildrenPath(ctx, peerKey, id));
+            assertTrue(peers.isEmpty());
+            verify(childrenPeer).removePath(id);
+            verify(ctx).fireUserEventTriggered(childrenPeer.removePeerEvent(id));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
         void shouldTryToRemovePathAndReturnTrueAndEmitCorrectEventIfAdditionalPathHasBeenRemoved(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            when(peers.get(any())).thenReturn(clientPeer);
-            when(clientPeer.removePath(any())).thenReturn(true);
-            when(clientPeer.hasPath()).thenReturn(true);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(childrenPeer.removePath(any())).thenReturn(true);
+            when(childrenPeer.hasPath()).thenReturn(true);
+            when(childrenPeer.hasPath(any())).thenReturn(true);
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, new HashMap<>(Map.of(peerKey, childrenPeer)), null);
 
-            assertTrue(peersManager.removeClientPath(ctx, peerKey, id));
-            verify(clientPeer).removePath(id);
-            verify(ctx).fireUserEventTriggered(clientPeer.removePathEvent(id));
+            assertTrue(peersManager.removeChildrenPath(ctx, peerKey, id));
+            verify(childrenPeer).removePath(id);
+            verify(ctx).fireUserEventTriggered(childrenPeer.removePathEvent(id));
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
 
         @Test
         void shouldTryToRemovePathAndReturnFalseAndEmitNoEventIfNoPathHasBeenRemoved(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer clientPeer) {
-            when(peers.get(any())).thenReturn(clientPeer);
-            when(clientPeer.removePath(any())).thenReturn(false);
-            when(clientPeer.role()).thenReturn(LEAF);
+                                                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer childrenPeer) {
+            when(childrenPeer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(peerKey, childrenPeer), null);
 
-            assertFalse(peersManager.removeClientPath(ctx, peerKey, id));
-            verify(clientPeer).removePath(id);
+            assertFalse(peersManager.removeChildrenPath(ctx, peerKey, id));
             verify(ctx, never()).fireUserEventTriggered(any());
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
@@ -335,12 +372,16 @@ class PeersManagerTest {
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                                   @Mock(answer = RETURNS_DEEP_STUBS) final Peer superPeer) {
-            when(peers.get(any())).thenReturn(superPeer);
-            when(superPeer.role()).thenReturn(ROOT);
+            when(superPeer.role()).thenReturn(SUPER_PEER);
+            when(superPeer.hasPath(id)).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(peerKey, superPeer), null);
 
-            assertThrows(IllegalStateException.class, () -> peersManager.removeClientPath(ctx, peerKey, id));
+            assertThrows(IllegalStateException.class, () -> peersManager.removeChildrenPath(ctx, peerKey, id));
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -354,15 +395,19 @@ class PeersManagerTest {
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer2) {
             when(peer1.paths().containsKey(id)).thenReturn(false);
             when(peer2.paths().containsKey(id)).thenReturn(true);
-            when(peer1.role()).thenReturn(ROOT);
-            when(peer2.role()).thenReturn(LEAF);
+            when(peer1.role()).thenReturn(SUPER_PEER);
+            when(peer2.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(Map.of(
-                    peerKey1, peer1,
-                    peerKey2, peer2
-            ));
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(
+                                                        peerKey1, peer1,
+                                                        peerKey2, peer2
+                                                ), null);
 
             assertEquals(Set.of(peerKey2), peersManager.getPeers(id));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -376,9 +421,13 @@ class PeersManagerTest {
             when(peers.get(any())).thenReturn(peer);
             when(peer.isStale(any(), any())).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.isStale(ctx, peerKey, id));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -392,9 +441,13 @@ class PeersManagerTest {
             when(peers.get(any())).thenReturn(peer);
             when(peer.isReachable(any(), any())).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.isReachable(ctx, peerKey, id));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -405,13 +458,17 @@ class PeersManagerTest {
                                     @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peers.get(peerKey)).thenReturn(peer);
-            when(peer.role()).thenReturn(LEAF);
+            when(peer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             peersManager.helloMessageReceived(peerKey, id);
 
             verify(peer).helloMessageReceived(id);
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -424,9 +481,13 @@ class PeersManagerTest {
             when(peers.get(any())).thenReturn(peer);
             when(peer.hasApplicationTraffic(any())).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.hasApplicationTraffic(ctx, peerKey));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -439,9 +500,13 @@ class PeersManagerTest {
             when(peers.get(any())).thenReturn(peer);
             when(peer.resolve()).thenReturn(endpoint);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertEquals(endpoint, peersManager.resolve(peerKey));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
@@ -455,9 +520,13 @@ class PeersManagerTest {
             when(peers.get(defaultPeerKey)).thenReturn(defaultPeer);
             when(defaultPeer.resolve()).thenReturn(endpoint);
 
-            final PeersManager peersManager = new PeersManager(peers, defaultPeerKey);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, defaultPeerKey);
 
             assertEquals(endpoint, peersManager.resolve(peerKey));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
 
         @Test
@@ -469,9 +538,13 @@ class PeersManagerTest {
             when(peers.get(defaultPeerKey)).thenReturn(defaultPeer);
             when(defaultPeer.resolve()).thenReturn(endpoint);
 
-            final PeersManager peersManager = new PeersManager(peers, defaultPeerKey);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, defaultPeerKey);
 
             assertEquals(endpoint, peersManager.resolve(peerKey));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -483,9 +556,13 @@ class PeersManagerTest {
             when(peers.get(peerKey)).thenReturn(peer);
             when(peer.hasPath()).thenReturn(true);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             assertTrue(peersManager.hasPath(peerKey));
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -493,9 +570,13 @@ class PeersManagerTest {
     class HasDefaultPeer {
         @Test
         void shouldReturnTrueIfDefaultPeerIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress defaultPeerKey) {
-            final PeersManager peersManager = new PeersManager(Map.of(), defaultPeerKey);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(), defaultPeerKey);
 
             assertTrue(peersManager.hasDefaultPeer());
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -504,22 +585,29 @@ class PeersManagerTest {
         @Test
         void shouldSetDefaultPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress previousDefaultPeerKey,
                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress defaultPeerKey) {
-            final PeersManager peersManager = new PeersManager(Map.of(), previousDefaultPeerKey);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(), previousDefaultPeerKey);
 
             assertEquals(previousDefaultPeerKey, peersManager.setDefaultPeer(defaultPeerKey));
             assertEquals(defaultPeerKey, peersManager.defaultPeerKey);
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
     @Nested
     class UnsetDefaultPeer {
         @Test
-        void shouldUnsetDefaultPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress previousDefaultPeerKey,
-                                    @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress defaultPeerKey) {
-            final PeersManager peersManager = new PeersManager(Map.of(), previousDefaultPeerKey);
+        void shouldUnsetDefaultPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress previousDefaultPeerKey) {
+            final PeersManager peersManager = new PeersManager(currentTime, lock, Map.of(), previousDefaultPeerKey);
 
             assertEquals(previousDefaultPeerKey, peersManager.unsetDefaultPeer());
             assertNull(peersManager.defaultPeerKey);
+            verify(lock.readLock(), atLeastOnce()).lock();
+            verify(lock.readLock(), atLeastOnce()).unlock();
+            verify(lock.writeLock()).lock();
+            verify(lock.writeLock()).unlock();
         }
     }
 
@@ -529,13 +617,17 @@ class PeersManagerTest {
         void shouldUpdateTimeOnPeer(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress peerKey,
                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer) {
             when(peers.get(peerKey)).thenReturn(peer);
-            when(peer.role()).thenReturn(LEAF);
+            when(peer.role()).thenReturn(CHILDREN);
 
-            final PeersManager peersManager = new PeersManager(peers);
+            final PeersManager peersManager = new PeersManager(currentTime, lock, peers, null);
 
             peersManager.applicationMessageSent(peerKey);
 
             verify(peer).applicationMessageSent();
+            verify(lock.readLock()).lock();
+            verify(lock.readLock()).unlock();
+            verify(lock.writeLock(), never()).lock();
+            verify(lock.writeLock(), never()).unlock();
         }
     }
 
@@ -550,28 +642,25 @@ class PeersManagerTest {
             @EnumSource(PeerRole.class)
             void shouldReturnTrueIfNewPathHasBeenAdded(final PeerRole role,
                                                        @Mock final DrasylAddress address,
-                                                       @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) throws ReflectiveOperationException {
+                                                       @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 final PathId id1 = new PathId() {
                     @Override
                     public short priority() {
                         return 100;
                     }
                 };
-                final short priority1 = id1.priority();
                 final PathId id2 = new PathId() {
                     @Override
                     public short priority() {
                         return 200;
                     }
                 };
-                final short priority2 = id2.priority();
                 final PathId id3 = new PathId() {
                     @Override
                     public short priority() {
                         return 50;
                     }
                 };
-                final short priority3 = id3.priority();
 
                 final Peer peer = new Peer(currentTime, address, role);
 
@@ -594,7 +683,7 @@ class PeersManagerTest {
                                                             @Mock final DrasylAddress address,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                             @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint1,
-                                                            @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2) throws ReflectiveOperationException {
+                                                            @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint2) {
                 final Peer peer = new Peer(currentTime, address, role);
 
                 // new path
@@ -611,7 +700,7 @@ class PeersManagerTest {
             void shouldThrowExceptionIfEndhostIsUnresolved(final PeerRole role,
                                                            @Mock final DrasylAddress address,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) throws ReflectiveOperationException {
+                                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 when(endpoint.isUnresolved()).thenReturn(true);
 
                 final Peer peer = new Peer(currentTime, address, role);
@@ -627,7 +716,7 @@ class PeersManagerTest {
             void shouldReturnTrueIfExistingPathHasBeenRemoved(final PeerRole role,
                                                               @Mock final DrasylAddress address,
                                                               @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                              @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) throws ReflectiveOperationException {
+                                                              @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 final PeerPath existingPath = new PeerPath(currentTime, id, endpoint, null, 0L, 0L, 0L, 0);
                 final Peer peer = new Peer(address, Map.of(id, existingPath), existingPath, role);
 
@@ -638,7 +727,7 @@ class PeersManagerTest {
             @EnumSource(PeerRole.class)
             void shouldReturnFalseIfNonExistingPathWasRequestedToBeRemoved(final PeerRole role,
                                                                            @Mock final DrasylAddress address,
-                                                                           @Mock(answer = RETURNS_DEEP_STUBS) final PathId id) throws ReflectiveOperationException {
+                                                                           @Mock(answer = RETURNS_DEEP_STUBS) final PathId id) {
                 final Peer peer = new Peer(address, Map.of(), null, role);
 
                 assertFalse(peer.removePath(id));
@@ -649,7 +738,7 @@ class PeersManagerTest {
             void shouldThrowExceptionIfEndhostIsUnresolved(final PeerRole role,
                                                            @Mock final DrasylAddress address,
                                                            @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
-                                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) throws ReflectiveOperationException {
+                                                           @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 when(endpoint.isUnresolved()).thenReturn(true);
 
                 final Peer peer = new Peer(currentTime, address, role);

@@ -169,8 +169,6 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
 
         if (!config(ctx).getPeersManager().isReachable(ctx, msg.getSender(), PATH_ID) && traversingPeer.addInetAddressCandidate(inetAddress)) {
             // send Hello immediately to speed up traversal
-            // FIXME: notwendig?
-            //config(ctx).getPeersManager().applicationMessageSentOrReceived(msg.getSender());
             config(ctx).getPeersManager().helloMessageSent(msg.getSender(), PATH_ID);
             writeHelloMessage(ctx, msg.getSender(), inetAddress, null);
             ctx.flush();
@@ -196,7 +194,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
         final TraversingPeer traversingPeer = traversingPeers.get(publicKey);
         traversingPeer.acknowledgementReceived(inetAddress);
 
-        config(ctx).getPeersManager().addClientPath(ctx, publicKey, PATH_ID, inetAddress, rtt);
+        config(ctx).getPeersManager().addChildrenPath(ctx, publicKey, PATH_ID, inetAddress, rtt);
         config(ctx).getPeersManager().acknowledgementMessageReceived(publicKey, PATH_ID);
     }
 
@@ -218,7 +216,7 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
             if (!traversingPeer.isNew(ctx) && (!peersManager.hasApplicationTraffic(ctx, address) || !peersManager.isReachable(ctx, address, PATH_ID))) {
                 LOG.trace("Traversing peer `{}` is stale. Remove from my neighbour list.", address);
                 it.remove();
-                peersManager.removeClientPath(ctx, address, PATH_ID);
+                peersManager.removeChildrenPath(ctx, address, PATH_ID);
             }
             else {
                 // send Hello

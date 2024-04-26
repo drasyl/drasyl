@@ -75,7 +75,6 @@ public class VisualPipeline {
             }
         }
         catch (final ReflectiveOperationException e) {
-            // FIXME:
             throw new RuntimeException(e);
         }
     }

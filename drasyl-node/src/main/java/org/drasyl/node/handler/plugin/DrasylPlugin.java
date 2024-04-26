@@ -36,7 +36,7 @@ public interface DrasylPlugin {
      *
      * @param environment the plugin environment
      */
-    default void onBeforeStart(final PluginEnvironment environment) {
+    default void onServerChannelRegistered(final PluginEnvironment environment) {
         // do nothing
     }
 
@@ -45,7 +45,7 @@ public interface DrasylPlugin {
      *
      * @param environment the plugin environment
      */
-    default void onAfterStart(final PluginEnvironment environment) {
+    default void onServerChannelActive(final PluginEnvironment environment) {
         // do nothing
     }
 
@@ -54,7 +54,7 @@ public interface DrasylPlugin {
      *
      * @param environment the plugin environment
      */
-    default void onBeforeShutdown(final PluginEnvironment environment) {
+    default void onServerChannelInactive(final PluginEnvironment environment) {
         // do nothing
     }
 
@@ -64,7 +64,23 @@ public interface DrasylPlugin {
      *
      * @param environment the plugin environment
      */
-    default void onAfterShutdown(final PluginEnvironment environment) {
+    default void onServerChannelUnregistered(final PluginEnvironment environment) {
+        // do nothing
+    }
+
+    default void onChildChannelRegistered(final PluginEnvironment environment) {
+        // do nothing
+    }
+
+    default void onChildChannelActive(final PluginEnvironment environment) {
+        // do nothing
+    }
+
+    default void onChildChannelInactive(final PluginEnvironment environment) {
+        // do nothing
+    }
+
+    default void onChildChannelUnregistered(final PluginEnvironment environment) {
         // do nothing
     }
 }

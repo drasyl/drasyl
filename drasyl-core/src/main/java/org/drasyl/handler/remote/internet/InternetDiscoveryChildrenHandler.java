@@ -246,11 +246,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         final PeersManager peersManager = config(ctx).getPeersManager();
 
         // we don't have a super peer yet, so this is now our best one
-        // FIXME: in eine methode for "transadtion"?
-        if (!peersManager.hasDefaultPeer()) {
-            peersManager.setDefaultPeer(publicKey);
-        }
-
+        peersManager.setDefaultPeerIfUnset(publicKey);
         peersManager.addSuperPeerPath(ctx, publicKey, PATH_ID, inetAddress, rtt);
         peersManager.acknowledgementMessageReceived(publicKey, PATH_ID, rtt);
 

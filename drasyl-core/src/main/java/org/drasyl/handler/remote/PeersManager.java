@@ -44,39 +44,38 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.BooleanSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.handler.remote.PeersManager.PeerRole.LEAF;
-import static org.drasyl.handler.remote.PeersManager.PeerRole.ROOT;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.CHILDREN;
+import static org.drasyl.handler.remote.PeersManager.PeerRole.SUPER_PEER;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
 
 public class PeersManager {
     private static final Logger LOG = LoggerFactory.getLogger(PeersManager.class);
     private static final int NO_RTT = -1;
     private final LongSupplier currentTime;
-    final Map<DrasylAddress, Peer> peers;
+    private final ReadWriteLock lock;
+    private final Map<DrasylAddress, Peer> peers;
     DrasylAddress defaultPeerKey;
 
     PeersManager(final LongSupplier currentTime,
+                 final ReadWriteLock lock,
                  final Map<DrasylAddress, Peer> peers,
                  final DrasylAddress defaultPeerKey) {
         this.peers = requireNonNull(peers);
+        this.lock = requireNonNull(lock);
         this.currentTime = requireNonNull(currentTime);
         this.defaultPeerKey = defaultPeerKey;
     }
 
-    PeersManager(final Map<DrasylAddress, Peer> peers,
-                 final DrasylAddress defaultPeerKey) {
-        this(System::currentTimeMillis, peers, defaultPeerKey);
-    }
-
-    PeersManager(final Map<DrasylAddress, Peer> peers) {
-        this(peers, null);
-    }
-
     public PeersManager() {
-        this(System::currentTimeMillis, new HashMap<>(), null);
+        this(System::currentTimeMillis, new ReentrantReadWriteLock(true), new ConcurrentHashMap<>(), null);
     }
 
     @Override
@@ -97,7 +96,7 @@ public class PeersManager {
                     peerKey,
                     peer.role() + (peerKey.equals(defaultPeerKey) ? "*" : "")
             ));
-            
+
             // paths
             PeerPath current = peer.bestPath;
             while (current != null) {
@@ -135,37 +134,61 @@ public class PeersManager {
 
     public boolean hasApplicationTraffic(final ChannelHandlerContext ctx,
                                          final DrasylAddress peerKey) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.hasApplicationTraffic(ctx);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.hasApplicationTraffic(ctx);
+            }
+            return false;
         }
-        return false;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public void applicationMessageSent(final DrasylAddress peerKey) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            peer.applicationMessageSent();
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                peer.applicationMessageSent();
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
     public void applicationMessageReceived(final DrasylAddress peerKey) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            peer.applicationMessageReceived();
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                peer.applicationMessageReceived();
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
     public InetSocketAddress resolve(final DrasylAddress peerKey) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            final InetSocketAddress endpoint = peer.resolve();
-            if (endpoint != null) {
-                return endpoint;
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                final InetSocketAddress endpoint = peer.resolve();
+                if (endpoint != null) {
+                    return endpoint;
+                }
+                return resolveDefault();
             }
             return resolveDefault();
         }
-        return resolveDefault();
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     private InetSocketAddress resolveDefault() {
@@ -177,12 +200,18 @@ public class PeersManager {
     }
 
     public boolean hasPath(final DrasylAddress peerKey) {
-        Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.hasPath();
+        lock.readLock().lock();
+        try {
+            Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.hasPath();
+            }
+            else {
+                return false;
+            }
         }
-        else {
-            return false;
+        finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -191,19 +220,56 @@ public class PeersManager {
      */
 
     public boolean hasDefaultPeer() {
-        return defaultPeerKey != null;
+        lock.readLock().lock();
+        try {
+            return defaultPeerKey != null;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
-    public DrasylAddress setDefaultPeer(final DrasylAddress defaultPeerKey) {
-        final DrasylAddress previousDefaultPeer = this.defaultPeerKey;
-        this.defaultPeerKey = requireNonNull(defaultPeerKey);
-        return previousDefaultPeer;
+    /**
+     * @throws NullPointerException if {@code newDefaultPeerKey} is {@code null}
+     */
+    public DrasylAddress setDefaultPeer(final DrasylAddress newDefaultPeerKey) {
+        requireNonNull(newDefaultPeerKey);
+
+        return conditionalWriteLock(
+                () -> !newDefaultPeerKey.equals(defaultPeerKey),
+                () -> {
+                    final DrasylAddress previousDefaultPeer = defaultPeerKey;
+                    defaultPeerKey = newDefaultPeerKey;
+                    return previousDefaultPeer;
+                },
+                () -> defaultPeerKey
+        );
+    }
+
+    public DrasylAddress setDefaultPeerIfUnset(final DrasylAddress newDefaultPeerKey) {
+        requireNonNull(newDefaultPeerKey);
+
+        return conditionalWriteLock(
+                () -> defaultPeerKey == null,
+                () -> {
+                    final DrasylAddress previousDefaultPeer = defaultPeerKey;
+                    defaultPeerKey = newDefaultPeerKey;
+                    return previousDefaultPeer;
+                },
+                () -> defaultPeerKey
+        );
     }
 
     public DrasylAddress unsetDefaultPeer() {
-        final DrasylAddress previousDefaultPeer = defaultPeerKey;
-        defaultPeerKey = null;
-        return previousDefaultPeer;
+        return conditionalWriteLock(
+                () -> defaultPeerKey != null,
+                () -> {
+                    final DrasylAddress previousDefaultPeer = defaultPeerKey;
+                    defaultPeerKey = null;
+                    return previousDefaultPeer;
+                },
+                () -> defaultPeerKey
+        );
     }
 
     /*
@@ -215,53 +281,70 @@ public class PeersManager {
                             final PathId id,
                             final InetSocketAddress endpoint,
                             final int rtt) {
-        final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer(currentTime, key, role));
-        if (peer.role() != role) {
-            throw new IllegalStateException();
-        }
+        return conditionalWriteLock(
+                () -> !(peers.containsKey(peerKey) && peers.get(peerKey).hasPath(id, endpoint)),
+                () -> {
+                    final Peer peer = peers.computeIfAbsent(peerKey, key -> new Peer(currentTime, key, role));
+                    if (peer.role() != role) {
+                        throw new IllegalStateException();
+                    }
 
-        if (peer.addPath(id, endpoint)) {
-            if (peer.pathCount() == 1) {
-                ctx.fireUserEventTriggered(peer.addPeerEvent(endpoint, id, rtt));
-            }
-            else {
-                ctx.fireUserEventTriggered(peer.addPathEvent(endpoint, id, rtt));
-            }
-            return true;
-        }
-        else if (rtt >= 0) {
-            ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
-        }
-        return false;
+                    if (peer.addPath(id, endpoint)) {
+                        if (peer.pathCount() == 1) {
+                            ctx.fireUserEventTriggered(peer.addPeerEvent(endpoint, id, rtt));
+                        }
+                        else {
+                            ctx.fireUserEventTriggered(peer.addPathEvent(endpoint, id, rtt));
+                        }
+                        return true;
+                    }
+                    else if (rtt >= 0) {
+                        ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
+                    }
+                    return false;
+                },
+                () -> {
+                    if (rtt >= 0) {
+                        ctx.fireUserEventTriggered(PathRttEvent.of(peerKey, endpoint, id, rtt));
+                    }
+                    return false;
+                }
+        );
     }
 
     private boolean removePath(final ChannelHandlerContext ctx,
                                final PeerRole role,
                                final DrasylAddress peerKey,
                                final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            if (peer.role() != role) {
-                throw new IllegalStateException();
-            }
+        return conditionalWriteLock(
+                () -> peers.containsKey(peerKey) && peers.get(peerKey).hasPath(id),
+                () -> {
+                    final Peer peer = peers.get(peerKey);
+                    if (peer != null) {
+                        if (peer.role() != role) {
+                            throw new IllegalStateException();
+                        }
 
-            if (peer.removePath(id)) {
-                if (peer.hasPath()) {
-                    ctx.fireUserEventTriggered(peer.removePathEvent(id));
-                }
-                else {
-                    peers.remove(peerKey);
-                    ctx.fireUserEventTriggered(peer.removePeerEvent(id));
-                }
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        else {
-            return false;
-        }
+                        if (peer.removePath(id)) {
+                            if (peer.hasPath()) {
+                                ctx.fireUserEventTriggered(peer.removePathEvent(id));
+                            }
+                            else {
+                                peers.remove(peerKey);
+                                ctx.fireUserEventTriggered(peer.removePeerEvent(id));
+                            }
+                            return true;
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else {
+                        return false;
+                    }
+                },
+                () -> false
+        );
     }
 
     /*
@@ -273,15 +356,16 @@ public class PeersManager {
                                     final PathId id,
                                     final InetSocketAddress endpoint,
                                     final int rtt) {
-        return addPath(ctx, ROOT, peerKey, id, endpoint, rtt);
+        return addPath(ctx, SUPER_PEER, peerKey, id, endpoint, rtt);
     }
 
     public boolean removeSuperPeerPath(final ChannelHandlerContext ctx,
                                        final DrasylAddress peerKey,
                                        final PathId id) {
-        return removePath(ctx, ROOT, peerKey, id);
+        return removePath(ctx, SUPER_PEER, peerKey, id);
     }
 
+    @SuppressWarnings("unused")
     public void removeSuperPeerPaths(final ChannelHandlerContext ctx,
                                      final PathId id) {
         final Set<DrasylAddress> peerKeys = Set.copyOf(peers.keySet());
@@ -289,30 +373,30 @@ public class PeersManager {
     }
 
     /*
-     * Client paths
+     * Children paths
      */
 
-    public boolean addClientPath(final ChannelHandlerContext ctx,
-                                 final DrasylAddress peerKey,
-                                 final PathId id,
-                                 final InetSocketAddress endpoint,
-                                 final int rtt) {
-        return addPath(ctx, LEAF, peerKey, id, endpoint, rtt);
+    public boolean addChildrenPath(final ChannelHandlerContext ctx,
+                                   final DrasylAddress peerKey,
+                                   final PathId id,
+                                   final InetSocketAddress endpoint,
+                                   final int rtt) {
+        return addPath(ctx, CHILDREN, peerKey, id, endpoint, rtt);
     }
 
-    public boolean addClientPath(final ChannelHandlerContext ctx,
-                                 final DrasylAddress peerKey,
-                                 final PathId id,
-                                 final InetSocketAddress endpoint) {
-        return addClientPath(ctx, peerKey, id, endpoint, NO_RTT);
+    public boolean addChildrenPath(final ChannelHandlerContext ctx,
+                                   final DrasylAddress peerKey,
+                                   final PathId id,
+                                   final InetSocketAddress endpoint) {
+        return addChildrenPath(ctx, peerKey, id, endpoint, NO_RTT);
     }
 
-    public boolean tryAddClientPath(final ChannelHandlerContext ctx,
-                                 final DrasylAddress peerKey,
-                                 final PathId id,
-                                 final InetSocketAddress endpoint) {
+    public boolean tryAddChildrenPath(final ChannelHandlerContext ctx,
+                                      final DrasylAddress peerKey,
+                                      final PathId id,
+                                      final InetSocketAddress endpoint) {
         try {
-            return addClientPath(ctx, peerKey, id, endpoint, NO_RTT);
+            return addChildrenPath(ctx, peerKey, id, endpoint, NO_RTT);
         }
         catch (final IllegalStateException e) {
             // ignore
@@ -320,16 +404,16 @@ public class PeersManager {
         }
     }
 
-    public boolean removeClientPath(final ChannelHandlerContext ctx,
-                                    final DrasylAddress peerKey,
-                                    final PathId id) {
-        return removePath(ctx, LEAF, peerKey, id);
+    public boolean removeChildrenPath(final ChannelHandlerContext ctx,
+                                      final DrasylAddress peerKey,
+                                      final PathId id) {
+        return removePath(ctx, CHILDREN, peerKey, id);
     }
 
-    public void removeClientPaths(final ChannelHandlerContext ctx,
-                                  final PathId id) {
+    public void removeChildrenPaths(final ChannelHandlerContext ctx,
+                                    final PathId id) {
         final Set<DrasylAddress> peerKeys = Set.copyOf(peers.keySet());
-        peerKeys.forEach(peerKey -> removeClientPath(ctx, peerKey, id));
+        peerKeys.forEach(peerKey -> removeChildrenPath(ctx, peerKey, id));
     }
 
     /*
@@ -337,59 +421,95 @@ public class PeersManager {
      */
 
     public Set<DrasylAddress> getPeers(final PathId id) {
-        final Set<DrasylAddress> peerKeys = new HashSet<>();
-        for (final Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
-            final DrasylAddress peerKey = entry.getKey();
-            final Peer peer = entry.getValue();
-            if (peer.paths().containsKey(id)) {
-                peerKeys.add(peerKey);
+        lock.readLock().lock();
+        try {
+            final Set<DrasylAddress> peerKeys = new HashSet<>();
+            for (final Entry<DrasylAddress, Peer> entry : peers.entrySet()) {
+                final DrasylAddress peerKey = entry.getKey();
+                final Peer peer = entry.getValue();
+                if (peer.paths().containsKey(id)) {
+                    peerKeys.add(peerKey);
+                }
             }
+            return peerKeys;
         }
-        return peerKeys;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public boolean isStale(final ChannelHandlerContext ctx,
                            final DrasylAddress peerKey,
                            final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.isStale(ctx, id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.isStale(ctx, id);
+            }
+            return false;
         }
-        return false;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public boolean isReachable(final ChannelHandlerContext ctx,
                                final DrasylAddress peerKey,
                                final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.isReachable(ctx, id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.isReachable(ctx, id);
+            }
+            return false;
         }
-        return false;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public void helloMessageReceived(final DrasylAddress peerKey,
                                      final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            peer.helloMessageReceived(id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                peer.helloMessageReceived(id);
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
     public void helloMessageSent(final DrasylAddress peerKey,
                                  final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            peer.helloMessageSent(id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                peer.helloMessageSent(id);
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
     public void acknowledgementMessageReceived(final DrasylAddress peerKey,
                                                final PathId id,
                                                final int rtt) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            peer.acknowledgementMessageReceived(id, rtt);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                peer.acknowledgementMessageReceived(id, rtt);
+            }
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -399,30 +519,71 @@ public class PeersManager {
     }
 
     public int rtt(DrasylAddress peerKey, final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.rtt(id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.rtt(id);
+            }
+            return NO_RTT;
         }
-        return NO_RTT;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public InetSocketAddress resolveInetAddress(DrasylAddress peerKey, final PathId id) {
-        final Peer peer = peers.get(peerKey);
-        if (peer != null) {
-            return peer.resolveEndpoint(id);
+        lock.readLock().lock();
+        try {
+            final Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.resolveEndpoint(id);
+            }
+            return null;
         }
-        return null;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
-    public Set<InetSocketAddress> getEndpoints(final PathId id) {
-        final Set<InetSocketAddress> endpoints = new HashSet<>();
-        for (final Peer peer : peers.values()) {
-            final InetSocketAddress endpoint = peer.getEndpoint(id);
-            if (endpoint != null) {
-                endpoints.add(endpoint);
+    /**
+     * This method reduces the amount of write locks by checking if the write task is actually
+     * changing the state. While there might be something false positive write locks, there are
+     * never be false negatives. Always acquires read lock, but "upgrade" to a write lock if a state
+     * change might happen.
+     */
+    private <T> T conditionalWriteLock(final BooleanSupplier writeCondition,
+                                       final Supplier<T> writeTask,
+                                       final Supplier<T> previousValue) {
+        lock.readLock().lock();
+        try {
+            // check if we need to change state
+            if (writeCondition.getAsBoolean()) {
+                // "upgrade" to write lock
+                lock.readLock().unlock();
+                lock.writeLock().lock();
+                try {
+                    // change state
+                    try {
+                        return writeTask.get();
+                    }
+                    finally {
+                        // downgrade to read lock
+                        lock.readLock().lock();
+                    }
+                }
+                finally {
+                    // unlock write, still hold read
+                    lock.writeLock().unlock();
+                }
+            }
+            else {
+                return previousValue.get();
             }
         }
-        return endpoints;
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     /*
@@ -471,6 +632,18 @@ public class PeersManager {
             return bestPath != null;
         }
 
+        boolean hasPath(final PathId id) {
+            return paths.containsKey(id);
+        }
+
+        boolean hasPath(final PathId id, final InetSocketAddress endpoint) {
+            return paths.containsKey(id) && paths.get(id).endpoint.equals(endpoint);
+        }
+
+        boolean hasDifferentPath(final PathId id, final InetSocketAddress endpoint) {
+            return paths.containsKey(id) && !paths.get(id).endpoint.equals(endpoint);
+        }
+
         Map<PathId, PeerPath> paths() {
             return paths;
         }
@@ -511,19 +684,13 @@ public class PeersManager {
                 throw new UnresolvedAddressException();
             }
 
-            if (paths.containsKey(id)) {
-                // update endpoint?
-                PeerPath current = bestPath;
-                while (current != null) {
-                    if (current.id == id) {
-                        // FIXME: change only attribute or replace whole path? and return true?
-                        current.endpoint = endpoint;
-                        break;
-                    }
-                    current = current.next;
-                }
-
-                return false;
+            final boolean pathAdded;
+            if (hasDifferentPath(id, endpoint)) {
+                pathAdded = false;
+                removePath(id);
+            }
+            else {
+                pathAdded = true;
             }
 
             final PeerPath newPath = new PeerPath(id, endpoint);
@@ -545,7 +712,7 @@ public class PeersManager {
                 current.next = newPath;
             }
 
-            return true;
+            return pathAdded;
         }
 
         boolean removePath(final PathId id) {
@@ -632,18 +799,10 @@ public class PeersManager {
             return null;
         }
 
-        public InetSocketAddress getEndpoint(final PathId id) {
-            final PeerPath path = paths.get(id);
-            if (path != null) {
-                return path.endpoint;
-            }
-            return null;
-        }
-
         public PathEvent addPeerEvent(final InetSocketAddress endpoint,
                                       final PathId id,
                                       final int rtt) {
-            if (role == ROOT) {
+            if (role == SUPER_PEER) {
                 return AddPathAndSuperPeerEvent.of(address, endpoint, id, rtt);
             }
             else {
@@ -667,8 +826,8 @@ public class PeersManager {
     }
 
     enum PeerRole {
-        ROOT("ROOT"),
-        LEAF("LEAF");
+        SUPER_PEER("S"),
+        CHILDREN("C");
         private final String label;
 
         PeerRole(final String label) {
@@ -694,8 +853,6 @@ public class PeersManager {
         long lastHelloMessageSentTime;
         long lastHelloMessageReceivedTime;
         long lastAcknowledgementMessageReceivedTime;
-        long lastApplicationMessageSentTime;
-        long lastApplicationMessageReceivedTime;
         int rtt;
 
         @SuppressWarnings("java:S107")

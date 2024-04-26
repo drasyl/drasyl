@@ -40,7 +40,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PluginsHandlerTest {
+class PluginsServerHandlerTest {
     @Mock
     private DrasylConfig config;
     @Mock
@@ -61,11 +61,11 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelRegistered(ctx);
 
-            verify(plugin).onBeforeStart(any());
+            verify(plugin).onServerChannelRegistered(any());
         }
     }
 
@@ -75,11 +75,11 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelActive(ctx);
 
-            verify(plugin).onAfterStart(any());
+            verify(plugin).onServerChannelActive(any());
         }
     }
 
@@ -89,11 +89,11 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelInactive(ctx);
 
-            verify(plugin).onBeforeShutdown(any());
+            verify(plugin).onServerChannelInactive(any());
         }
     }
 
@@ -103,11 +103,11 @@ class PluginsHandlerTest {
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel()).thenReturn(channel);
 
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelUnregistered(ctx);
 
-            verify(plugin).onAfterShutdown(any());
+            verify(plugin).onServerChannelUnregistered(any());
         }
     }
 }

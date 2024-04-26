@@ -136,7 +136,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.doHeartbeat(ctx);
 
-            verify(config.getPeersManager()).removeClientPath(any(), any(), any());
+            verify(config.getPeersManager()).removeChildrenPath(any(), any(), any());
             verify(ctx).writeAndFlush(argThat((ArgumentMatcher<InetAddressedMessage<?>>) m -> m.content() instanceof HelloMessage && m.recipient().equals(MULTICAST_ADDRESS)));
         }
     }
@@ -163,7 +163,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.clearRoutes(ctx);
 
-            verify(config.getPeersManager()).removeClientPaths(any(), any());
+            verify(config.getPeersManager()).removeChildrenPaths(any(), any());
         }
     }
 
@@ -173,7 +173,7 @@ class LocalNetworkDiscoveryTest {
         void shouldHandleInboundPingFromOtherNodes(@Mock final InetSocketAddress sender,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().config()).thenReturn(config);
-            when(config.getPeersManager().addClientPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
+            when(config.getPeersManager().addChildrenPath(eq(ctx), any(), any(), any(), anyInt())).thenReturn(true);
 
             final IdentityPublicKey publicKey = ID_2.getIdentityPublicKey();
             final HelloMessage msg = HelloMessage.of(0, publicKey, ID_2.getProofOfWork());
@@ -181,7 +181,7 @@ class LocalNetworkDiscoveryTest {
             final LocalNetworkDiscovery handler = new LocalNetworkDiscovery(MULTICAST_ADDRESS, pingDisposable);
             handler.channelRead(ctx, new InetAddressedMessage<>(msg, null, sender));
 
-            verify(config.getPeersManager()).addClientPath(eq(ctx), any(), any(), any(), anyInt());
+            verify(config.getPeersManager()).addChildrenPath(eq(ctx), any(), any(), any(), anyInt());
         }
 
         @Test

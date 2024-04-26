@@ -170,7 +170,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        config(ctx).getPeersManager().removeClientPaths(ctx, PATH_ID);
+        config(ctx).getPeersManager().removeChildrenPaths(ctx, PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }
@@ -282,14 +282,14 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
         for (final DrasylAddress publicKey : peers) {
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                peersManager.removeClientPath(ctx, publicKey, PATH_ID);
+                peersManager.removeChildrenPath(ctx, publicKey, PATH_ID);
             }
         }
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
             LOG.trace("Add new address `{}` for peer `{}`.", address, publicKey);
-            peersManager.addClientPath(ctx, publicKey, PATH_ID, address, PATH_ID.priority());
+            peersManager.addChildrenPath(ctx, publicKey, PATH_ID, address, PATH_ID.priority());
         }));
     }
 

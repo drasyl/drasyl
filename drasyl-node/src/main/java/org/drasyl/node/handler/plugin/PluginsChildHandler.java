@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,12 +31,12 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static java.util.Objects.requireNonNull;
 
-public class PluginsHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(PluginsHandler.class);
+public class PluginsChildHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(PluginsChildHandler.class);
     private final DrasylConfig config;
     private final Identity identity;
 
-    public PluginsHandler(final DrasylConfig config, final Identity identity) {
+    public PluginsChildHandler(final DrasylConfig config, final Identity identity) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
     }
@@ -46,10 +46,10 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelRegistered();
 
         if (!config.getPlugins().isEmpty()) {
-            LOG.debug("Execute onBeforeStart listeners for all plugins...");
+            LOG.debug("Execute onChildChannelRegistered listeners for all plugins...");
             final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
-            config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
-            LOG.debug("All onBeforeStart listeners executed");
+            config.getPlugins().forEach(plugin -> plugin.onChildChannelRegistered(environment));
+            LOG.debug("All onChildChannelRegistered listeners executed");
         }
     }
 
@@ -58,10 +58,10 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelActive();
 
         if (!config.getPlugins().isEmpty()) {
-            LOG.debug("Execute onAfterStart listeners for all plugins...");
+            LOG.debug("Execute onChildChannelActive listeners for all plugins...");
             final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
-            config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
-            LOG.debug("All onAfterStart listeners executed");
+            config.getPlugins().forEach(plugin -> plugin.onChildChannelActive(environment));
+            LOG.debug("All onChildChannelActive listeners executed");
         }
     }
 
@@ -70,10 +70,10 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
         ctx.fireChannelInactive();
 
         if (!config.getPlugins().isEmpty()) {
-            LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
+            LOG.debug("Execute onChildChannelInactive listeners for all plugins...");
             final PluginEnvironment environment = PluginEnvironment.of(config, identity, ctx.channel().pipeline());
-            config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
-            LOG.debug("All onBeforeShutdown listeners executed");
+            config.getPlugins().forEach(plugin -> plugin.onChildChannelInactive(environment));
+            LOG.debug("All onChildChannelInactive listeners executed");
         }
     }
 
@@ -84,10 +84,10 @@ public class PluginsHandler extends ChannelInboundHandlerAdapter {
         final ChannelPipeline pipeline = ctx.channel().pipeline();
 
         if (!config.getPlugins().isEmpty()) {
-            LOG.debug("Execute onAfterShutdown listeners for all plugins...");
+            LOG.debug("Execute onChildChannelUnregistered listeners for all plugins...");
             final PluginEnvironment environment = PluginEnvironment.of(config, identity, pipeline);
-            config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
-            LOG.debug("All onAfterShutdown listeners executed");
+            config.getPlugins().forEach(plugin -> plugin.onChildChannelUnregistered(environment));
+            LOG.debug("All onChildChannelUnregistered listeners executed");
         }
     }
 }

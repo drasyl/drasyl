@@ -185,10 +185,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         return promise;
     }
 
-    private DrasylChannel serve0(final DrasylAddress peer) {
+    public DrasylChannel serve0(final DrasylAddress peer) {
         assert eventLoop().inEventLoop();
         DrasylChannel channel = channels.get(peer);
-        if (channel == null) {
+        if (channel == null && isOpen()) {
             channel = newDrasylChannel(peer);
             pipeline().fireChannelRead(channel);
             pipeline().fireChannelReadComplete();
