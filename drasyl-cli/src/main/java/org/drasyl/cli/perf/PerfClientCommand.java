@@ -23,7 +23,6 @@ package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
@@ -32,6 +31,7 @@ import org.drasyl.cli.perf.channel.PerfClientChildChannelInitializer;
 import org.drasyl.cli.perf.message.SessionRequest;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -92,9 +92,6 @@ public class PerfClientCommand extends ChannelOptions {
     @SuppressWarnings("java:S107")
     PerfClientCommand(final PrintStream out,
                       final PrintStream err,
-                      final EventLoopGroup parentGroup,
-                      final EventLoopGroup childGroup,
-                      final EventLoopGroup udpServerGroup,
                       final Level logLevel,
                       final File identityFile,
                       final InetSocketAddress bindAddress,
@@ -107,7 +104,7 @@ public class PerfClientCommand extends ChannelOptions {
                       final int testDuration,
                       final int messagesPerSecond,
                       final int messageSize) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.server = server;
         this.waitForDirectConnection = waitForDirectConnection;
         this.reverseMode = reverseMode;
@@ -118,18 +115,27 @@ public class PerfClientCommand extends ChannelOptions {
 
     @SuppressWarnings("unused")
     PerfClientCommand() {
-        super(new DefaultEventLoopGroup(1));
     }
 
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    @Override
+    protected EventLoopGroup getChildChannelLoopGroup() {
+        // we have only one peer
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        }
+        return childChannelLoopGroup;
+    }
+
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
+                                                        final Identity identity) {
         final SessionRequest request = new SessionRequest(testDuration, messagesPerSecond, messageSize, reverseMode);
         return new PerfClientChildChannelInitializer(out, err, exitCode, server, waitForDirectConnection, request);
     }
 
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new PerfClientChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
+                                                         final Identity identity,
+                                                         final EventLoopGroup udpChannelLoop) {
+        return new PerfClientChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
     }
 
     @Override

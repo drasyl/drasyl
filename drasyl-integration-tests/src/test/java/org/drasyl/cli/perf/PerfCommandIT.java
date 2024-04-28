@@ -125,9 +125,6 @@ class PerfCommandIT {
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,
-                serverParentGroup,
-                serverChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 serverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -156,9 +153,6 @@ class PerfCommandIT {
         clientThread = new Thread(() -> new PerfClientCommand(
                 new PrintStream(clientOut, true),
                 System.err,
-                clientParentGroup,
-                clientChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 clientPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
