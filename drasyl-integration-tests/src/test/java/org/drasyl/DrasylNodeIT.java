@@ -652,7 +652,6 @@ class DrasylNodeIT {
     }
 
     @Nested
-    @Disabled
     class TestIntraVmDiscovery {
         /**
          * Network Layout:

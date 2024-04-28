@@ -37,9 +37,11 @@ import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.identity.DrasylAddress;
@@ -67,6 +69,7 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
+    private static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
 
     enum State {OPEN, ACTIVE, CLOSED}
 
@@ -118,6 +121,18 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
 
         this.identity = (Identity) identity;
         state = State.ACTIVE;
+
+        final int networkId = config().getNetworkId();
+        final PeersManager peersManager = config().getPeersManager();
+        serverChannels.forEach((peerKey, peerChannel) -> {
+            final int peerNetworkId = peerChannel.config().getNetworkId();
+            final PeersManager peerPeersManager = peerChannel.config().getPeersManager();
+            if (networkId == peerNetworkId) {
+                peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null);
+                peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null);
+            }
+        });
+        serverChannels.put(this.identity.getAddress(), this);
     }
 
     @Override
@@ -137,6 +152,8 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     protected void doClose() {
         if (state != State.CLOSED) {
             // Update the internal state before the closeFuture<?> is notified.
+            serverChannels.remove(identity.getAddress());
+
             if (identity != null) {
                 identity = null;
             }

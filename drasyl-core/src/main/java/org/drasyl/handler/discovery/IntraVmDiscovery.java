@@ -48,7 +48,7 @@ import static java.util.Objects.requireNonNull;
 @SuppressWarnings({ "java:S110" })
 public class IntraVmDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
-    static final PathId PATH_ID = new PathId() {
+    public static final PathId PATH_ID = new PathId() {
         @Override
         public short priority() {
             return 20;

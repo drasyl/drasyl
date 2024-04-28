@@ -637,11 +637,11 @@ public class PeersManager {
         }
 
         boolean hasPath(final PathId id, final InetSocketAddress endpoint) {
-            return paths.containsKey(id) && paths.get(id).endpoint.equals(endpoint);
+            return paths.containsKey(id) && Objects.equals(paths.get(id).endpoint, endpoint);
         }
 
         boolean hasDifferentPath(final PathId id, final InetSocketAddress endpoint) {
-            return paths.containsKey(id) && !paths.get(id).endpoint.equals(endpoint);
+            return paths.containsKey(id) && !Objects.equals(paths.get(id).endpoint, endpoint);
         }
 
         Map<PathId, PeerPath> paths() {
