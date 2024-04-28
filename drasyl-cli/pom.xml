@@ -223,6 +223,7 @@
                         <groupId>org.graalvm.buildtools</groupId>
                         <artifactId>native-maven-plugin</artifactId>
                         <version>0.10.1</version>
+                        <extensions>true</extensions>
                         <executions>
                             <execution>
                                 <id>build-native</id>
@@ -244,6 +245,10 @@
                             <mainClass>org.drasyl.cli.Cli</mainClass>
                             <outputDirectory>${project.parent.basedir}</outputDirectory>
                             <fallback>false</fallback>
+                            <buildArgs>-Ob</buildArgs>
+                            <agent>
+                                <enabled>true</enabled>
+                            </agent>
                         </configuration>
                     </plugin>
                     <plugin>
