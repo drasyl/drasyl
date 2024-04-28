@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import org.awaitility.Awaitility;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.UdpServer;
@@ -42,6 +43,7 @@ import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -83,6 +85,11 @@ class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
     public static final long TIMEOUT = 15000L;
     public static final int MESSAGE_MTU = 1024;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setup(final TestInfo info) {
