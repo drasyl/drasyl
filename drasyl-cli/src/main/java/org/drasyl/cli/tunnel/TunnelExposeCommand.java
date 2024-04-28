@@ -23,9 +23,7 @@ package org.drasyl.cli.tunnel;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer;
@@ -64,12 +62,9 @@ public class TunnelExposeCommand extends ChannelOptions {
     @ArgGroup(multiplicity = "1")
     Service service;
 
-    @SuppressWarnings("java:S107")
+    @SuppressWarnings({ "java:S107", "unused" })
     TunnelExposeCommand(final PrintStream out,
                         final PrintStream err,
-                        final EventLoopGroup parentGroup,
-                        final EventLoopGroup childGroup,
-                        final NioEventLoopGroup udpServerGroup,
                         final Level logLevel,
                         final File identityFile,
                         final InetSocketAddress bindAddress,
@@ -78,14 +73,13 @@ public class TunnelExposeCommand extends ChannelOptions {
                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                         final String password,
                         final Service service) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.password = requireNonNull(password);
         this.service = requireNonNull(service);
     }
 
     @SuppressWarnings("unused")
     TunnelExposeCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
@@ -98,14 +92,15 @@ public class TunnelExposeCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new TunnelExposeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, service, password, out, err, exitCode, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
+                                                         final Identity identity,
+                                                         final EventLoopGroup udpChannelLoop) {
+        return new TunnelExposeChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, service, password, out, err, exitCode, !protocolArmDisabled);
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
+                                                        final Identity identity) {
         return new TunnelExposeChildChannelInitializer(err, exitCode, identity, password, service);
     }
 

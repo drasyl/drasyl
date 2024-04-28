@@ -23,7 +23,6 @@ package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
@@ -52,32 +51,29 @@ public class PerfServerCommand extends ChannelOptions {
     @SuppressWarnings("java:S107")
     PerfServerCommand(final PrintStream out,
                       final PrintStream err,
-                      final EventLoopGroup parentGroup,
-                      final EventLoopGroup childGroup,
-                      final EventLoopGroup udpServerGroup,
                       final Level logLevel,
                       final File identityFile,
                       final InetSocketAddress bindAddress,
                       final int onlineTimeoutMillis,
                       final int networkId,
                       final Map<IdentityPublicKey, InetSocketAddress> superPeers) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
     }
 
     @SuppressWarnings("unused")
     PerfServerCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new PerfServerChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
+                                                         final Identity identity,
+                                                         final EventLoopGroup udpChannelLoop) {
+        return new PerfServerChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
+                                                        final Identity identity) {
         return new PerfServerChildChannelInitializer(out, err, exitCode);
     }
 

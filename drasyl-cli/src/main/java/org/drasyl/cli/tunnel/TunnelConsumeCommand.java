@@ -23,9 +23,7 @@ package org.drasyl.cli.tunnel;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChannelInitializer;
@@ -33,6 +31,7 @@ import org.drasyl.cli.tunnel.channel.TunnelConsumeChildChannelInitializer;
 import org.drasyl.cli.wormhole.WormholeCodeConverter;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -70,12 +69,9 @@ public class TunnelConsumeCommand extends ChannelOptions {
     )
     private int port;
 
-    @SuppressWarnings("java:S107")
+    @SuppressWarnings({ "java:S107", "unused" })
     TunnelConsumeCommand(final PrintStream out,
                          final PrintStream err,
-                         final EventLoopGroup parentGroup,
-                         final EventLoopGroup childGroup,
-                         final NioEventLoopGroup udpServerGroup,
                          final Level logLevel,
                          final File identityFile,
                          final InetSocketAddress bindAddress,
@@ -84,25 +80,34 @@ public class TunnelConsumeCommand extends ChannelOptions {
                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                          final Pair<IdentityPublicKey, String> code,
                          final int port) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.code = requireNonNull(code);
         this.port = requireNonNegative(port);
     }
 
     @SuppressWarnings("unused")
-    TunnelConsumeCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
+    public TunnelConsumeCommand() {
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new TunnelConsumeChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+    protected EventLoopGroup getChildChannelLoopGroup() {
+        // we have only one peer
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        }
+        return childChannelLoopGroup;
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
+                                                         final Identity identity,
+                                                         final EventLoopGroup udpChannelLoop) {
+        return new TunnelConsumeChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+    }
+
+    @Override
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
+                                                        Identity identity) {
         return new TunnelConsumeChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second(), port);
     }
 
