@@ -75,13 +75,13 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
                 drasylChannel.queueRead(appMsg.getPayload());
-                drasylChannel.finishRead();
+                drasylChannel.finishRead(); // FIXME: move to channelReadComplete
             }
             else {
                 parent.serve(appMsg.getSender()).addListener(future -> {
                     final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
                     drasylChannel1.queueRead(appMsg.getPayload());
-                    drasylChannel1.finishRead();
+                    drasylChannel1.finishRead(); // FIXME: move to channelReadComplete
                 });
             }
         }

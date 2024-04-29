@@ -27,6 +27,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
@@ -69,7 +70,7 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
-    private static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
+    static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
 
     enum State {OPEN, ACTIVE, CLOSED}
 
@@ -78,6 +79,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private volatile State state;
     private volatile Identity identity; // NOSONAR
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
+    private ChannelPromise activePromise;
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
@@ -122,14 +124,23 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         this.identity = (Identity) identity;
         state = State.ACTIVE;
 
-        final int networkId = config().getNetworkId();
         final PeersManager peersManager = config().getPeersManager();
         serverChannels.forEach((peerKey, peerChannel) -> {
             final int peerNetworkId = peerChannel.config().getNetworkId();
             final PeersManager peerPeersManager = peerChannel.config().getPeersManager();
-            if (networkId == peerNetworkId) {
-                peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null);
-                peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null);
+            if (config().getNetworkId() == peerNetworkId) {
+                activePromise.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null);
+                    }
+                });
+                peerChannel.activePromise.addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), DrasylServerChannel.this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null);
+                    }
+                });
             }
         });
         serverChannels.put(this.identity.getAddress(), this);
@@ -139,11 +150,22 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     protected void doRegister() throws Exception {
         super.doRegister();
 
+        activePromise = newPromise();
+
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
                 ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
+                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelActive(final ChannelHandlerContext ctx) {
+                        ctx.fireChannelActive();
+
+                        ctx.executor().execute(() -> activePromise.setSuccess());
+                        ctx.pipeline().remove(this);
+                    }
+                });
             }
         });
     }

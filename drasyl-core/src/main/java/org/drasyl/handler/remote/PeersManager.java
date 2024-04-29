@@ -107,7 +107,7 @@ public class PeersManager {
                             current.timeSincLastSent(),
                             current.timeSincLastReceived(),
                             current.id.priority(),
-                            socketAddressToString(current.endpoint)
+                            current.endpoint != null ? socketAddressToString(current.endpoint) : null
                     ));
                 }
                 else {
@@ -118,7 +118,7 @@ public class PeersManager {
                             current.timeSincLastSent(),
                             current.timeSincLastReceived(),
                             current.id.priority(),
-                            socketAddressToString(current.endpoint)
+                            current.endpoint != null ? socketAddressToString(current.endpoint) : null
                     ));
                 }
                 current = current.next;
@@ -205,6 +205,22 @@ public class PeersManager {
             Peer peer = peers.get(peerKey);
             if (peer != null) {
                 return peer.hasPath();
+            }
+            else {
+                return false;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public boolean hasPath(final DrasylAddress peerKey, final PathId id) {
+        lock.readLock().lock();
+        try {
+            Peer peer = peers.get(peerKey);
+            if (peer != null) {
+                return peer.hasPath(id);
             }
             else {
                 return false;
@@ -622,6 +638,14 @@ public class PeersManager {
              final PeerPath bestPath,
              final PeerRole role) {
             this(System::currentTimeMillis, address, paths, bestPath, role);
+        }
+
+        @Override
+        public String toString() {
+            return "Peer{" +
+                    "address=" + address +
+                    ", role=" + role +
+                    '}';
         }
 
         int pathCount() {

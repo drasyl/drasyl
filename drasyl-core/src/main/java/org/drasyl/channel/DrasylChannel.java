@@ -308,16 +308,40 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 // map remoteAddress to udp endpoint
                 final PeersManager peersManager = parent().config().getPeersManager();
                 peersManager.applicationMessageSent(remoteAddress);
-                final InetSocketAddress endpoint = peersManager.resolve(remoteAddress);
-                if (endpoint != null) {
-                    // convert to remote message
-                    final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
-                    final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
-
-                    parent().enqueueUdpWrite(inetMsg);
+                final DrasylServerChannel peerServerChannel = parent().serverChannels.get(remoteAddress);
+                if (peerServerChannel != null) {
+                    final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
+                    if (drasylChannel != null) {
+                        drasylChannel.queueRead(buf.retain());
+                        if (in.size() == 1) {
+                            // we passed last entry
+                            drasylChannel.finishRead();
+                        }
+                    }
+                    else {
+                        buf.retain();
+                        final boolean lastMsg = in.size() == 1;
+                        peerServerChannel.serve(identity.getAddress()).addListener(future -> {
+                            final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                            drasylChannel1.queueRead(buf);
+                            if (lastMsg) {
+                                drasylChannel1.finishRead();
+                            }
+                        });
+                    }
                 }
                 else {
-                    LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
+                    final InetSocketAddress endpoint = peersManager.resolve(remoteAddress);
+                    if (endpoint != null) {
+                        // convert to remote message
+                        final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
+                        final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
+
+                        parent().enqueueUdpWrite(inetMsg);
+                    }
+                    else {
+                        LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
+                    }
                 }
 
                 in.remove();
