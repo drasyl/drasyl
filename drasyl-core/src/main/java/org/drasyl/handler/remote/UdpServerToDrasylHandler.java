@@ -23,6 +23,7 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -36,21 +37,21 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
-    private final ChannelHandlerContext drasylCtx;
+    private final DrasylServerChannel parent;
 
-    public UdpServerToDrasylHandler(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
         LOG.trace("Read Datagram {}", msg);
-        drasylCtx.fireChannelRead(msg);
+        parent.pipeline().fireChannelRead(msg);
     }
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        drasylCtx.fireChannelReadComplete();
+        parent.pipeline().fireChannelReadComplete();
         ctx.fireChannelReadComplete();
     }
 }

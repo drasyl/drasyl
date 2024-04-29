@@ -46,6 +46,11 @@ import java.util.Map;
 import java.util.concurrent.Callable;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -150,15 +155,20 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                 bindAddress = new InetSocketAddress(bindAddress.getAddress(), identityPort);
             }
 
-            final ChannelHandler serverChannelInitializer = getServerChannelInitializer(exitCode, identity, udpChannelLoop);
-            final ChannelHandler childChannelInitializer = getChildChannelInitializer(exitCode, identity);
+            final ChannelHandler serverChannelInitializer = getServerChannelInitializer(exitCode);
+            final ChannelHandler childChannelInitializer = getChildChannelInitializer(exitCode);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(serverChannelLoop, childChannelLoopGroup)
                     .channel(DrasylServerChannel.class)
+                    .option(NETWORK_ID, networkId)
+                    .option(ARMING_ENABLED, !protocolArmDisabled)
+                    .option(SUPER_PEERS, superPeers)
+                    .option(UDP_BIND, bindAddress)
+                    .option(UDP_EVENT_LOOP_SUPPLIER, () -> udpChannelLoop)
                     .handler(serverChannelInitializer)
                     .childHandler(childChannelInitializer);
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
 
             Runtime.getRuntime().addShutdownHook(new Thread(() -> {
                 log().info("Shutdown.");
@@ -199,10 +209,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
         return getChildChannelLoopGroup().next();
     }
 
-    protected abstract ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                                  Identity identity,
-                                                                  EventLoopGroup udpChannelLoop);
+    protected abstract ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode);
 
-    protected abstract ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                                 Identity identity);
+    protected abstract ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode);
 }

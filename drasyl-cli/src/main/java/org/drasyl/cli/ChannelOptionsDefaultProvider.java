@@ -29,7 +29,7 @@ import picocli.CommandLine.Model.OptionSpec;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
 
-import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.DEFAULT_SUPER_PEERS;
 
 public class ChannelOptionsDefaultProvider implements CommandLine.IDefaultValueProvider {
     @Override
@@ -39,7 +39,7 @@ public class ChannelOptionsDefaultProvider implements CommandLine.IDefaultValueP
             if (optionSpec.names().length > 0 && "--super-peers".equals(optionSpec.names()[0])) {
                 final StringBuilder builder = new StringBuilder();
                 boolean first = true;
-                for (Entry<IdentityPublicKey, InetSocketAddress> entry : SUPER_PEERS.entrySet()) {
+                for (Entry<IdentityPublicKey, InetSocketAddress> entry : DEFAULT_SUPER_PEERS.entrySet()) {
                     if (first) {
                         first = false;
                     }

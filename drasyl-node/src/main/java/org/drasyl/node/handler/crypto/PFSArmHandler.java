@@ -59,7 +59,7 @@ public class PFSArmHandler extends AbstractArmHandler {
                             final LongSupplier expireProvider,
                             final Duration retryInterval,
                             final State state) {
-        super(crypto, identity, peerIdentity, session);
+        super(crypto, peerIdentity, session);
         this.expireProvider = expireProvider;
         this.retryInterval = retryInterval;
         this.state = state;

@@ -21,7 +21,9 @@
  */
 package org.drasyl.handler.remote.internet;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
@@ -33,9 +35,8 @@ import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.IdentitySecretKey;
-import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,30 +63,34 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TraversingInternetDiscoveryChildrenHandlerTest {
-    @Mock
-    private IdentityPublicKey myPublicKey;
-    @Mock
-    private IdentitySecretKey mySecretKey;
-    @Mock
-    private ProofOfWork myProofOfWork;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity myIdentity;
     @Mock
     private LongSupplier currentTime;
+    @Mock
+    private ChannelHandlerContext ctx;
 
     @Test
     void shouldHandleUniteMessageFromSuperPeer(@Mock final IdentityPublicKey superPeerPublicKey,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final UniteMessage uniteMsg,
                                                @Mock final SuperPeer superPeer,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey,
                                                @Mock final InetSocketAddress otherPeerInetAddress,
                                                @Mock final InetSocketAddress superPeerInetAddress) {
-        when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
         when(uniteMsg.getSender()).thenReturn(superPeerPublicKey);
         when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
+        when(myIdentity.getAddress()).thenReturn(myPublicKey);
+        when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 
@@ -99,16 +104,20 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     void shouldDropUniteMessageNotFromSuperPeer(@Mock final IdentityPublicKey superPeerPublicKey,
                                                 @Mock(answer = RETURNS_DEEP_STUBS) final UniteMessage uniteMsg,
                                                 @Mock final SuperPeer superPeer,
+                                                @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey,
                                                 @Mock final InetSocketAddress otherPeerInetAddress,
                                                 @Mock final InetSocketAddress superPeerInetAddress) {
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
+        when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(uniteMsg.getRecipient()).thenReturn(myPublicKey);
         when(uniteMsg.getEndpoints()).thenReturn(Set.of(otherPeerInetAddress));
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of(superPeerPublicKey, superPeer);
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>();
         final InetAddressedMessage<UniteMessage> msg = new InetAddressedMessage<>(uniteMsg, null, superPeerInetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 
@@ -120,16 +129,21 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     void shouldHandleHelloMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final HelloMessage helloMsg,
                                                     @Mock final InetSocketAddress inetAddress,
                                                     @Mock final IdentityPublicKey traversingPeerPublicKey,
-                                                    @Mock final TraversingPeer traversingPeer) {
-        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
+                                                    @Mock final TraversingPeer traversingPeer,
+                                                    @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey) {
         when(helloMsg.getSender()).thenReturn(traversingPeerPublicKey);
-        when(helloMsg.getTime()).thenReturn(40L);
+        when(helloMsg.getTime()).thenReturn(5L);
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
+        when(config.getMaxMessageAge().toMillis()).thenReturn(10L);
+        when(myIdentity.getAddress()).thenReturn(myPublicKey);
+        when(helloMsg.getRecipient()).thenReturn(myPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<HelloMessage> msg = new InetAddressedMessage<>(helloMsg, null, inetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 
@@ -141,15 +155,19 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     void shouldHandleAcknowledgementMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final AcknowledgementMessage acknowledgementMsg,
                                                               @Mock final InetSocketAddress inetAddress,
                                                               @Mock final IdentityPublicKey traversingPeerPublicKey,
-                                                              @Mock final TraversingPeer traversingPeer) {
+                                                              @Mock final TraversingPeer traversingPeer,
+                                                              @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey) {
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
+        when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
         when(acknowledgementMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 
@@ -161,15 +179,19 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
     void shouldRecordApplicationMessageFromTraversingPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage applicationMsg,
                                                           @Mock final InetSocketAddress inetAddress,
                                                           @Mock final IdentityPublicKey traversingPeerPublicKey,
-                                                          @Mock final TraversingPeer traversingPeer) {
+                                                          @Mock final TraversingPeer traversingPeer,
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress myPublicKey) {
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
+        when(myIdentity.getAddress()).thenReturn(myPublicKey);
         when(applicationMsg.getRecipient()).thenReturn(myPublicKey);
         when(applicationMsg.getSender()).thenReturn(traversingPeerPublicKey);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
 
@@ -182,15 +204,17 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                                                                      @Mock final IdentityPublicKey traversingPeerPublicKey,
                                                                      @Mock final TraversingPeer traversingPeer,
                                                                      @Mock final InetSocketAddress traversingPeerInetAddress) {
+        when(config.getHelloInterval().toMillis()).thenReturn(1L);
         when(applicationMsg.getRecipient()).thenReturn(traversingPeerPublicKey);
         when(traversingPeer.primaryAddress()).thenReturn(traversingPeerInetAddress);
-        when(traversingPeer.isReachable()).thenReturn(true);
+        when(traversingPeer.isReachable(any())).thenReturn(true);
         final Map<IdentityPublicKey, SuperPeer> superPeers = Map.of();
         final Map<DrasylAddress, TraversingPeer> traversingPeers = new HashMap<>(Map.of(traversingPeerPublicKey, traversingPeer));
         final OverlayAddressedMessage<ApplicationMessage> msg = new OverlayAddressedMessage<>(applicationMsg, publicKey);
 
-        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(0, myPublicKey, mySecretKey, myProofOfWork, currentTime, 0L, 5L, 30L, 60L, superPeers, null, null, 60L, 100, traversingPeers);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final TraversingInternetDiscoveryChildrenHandler handler = new TraversingInternetDiscoveryChildrenHandler(currentTime, 0L, superPeers, null, null, traversingPeers);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, myIdentity);
+        channel.pipeline().addFirst(handler);
 
         channel.writeOutbound(msg);
 
@@ -212,7 +236,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressA = InetSocketAddress.createUnresolved("example.com", 35432);
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
 
                 assertTrue(traversingPeer.addInetAddressCandidate(inetAddressB));
                 assertTrue(traversingPeer.inetAddressCandidates().contains(inetAddressB));
@@ -225,7 +249,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordFirstDiscoveryTime(@Mock final InetSocketAddress inetAddress) {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, Set.of(inetAddress), 0L, 0L, 0L);
                 traversingPeer.helloSent();
                 traversingPeer.helloSent();
 
@@ -241,7 +265,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
                 final InetSocketAddress inetAddressB = InetSocketAddress.createUnresolved("example.com", 23485);
                 when(currentTime.getAsLong()).thenReturn(1L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, new HashSet<>(Set.of(inetAddressA)), 0L, 0L, 0L);
                 traversingPeer.acknowledgementReceived(inetAddressB);
 
                 assertEquals(1L, traversingPeer.lastAcknowledgementTime);
@@ -255,7 +279,7 @@ class TraversingInternetDiscoveryChildrenHandlerTest {
             void shouldRecordLastApplicationTime(@Mock final InetSocketAddress inetAddress) {
                 when(currentTime.getAsLong()).thenReturn(1L).thenReturn(2L);
 
-                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, 30L, 60L, Set.of(inetAddress), 0L, 0L, 0L);
+                final TraversingPeer traversingPeer = new TraversingPeer(currentTime, Set.of(inetAddress), 0L, 0L, 0L);
                 traversingPeer.applicationTrafficSentOrReceived();
 
                 assertEquals(1L, traversingPeer.lastApplicationTime);

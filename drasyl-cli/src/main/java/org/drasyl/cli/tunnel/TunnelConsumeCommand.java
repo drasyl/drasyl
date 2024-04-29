@@ -29,7 +29,6 @@ import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelConsumeChildChannelInitializer;
 import org.drasyl.cli.wormhole.WormholeCodeConverter;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Pair;
@@ -99,16 +98,13 @@ public class TunnelConsumeCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         final Identity identity,
-                                                         final EventLoopGroup udpChannelLoop) {
-        return new TunnelConsumeChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new TunnelConsumeChannelInitializer(onlineTimeoutMillis, err, exitCode, code.first());
     }
 
     @Override
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        Identity identity) {
-        return new TunnelConsumeChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second(), port);
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
+        return new TunnelConsumeChildChannelInitializer(out, err, exitCode, code.first(), code.second(), port);
     }
 
     @Override
