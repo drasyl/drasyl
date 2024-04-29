@@ -23,12 +23,10 @@ package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.perf.channel.PerfServerChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfServerChildChannelInitializer;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -65,15 +63,12 @@ public class PerfServerCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         final Identity identity,
-                                                         final EventLoopGroup udpChannelLoop) {
-        return new PerfServerChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new PerfServerChannelInitializer(onlineTimeoutMillis, out, err, exitCode);
     }
 
     @Override
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         return new PerfServerChildChannelInitializer(out, err, exitCode);
     }
 

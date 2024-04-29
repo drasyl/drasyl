@@ -31,7 +31,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.pubsub.PubSubCodec;
 import org.drasyl.handler.pubsub.PubSubPublish;
 import org.drasyl.handler.pubsub.PubSubPublishHandler;
@@ -42,10 +42,12 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
 /**
  * Publishes to a pub/sub broker.
@@ -86,7 +88,8 @@ public class PubSubPublisher {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 0) {
+                .option(UDP_BIND, new InetSocketAddress(0))
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -105,7 +108,7 @@ public class PubSubPublisher {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
 
             // begin to take user input
             final Scanner userInput = new Scanner(System.in);

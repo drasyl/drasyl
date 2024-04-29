@@ -29,7 +29,6 @@ import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.perf.channel.PerfClientChannelInitializer;
 import org.drasyl.cli.perf.channel.PerfClientChildChannelInitializer;
 import org.drasyl.cli.perf.message.SessionRequest;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
@@ -126,16 +125,13 @@ public class PerfClientCommand extends ChannelOptions {
         return childChannelLoopGroup;
     }
 
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         final SessionRequest request = new SessionRequest(testDuration, messagesPerSecond, messageSize, reverseMode);
         return new PerfClientChildChannelInitializer(out, err, exitCode, server, waitForDirectConnection, request);
     }
 
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         final Identity identity,
-                                                         final EventLoopGroup udpChannelLoop) {
-        return new PerfClientChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, server, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new PerfClientChannelInitializer(onlineTimeoutMillis, err, exitCode, server);
     }
 
     @Override

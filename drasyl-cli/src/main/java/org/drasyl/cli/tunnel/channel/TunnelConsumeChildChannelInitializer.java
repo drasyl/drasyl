@@ -33,7 +33,6 @@ import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
@@ -44,7 +43,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer.MAX_PEERS;
 import static org.drasyl.cli.tunnel.TunnelCommand.CONNECTION_CONFIG;
 import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.util.Preconditions.requireNonNegative;
@@ -54,7 +52,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
-    private final Identity identity;
     private final IdentityPublicKey exposer;
     private final String password;
     private final int port;
@@ -62,7 +59,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
     public TunnelConsumeChildChannelInitializer(final PrintStream out,
                                                 final PrintStream err,
                                                 final Worm<Integer> exitCode,
-                                                final Identity identity,
                                                 final IdentityPublicKey exposer,
                                                 final String password,
                                                 final int port) {
@@ -70,7 +66,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
-        this.identity = requireNonNull(identity);
         this.exposer = requireNonNull(exposer);
         this.password = requireNonNull(password);
         this.port = requireNonNegative(port);
@@ -89,7 +84,7 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }
