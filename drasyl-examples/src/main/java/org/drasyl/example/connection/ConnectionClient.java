@@ -29,9 +29,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionHandler;
@@ -46,9 +46,11 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.Scanner;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
 /**
  * This node will contact {@link ConnectionServer} and initiates a connection handshake.
@@ -89,6 +91,7 @@ public class ConnectionClient {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
+                .option(UDP_BIND, new InetSocketAddress(22528))
                 .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {

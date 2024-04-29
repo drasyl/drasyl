@@ -31,9 +31,9 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.pubsub.PubSubCodec;
 import org.drasyl.handler.pubsub.PubSubPublish;
 import org.drasyl.handler.pubsub.PubSubSubscribe;
@@ -46,10 +46,12 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
 /**
  * Subscribes to a pub/sub broker.
@@ -90,6 +92,7 @@ public class PubSubSubscriber {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
+                .option(UDP_BIND, new InetSocketAddress(0))
                 .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
