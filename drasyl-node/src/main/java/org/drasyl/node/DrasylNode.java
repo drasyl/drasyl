@@ -44,7 +44,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
@@ -111,6 +110,7 @@ import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 @SuppressWarnings({ "java:S107", "java:S118" })
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
+    private static final short MIN_DERIVED_PORT = 22528;
     protected final Identity identity;
     protected final ServerBootstrap bootstrap;
     private final List<SocketAddress> sntpServers;
@@ -169,9 +169,9 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config) throws DrasylException {
         identity = DrasylNode.generateIdentity(config);
 
-        final EventLoopGroup parentGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        final EventLoopGroup childGroup = parentGroup;
-        final EventLoopGroup udpServerGroup = parentGroup;
+        final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
+        final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
+        final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .localAddress(identity)
@@ -187,8 +187,7 @@ public abstract class DrasylNode {
                 .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
                 .option(UDP_EVENT_LOOP_SUPPLIER, udpServerGroup::next)
                 .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
-                .handler(new DrasylNodeServerChannelInitializer(config, this))
-                .childHandler(new DrasylNodeChannelInitializer(config, this));
+                .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
@@ -524,7 +523,7 @@ public abstract class DrasylNode {
         return null;
     }
 
-    static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
+    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
         if (remoteBindPort == -1) {
             /*
              derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
@@ -535,7 +534,7 @@ public abstract class DrasylNode {
              started it would use a new port and this would make discovery more difficult
             */
             final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
-            return (int) (DrasylNodeServerChannelInitializer.MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - DrasylNodeServerChannelInitializer.MIN_DERIVED_PORT));
+            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
         }
         else {
             return remoteBindPort;

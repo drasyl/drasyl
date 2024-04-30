@@ -49,8 +49,11 @@ class PerfClientChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey server,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress inetAddress) throws Exception {
             when(ctx.channel()).thenReturn(channel);
+            when(channel.config().getSuperPeers()).thenReturn(Map.of(publicKey, inetAddress));
 
             final ChannelInboundHandler handler = new PerfClientChannelInitializer(1, err, exitCode, server);
             handler.channelRegistered(ctx);

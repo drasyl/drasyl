@@ -49,8 +49,11 @@ class WormholeReceiveChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey sender) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey sender,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress inetAddress) throws Exception {
             when(ctx.channel()).thenReturn(channel);
+            when(channel.config().getSuperPeers()).thenReturn(Map.of(publicKey, inetAddress));
 
             final ChannelInboundHandler handler = new WormholeReceiveChannelInitializer(1, err, exitCode, sender);
             handler.channelRegistered(ctx);

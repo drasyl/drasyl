@@ -25,6 +25,7 @@ import com.google.auto.value.AutoValue;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 import java.net.SocketAddress;
@@ -35,6 +36,7 @@ import java.net.SocketAddress;
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class Identity extends SocketAddress {
