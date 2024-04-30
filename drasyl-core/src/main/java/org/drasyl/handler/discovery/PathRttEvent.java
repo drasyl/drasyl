@@ -29,7 +29,7 @@ import java.net.InetSocketAddress;
 
 /**
  * Signals that a new RTT measurement for a routing path has been performed to {@link
- * AddPathAndChildrenEvent#getAddress()}.
+ * AddPathEvent#getAddress()}.
  */
 @AutoValue
 public abstract class PathRttEvent implements PathEvent {
