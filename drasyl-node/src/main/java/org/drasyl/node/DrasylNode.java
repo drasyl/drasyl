@@ -187,7 +187,7 @@ public abstract class DrasylNode {
                 .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
                 .option(UDP_EVENT_LOOP_SUPPLIER, udpServerGroup::next)
                 .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
-                .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
+                .handler(new DrasylNodeServerChannelInitializer(config, this)).childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
