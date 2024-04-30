@@ -86,7 +86,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         }
     };
     private volatile State state;
-    private volatile Identity identity;
+    private volatile Identity identity; // NOSONAR
     private final DrasylAddress remoteAddress;
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
