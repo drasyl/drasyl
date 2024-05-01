@@ -45,6 +45,7 @@ class ByteToStopAndWaitArqDataCodecTest {
 
             final StopAndWaitArqData actual = channel.readOutbound();
             assertThat(actual, instanceOf(StopAndWaitArqData.class));
+            channel.checkException();
 
             actual.release();
         }
@@ -61,6 +62,7 @@ class ByteToStopAndWaitArqDataCodecTest {
             channel.writeInbound(msg);
 
             assertEquals(msg.content(), channel.readInbound());
+            channel.checkException();
 
             msg.release();
         }

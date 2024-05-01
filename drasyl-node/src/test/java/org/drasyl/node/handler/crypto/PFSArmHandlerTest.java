@@ -92,6 +92,7 @@ class PFSArmHandlerTest {
                 ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -124,6 +125,7 @@ class PFSArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -171,6 +173,7 @@ class PFSArmHandlerTest {
                 ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -216,6 +219,7 @@ class PFSArmHandlerTest {
                 ReferenceCountUtil.release(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -246,6 +250,7 @@ class PFSArmHandlerTest {
                 actual2.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

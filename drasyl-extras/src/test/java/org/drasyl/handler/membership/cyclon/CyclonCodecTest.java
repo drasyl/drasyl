@@ -100,6 +100,8 @@ class CyclonCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @SuppressWarnings("unchecked")
@@ -158,6 +160,8 @@ class CyclonCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -166,6 +170,8 @@ class CyclonCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+
+            channel.checkException();
         }
     }
 
@@ -223,6 +229,8 @@ class CyclonCodecTest {
 
             final CyclonShuffleRequest actual = ((OverlayAddressedMessage<CyclonShuffleRequest>) channel.readInbound()).content();
             assertThat(actual, instanceOf(CyclonShuffleRequest.class));
+
+            channel.checkException();
         }
 
         @SuppressWarnings("unchecked")
@@ -277,6 +285,8 @@ class CyclonCodecTest {
 
             final CyclonShuffleResponse actual = ((OverlayAddressedMessage<CyclonShuffleResponse>) channel.readInbound()).content();
             assertThat(actual, instanceOf(CyclonShuffleResponse.class));
+
+            channel.checkException();
         }
 
         @Test
@@ -291,6 +301,8 @@ class CyclonCodecTest {
 
             assertEquals(actual, msg);
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -305,6 +317,8 @@ class CyclonCodecTest {
 
             assertEquals(actual, msg);
             actual.release();
+
+            channel.checkException();
         }
     }
 }

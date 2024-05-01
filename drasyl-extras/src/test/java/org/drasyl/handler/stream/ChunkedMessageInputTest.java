@@ -138,5 +138,6 @@ class ChunkedMessageInputTest {
         assertEquals(BYTES.length * inputs.length, read);
         assertThat(lastChunk, instanceOf(LastMessageChunk.class));
         assertEquals(chunkNo, lastChunk.chunkNo());
+        ch.checkException();
     }
 }
