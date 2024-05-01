@@ -37,7 +37,6 @@ import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -62,6 +61,10 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public class TcpServer extends ChannelDuplexHandler {
+    /*
+     * On MacOS -Djava.net.preferIPv4Stack=true must be set to work.
+     */
+    public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
     static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
@@ -160,7 +163,7 @@ public class TcpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
         LOG.debug("Start Server...");
         bootstrap
-                .option(ChannelOption.IP_TOS, UdpServer.IP_TOS)
+                .option(ChannelOption.IP_TOS, IP_TOS)
                 .group(group)
                 .channel(NioServerSocketChannel.class)
                 .childHandler(channelInitializerSupplier.apply(ctx))
