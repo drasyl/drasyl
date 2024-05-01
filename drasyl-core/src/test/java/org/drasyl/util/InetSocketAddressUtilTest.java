@@ -21,12 +21,14 @@
  */
 package org.drasyl.util;
 
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
+import java.net.UnknownHostException;
 
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
 import static org.drasyl.util.InetSocketAddressUtil.socketAddressToString;
@@ -109,6 +111,15 @@ public class InetSocketAddressUtilTest {
             assertTrue(InetSocketAddressUtil.equalSocketAddress(a, b));
             assertFalse(InetSocketAddressUtil.equalSocketAddress(a, c));
             assertFalse(InetSocketAddressUtil.equalSocketAddress(a, d));
+        }
+    }
+
+    @Nested
+    @Disabled("we don't want tests that rely on external services (DNS servers)")
+    class Resolve {
+        @Test
+        void shouldReturnResolvedAddress() throws UnknownHostException {
+            System.out.println(InetSocketAddressUtil.resolve(InetSocketAddress.createUnresolved("example.com", 80)));
         }
     }
 }
