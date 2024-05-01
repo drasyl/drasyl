@@ -134,8 +134,8 @@ public final class NumberUtil {
      *
      * @param number    number containing size in bytes
      * @param precision Sets the precision of the number. Value -1 has a special meaning here: an
-     *                  absolute formatted number less then 10 results in precision 2; an absolute
-     *                  formatted number less then 100 results in precision 1; all other absolute
+     *                  absolute formatted number less than 10 results in precision 2; an absolute
+     *                  formatted number less than 100 results in precision 1; all other absolute
      *                  formatted numbers result in precision 0
      * @param locale    The {@link Locale locale} to apply during formatting. If {@code locale} is
      *                  {@code null} then no localization is applied.
@@ -153,8 +153,8 @@ public final class NumberUtil {
      *
      * @param number    number containing size in bytes
      * @param precision Sets the precision of the number. Value -1 has a special meaning here: an
-     *                  absolute formatted number less then 10 results in precision 2; an absolute
-     *                  formatted number less then 100 results in precision 1; all other absolute
+     *                  absolute formatted number less than 10 results in precision 2; an absolute
+     *                  formatted number less than 100 results in precision 1; all other absolute
      *                  formatted numbers result in precision 0
      * @return the formatted SI (metric) data-rate
      * @throws IllegalArgumentException if precision is less than {@code -1}
@@ -215,10 +215,48 @@ public final class NumberUtil {
      * Returns the smallest given number.
      *
      * @return the smallest number in {@code numbers}.
+     */
+    public static int min(final int a, final int b) {
+        return Math.min(a, b);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     */
+    public static int min(final int a, final int b, final int c) {
+        return Math.min(Math.min(a, b), c);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
      * @throws java.util.NoSuchElementException if no numbers were given
      */
     public static int min(final int... numbers) {
         return Arrays.stream(numbers).min().getAsInt();
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long min(final long a, final long b) {
+        return Math.min(a, b);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long min(final long a, final long b, final long c) {
+        return Math.min(Math.min(a, b), c);
     }
 
     /**
@@ -237,8 +275,48 @@ public final class NumberUtil {
      * @return the smallest number in {@code numbers}.
      * @throws java.util.NoSuchElementException if no numbers were given
      */
+    public static double min(final double a, final double b) {
+        return Math.min(a, b);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double min(final double a, final double b, final double c) {
+        return Math.min(Math.min(a, b), c);
+    }
+
+    /**
+     * Returns the smallest given number.
+     *
+     * @return the smallest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
     public static double min(final double... numbers) {
         return Arrays.stream(numbers).min().getAsDouble();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static int max(final int a, final int b) {
+        return Math.max(a, b);
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static int max(final int a, final int b, final int c) {
+        return Math.max(Math.max(a, b), c);
     }
 
     /**
@@ -257,8 +335,48 @@ public final class NumberUtil {
      * @return the largest number in {@code numbers}.
      * @throws java.util.NoSuchElementException if no numbers were given
      */
+    public static long max(final long a, final long b) {
+        return Math.max(a, b);
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static long max(final long a, final long b, final long c) {
+        return Math.max(Math.max(a, b), c);
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
     public static long max(final long... numbers) {
         return Arrays.stream(numbers).max().getAsLong();
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double max(final double a, final double b) {
+        return Math.max(a, b);
+    }
+
+    /**
+     * Returns the largest given number.
+     *
+     * @return the largest number in {@code numbers}.
+     * @throws java.util.NoSuchElementException if no numbers were given
+     */
+    public static double max(final double a, final double b, final double c) {
+        return Math.max(Math.max(a, b), c);
     }
 
     /**
