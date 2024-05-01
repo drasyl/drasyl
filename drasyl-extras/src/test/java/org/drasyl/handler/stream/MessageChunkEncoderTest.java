@@ -58,6 +58,7 @@ class MessageChunkEncoderTest {
 
         expected.release();
         actual.release();
+        channel.checkException();
     }
 
     @Test
@@ -82,6 +83,7 @@ class MessageChunkEncoderTest {
 
         expected.release();
         actual.release();
+        channel.checkException();
     }
 
     @Test
@@ -90,5 +92,6 @@ class MessageChunkEncoderTest {
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+        channel.checkException();
     }
 }

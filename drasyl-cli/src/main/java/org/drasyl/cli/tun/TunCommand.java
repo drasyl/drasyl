@@ -84,6 +84,11 @@ import java.util.stream.Collectors;
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -243,16 +248,13 @@ public class TunCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         Identity identity,
-                                                         EventLoopGroup udpChannelLoop) {
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
 
     @Override
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
@@ -390,15 +392,20 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // create drasyl channel
-            final ChannelHandler handler = new TunChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, !applicationArmDisabled);
+            final ChannelHandler handler = new TunChannelInitializer(onlineTimeoutMillis, err, exitCode, ctx.channel(), new HashSet<>(routes.values()));
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(serverChannelLoop, childChannelLoopGroup)
                     .channel(DrasylServerChannel.class)
+                    .option(NETWORK_ID, networkId)
+                    .option(ARMING_ENABLED, !protocolArmDisabled)
+                    .option(SUPER_PEERS, superPeers)
+                    .option(UDP_BIND, bindAddress)
+                    .option(UDP_EVENT_LOOP_SUPPLIER, () -> udpChannelLoop)
                     .handler(handler)
                     .childHandler(childHandler);
-            channel = (DrasylServerChannel) b.bind(identity.getAddress()).channel();
+            channel = (DrasylServerChannel) b.bind(identity).channel();
         }
 
         @Override

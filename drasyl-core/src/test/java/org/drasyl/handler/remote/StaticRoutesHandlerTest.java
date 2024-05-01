@@ -95,6 +95,7 @@ class StaticRoutesHandlerTest {
             actual.release();
         }
         finally {
+            channel.checkException();
             channel.close();
         }
     }
@@ -113,6 +114,7 @@ class StaticRoutesHandlerTest {
             actual.release();
         }
         finally {
+            channel.checkException();
             channel.close();
         }
     }

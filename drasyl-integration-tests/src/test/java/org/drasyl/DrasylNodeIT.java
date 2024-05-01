@@ -62,6 +62,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
@@ -1006,7 +1007,13 @@ class DrasylNodeIT {
                         .remoteBindPort(socket.getLocalPort())
                         .build();
                 final EmbeddedNode node = new EmbeddedNode(config);
-                node.start();
+                node.start().exceptionally(new Function<Throwable, Void>() {
+                    @Override
+                    public Void apply(Throwable t) {
+                        t.printStackTrace();
+                        return null;
+                    }
+                });
 
                 await("NodeUpEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
                 await("NodeUnrecoverableErrorEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));

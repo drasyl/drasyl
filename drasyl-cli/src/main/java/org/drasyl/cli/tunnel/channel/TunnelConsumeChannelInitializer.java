@@ -22,18 +22,14 @@
 package org.drasyl.cli.tunnel.channel;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.handler.SpawnChildChannelToPeer;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,17 +40,11 @@ public class TunnelConsumeChannelInitializer extends AbstractChannelInitializer 
     private final IdentityPublicKey exposer;
 
     @SuppressWarnings("java:S107")
-    public TunnelConsumeChannelInitializer(final Identity identity,
-                                           final EventLoopGroup udpServerGroup,
-                                           final InetSocketAddress bindAddress,
-                                           final int networkId,
-                                           final int onlineTimeoutMillis,
-                                           final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+    public TunnelConsumeChannelInitializer(final int onlineTimeoutMillis,
                                            final PrintStream err,
                                            final Worm<Integer> exitCode,
-                                           final IdentityPublicKey exposer,
-                                           final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+                                           final IdentityPublicKey exposer) {
+        super(onlineTimeoutMillis);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.exposer = requireNonNull(exposer);

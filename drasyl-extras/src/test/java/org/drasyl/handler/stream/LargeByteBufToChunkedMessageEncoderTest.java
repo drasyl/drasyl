@@ -47,6 +47,7 @@ class LargeByteBufToChunkedMessageEncoderTest {
 
         assertEquals(msg, channel.readOutbound());
         msg.release();
+        channel.checkException();
     }
 
     @Test
@@ -62,6 +63,7 @@ class LargeByteBufToChunkedMessageEncoderTest {
 
         ((ChunkedMessageInput) actual).close();
         assertEquals(0, msg.refCnt());
+        channel.checkException();
     }
 
     @Test
@@ -72,5 +74,6 @@ class LargeByteBufToChunkedMessageEncoderTest {
         final ByteBuf msg = Unpooled.wrappedBuffer(new byte[150]);
 
         assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+        channel.checkException();
     }
 }

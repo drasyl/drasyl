@@ -42,6 +42,7 @@ class PerfSessionRequestorHandlerTest {
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         try {
+            channel.checkException();
             assertEquals(request, channel.readOutbound());
         }
         finally {

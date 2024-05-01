@@ -23,13 +23,11 @@ package org.drasyl.cli.tunnel;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChannelInitializer;
 import org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -92,16 +90,13 @@ public class TunnelExposeCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         final Identity identity,
-                                                         final EventLoopGroup udpChannelLoop) {
-        return new TunnelExposeChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, service, password, out, err, exitCode, !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new TunnelExposeChannelInitializer(onlineTimeoutMillis, service, password, out, err, exitCode);
     }
 
     @Override
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        final Identity identity) {
-        return new TunnelExposeChildChannelInitializer(err, exitCode, identity, password, service);
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
+        return new TunnelExposeChildChannelInitializer(err, exitCode, password, service);
     }
 
     @Override

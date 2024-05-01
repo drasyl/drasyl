@@ -64,6 +64,7 @@ class PortMapperTest {
                 verify(method).start(any(), anyInt(), any());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -80,6 +81,7 @@ class PortMapperTest {
                 verify(method).stop(any());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -103,6 +105,7 @@ class PortMapperTest {
                 assertNull(channel.readInbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -124,6 +127,7 @@ class PortMapperTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -152,6 +156,7 @@ class PortMapperTest {
                 verify(method2).start(any(), anyInt(), any());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

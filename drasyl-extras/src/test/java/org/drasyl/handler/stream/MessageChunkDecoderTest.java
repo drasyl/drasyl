@@ -50,6 +50,7 @@ class MessageChunkDecoderTest {
         assertEquals(42, actual.msgId());
         assertEquals(13, actual.chunkNo());
         actual.release();
+        channel.checkException();
     }
 
     @Test
@@ -69,6 +70,7 @@ class MessageChunkDecoderTest {
         assertEquals(23, actual.msgId());
         assertEquals(2, actual.chunkNo());
         actual.release();
+        channel.checkException();
     }
 
     @Test
@@ -83,6 +85,7 @@ class MessageChunkDecoderTest {
 
         assertEquals(actual, msg);
         actual.release();
+        channel.checkException();
     }
 
     @Test
@@ -97,5 +100,6 @@ class MessageChunkDecoderTest {
 
         assertEquals(actual, msg);
         actual.release();
+        channel.checkException();
     }
 }

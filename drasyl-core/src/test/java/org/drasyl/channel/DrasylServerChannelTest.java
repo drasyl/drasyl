@@ -23,13 +23,13 @@ package org.drasyl.channel;
 
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.SocketAddress;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -37,23 +37,24 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylServerChannelTest {
     @Nested
     class DoBind {
         @Test
-        void shouldSetLocalAddressAndActivateChannel(@Mock final DrasylAddress localAddress) {
+        void shouldSetLocalAddressAndActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null);
 
             channel.doBind(localAddress);
 
             assertTrue(channel.isActive());
-            assertEquals(localAddress, channel.localAddress0());
+            assertEquals(localAddress.getAddress(), channel.localAddress0());
         }
 
         @Test
-        void shouldRejectNonIdentity(@Mock final SocketAddress localAddress) {
+        void shouldRejectNonIdentity(@Mock final DrasylAddress localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null);
 
             assertThrows(IllegalArgumentException.class, () -> channel.doBind(localAddress));
@@ -63,7 +64,7 @@ class DrasylServerChannelTest {
     @Nested
     class DoClose {
         @Test
-        void shouldRemoveLocalAddressAndCloseChannel(@Mock final DrasylAddress localAddress) {
+        void shouldRemoveLocalAddressAndCloseChannel(@Mock final Identity localAddress) {
             final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), localAddress);
 
             channel.doClose();

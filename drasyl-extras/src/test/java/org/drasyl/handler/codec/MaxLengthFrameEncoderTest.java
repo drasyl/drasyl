@@ -59,5 +59,6 @@ class MaxLengthFrameEncoderTest {
         assertEquals(Unpooled.copiedBuffer("GH", UTF_8), channel.readOutbound());
 
         assertNull(channel.readOutbound());
+        channel.checkException();
     }
 }

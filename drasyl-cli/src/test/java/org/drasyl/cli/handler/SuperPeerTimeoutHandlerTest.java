@@ -45,7 +45,7 @@ class SuperPeerTimeoutHandlerTest {
 
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
-            assertThrows(SuperPeerTimeoutException.class, () -> channel.checkException());
+            assertThrows(SuperPeerTimeoutException.class, channel::checkException);
         });
     }
 
@@ -57,7 +57,7 @@ class SuperPeerTimeoutHandlerTest {
 
         channel.pipeline().fireUserEventTriggered(event);
 
-        assertNull(channel.pipeline().get(SuperPeerTimeoutHandler.class));
+        channel.checkException();
         assertNull(channel.pipeline().get(SuperPeerTimeoutHandler.class));
         verify(timeoutTask).cancel(false);
     }

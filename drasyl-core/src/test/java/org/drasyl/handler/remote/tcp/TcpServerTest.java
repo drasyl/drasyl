@@ -108,6 +108,7 @@ class TcpServerTest {
                 verify(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()), times(2)).bind(bindHost, bindPort);
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -151,6 +152,7 @@ class TcpServerTest {
                 verify(client).writeAndFlush(any());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -172,6 +174,7 @@ class TcpServerTest {
                 assertFalse(promise.isSuccess());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -192,6 +195,7 @@ class TcpServerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
