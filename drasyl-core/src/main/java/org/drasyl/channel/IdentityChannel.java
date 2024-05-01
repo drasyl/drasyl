@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,31 +19,10 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.channel;
+package org.drasyl.channel;
 
-import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
+import org.drasyl.identity.Identity;
 
-import static org.drasyl.util.Preconditions.requirePositive;
-
-@SuppressWarnings("java:S110")
-public abstract class AbstractChannelInitializer extends DefaultDrasylServerChannelInitializer {
-    private final long onlineTimeoutMillis;
-
-    @SuppressWarnings("java:S107")
-    protected AbstractChannelInitializer(final long onlineTimeoutMillis) {
-        this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
-    }
-
-    @Override
-    protected void initChannel(final DrasylServerChannel ch) {
-        super.initChannel(ch);
-
-        final ChannelPipeline p = ch.pipeline();
-
-        p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
-    }
+public interface IdentityChannel {
+    Identity identity();
 }
-

@@ -21,28 +21,25 @@
  */
 package org.drasyl.handler.remote;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoopGroup;
 import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.PromiseNotifier;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -62,109 +59,28 @@ public class UdpServer extends ChannelDuplexHandler {
     public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private static final boolean SO_REUSEADDR = Boolean.getBoolean(System.getProperty("reuseAddress", "false"));
-    private final Bootstrap bootstrap;
-    private final EventLoopGroup group;
-    private final InetSocketAddress bindAddress;
     private final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private PendingWriteQueue pendingWrites;
     private Channel channel;
 
-    UdpServer(final Bootstrap bootstrap,
-              final EventLoopGroup group,
-              final InetSocketAddress bindAddress,
-              final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
+    UdpServer(final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
               final PendingWriteQueue pendingWrites,
               final Channel channel) {
-        this.bootstrap = requireNonNull(bootstrap);
-        this.group = requireNonNull(group);
-        this.bindAddress = requireNonNull(bindAddress);
         this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.pendingWrites = pendingWrites;
         this.channel = channel;
     }
 
-    public UdpServer(final Bootstrap bootstrap,
-                     final EventLoopGroup group,
-                     final InetSocketAddress bindAddress,
-                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
+    public UdpServer(final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
         this(
-                bootstrap,
-                group,
-                bindAddress,
                 channelInitializerSupplier,
                 null,
                 null
         );
     }
 
-    public UdpServer(final Bootstrap bootstrap,
-                     final EventLoopGroup group,
-                     final InetSocketAddress bindAddress) {
-        this(bootstrap, group, bindAddress, UdpServerChannelInitializer::new);
-    }
-
-    /**
-     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindAddress the address the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetSocketAddress bindAddress,
-                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress, channelInitializerSupplier);
-    }
-
-    /**
-     * @param group       the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindAddress the address the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetSocketAddress bindAddress) {
-        this(new Bootstrap().option(ChannelOption.SO_BROADCAST, false).option(ChannelOption.SO_REUSEADDR, SO_REUSEADDR).option(ChannelOption.IP_TOS, 0xB8), group, bindAddress);
-    }
-
-    /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort,
-                     final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
-        this(group, new InetSocketAddress(bindHost, bindPort), channelInitializerSupplier);
-    }
-
-    /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindHost, bindPort));
-    }
-
-    /**
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindHost the host the UDP server will bind to
-     * @param bindPort the port the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final String bindHost,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindHost, bindPort));
-    }
-
-    /**
-     * Create UDP server that will bind to host {@code 0.0.0.0} and port {@code bindPort}.
-     *
-     * @param group    the {@link EventLoopGroup} the underlying udp server should run on
-     * @param bindPort the port the UDP server will bind to
-     */
-    public UdpServer(final EventLoopGroup group,
-                     final int bindPort) {
-        this(group, new InetSocketAddress(bindPort));
+    public UdpServer() {
+        this(ctx -> new UdpServerChannelInitializer((DrasylServerChannel) ctx.channel()));
     }
 
     @Override
@@ -176,11 +92,12 @@ public class UdpServer extends ChannelDuplexHandler {
     @Override
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start Server...");
-        bootstrap
-                .group(group)
-                .channel(EventLoopGroupUtil.getBestDatagramChannel())
+
+        config(ctx).getUdpBootstrap()
+                .group(config(ctx).getUdpEventLoopSupplier().get())
+                .channel(config(ctx).getUdpChannelClass())
                 .handler(channelInitializerSupplier.apply(ctx))
-                .bind(bindAddress)
+                .bind(config(ctx).getUdpBind())
                 .addListener(new UdpServerBindListener(ctx));
     }
 
@@ -250,6 +167,10 @@ public class UdpServer extends ChannelDuplexHandler {
         }
     }
 
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
+    }
+
     /**
      * Listener that gets called once the channel is closed.
      */
@@ -310,7 +231,7 @@ public class UdpServer extends ChannelDuplexHandler {
             }
             else {
                 // server start failed
-                ctx.fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + bindAddress, future.cause()));
+                ctx.fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + future.channel().localAddress(), future.cause()));
             }
         }
     }

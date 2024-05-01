@@ -117,6 +117,7 @@ class UdpBroadcastServerTest {
                 verify(UdpBroadcastServerTest.this.channel).close();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 broadcastServerGroup.shutdownGracefully();
             }

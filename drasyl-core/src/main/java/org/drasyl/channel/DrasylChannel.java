@@ -33,6 +33,7 @@ import io.netty.channel.EventLoop;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -52,7 +53,7 @@ import java.nio.channels.NotYetConnectedException;
  * @see DrasylServerChannel
  */
 @UnstableApi
-public class DrasylChannel extends AbstractChannel {
+public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
@@ -63,22 +64,22 @@ public class DrasylChannel extends AbstractChannel {
     private final ChannelConfig config = new DefaultChannelConfig(this);
     private volatile State state;
     volatile boolean pendingWrites;
-    private volatile DrasylAddress localAddress; // NOSONAR
+    private volatile Identity identity; // NOSONAR
     private final DrasylAddress remoteAddress;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
                   final State state,
-                  final DrasylAddress localAddress,
+                  final Identity identity,
                   final DrasylAddress remoteAddress) {
         super(parent);
         this.state = state;
-        this.localAddress = localAddress;
+        this.identity = identity;
         this.remoteAddress = remoteAddress;
     }
 
     DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
-        this(parent, null, parent.localAddress0(), remoteAddress);
+        this(parent, null, parent.identity(), remoteAddress);
     }
 
     @Override
@@ -92,8 +93,16 @@ public class DrasylChannel extends AbstractChannel {
     }
 
     @Override
+    public Identity identity() {
+        return identity;
+    }
+
+    @Override
     protected SocketAddress localAddress0() {
-        return localAddress;
+        if (identity == null) {
+            return null;
+        }
+        return identity.getAddress();
     }
 
     @Override
@@ -118,7 +127,7 @@ public class DrasylChannel extends AbstractChannel {
 
     @Override
     protected void doClose() {
-        localAddress = null;
+        identity = null;
 
         state = State.CLOSED;
     }
@@ -137,6 +146,11 @@ public class DrasylChannel extends AbstractChannel {
 
         throw new UnsupportedOperationException(
                 "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+    }
+
+    @Override
+    public DrasylServerChannel parent() {
+        return (DrasylServerChannel) super.parent();
     }
 
     @SuppressWarnings("java:S135")
@@ -165,7 +179,7 @@ public class DrasylChannel extends AbstractChannel {
             }
 
             ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, localAddress)).addListener(future -> {
+            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, identity.getAddress())).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
                 }

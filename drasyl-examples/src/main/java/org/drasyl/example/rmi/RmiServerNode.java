@@ -30,7 +30,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.handler.rmi.RmiServerHandler;
 import org.drasyl.identity.Identity;
@@ -39,6 +39,9 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
+
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
 @SuppressWarnings({ "java:S106", "java:S110" })
 public class RmiServerNode {
@@ -65,7 +68,8 @@ public class RmiServerNode {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527) {
+                .option(UDP_BIND, new InetSocketAddress(22527))
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -85,7 +89,7 @@ public class RmiServerNode {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
             Runtime.getRuntime().addShutdownHook(new Thread(ch::close));
             ch.closeFuture().awaitUninterruptibly();
         }

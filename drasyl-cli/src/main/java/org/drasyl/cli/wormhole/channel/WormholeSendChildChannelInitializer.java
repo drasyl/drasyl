@@ -33,7 +33,6 @@ import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
 import org.drasyl.node.handler.crypto.LongTimeArmHandler;
@@ -51,7 +50,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
-    private final Identity identity;
     private final String password;
     private final Payload payload;
 
@@ -59,14 +57,12 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     public WormholeSendChildChannelInitializer(final PrintStream out,
                                                final PrintStream err,
                                                final Worm<Integer> exitCode,
-                                               final Identity identity,
                                                final String password,
                                                final Payload payload) {
         super(true, DEFAULT_SERVER_PORT, CONNECTION_CONFIG);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
-        this.identity = requireNonNull(identity);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
     }
@@ -78,7 +74,7 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, identity, (IdentityPublicKey) ch.remoteAddress()));
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

@@ -60,6 +60,7 @@ class PubSubSubscribeHandlerTest {
 
         assertEquals(new OverlayAddressedMessage<>(subscribe, broker), channel.readOutbound());
         verify(requests).put(eq(subscribe.getId()), any());
+        channel.checkException();
     }
 
     @Test
@@ -73,6 +74,7 @@ class PubSubSubscribeHandlerTest {
 
         assertEquals(new OverlayAddressedMessage<>(unsubscribe, broker), channel.readOutbound());
         verify(requests).put(eq(unsubscribe.getId()), any());
+        channel.checkException();
     }
 
     @Test
@@ -89,6 +91,7 @@ class PubSubSubscribeHandlerTest {
 
         verify(subscriptions).add("myTopic");
         verify(promise).trySuccess(null);
+        channel.checkException();
     }
 
     @Test
@@ -105,6 +108,7 @@ class PubSubSubscribeHandlerTest {
 
         verify(subscriptions).remove("myTopic");
         verify(promise).trySuccess(null);
+        channel.checkException();
     }
 
     @Test
@@ -119,6 +123,7 @@ class PubSubSubscribeHandlerTest {
         channel.writeInbound(new OverlayAddressedMessage<>(publish, null, broker));
 
         assertEquals(publish, channel.readInbound());
+        channel.checkException();
     }
 
     @Test
@@ -133,6 +138,7 @@ class PubSubSubscribeHandlerTest {
         channel.writeInbound(new OverlayAddressedMessage<>(publish, null, broker));
 
         assertEquals(0, publish.refCnt());
+        channel.checkException();
     }
 
     @Test
@@ -147,6 +153,7 @@ class PubSubSubscribeHandlerTest {
         channel.writeInbound(new OverlayAddressedMessage<>(unsubscribe, null, broker));
 
         verify(subscriptions).remove("myTopic");
+        channel.checkException();
     }
 
     @Test
@@ -156,5 +163,6 @@ class PubSubSubscribeHandlerTest {
 
         final EmbeddedChannel channel = new EmbeddedChannel(new PubSubSubscribeHandler(ofMillis(5_000L), requests, broker, subscriptions));
         assertTrue(channel.close().awaitUninterruptibly().isSuccess());
+        channel.checkException();
     }
 }
