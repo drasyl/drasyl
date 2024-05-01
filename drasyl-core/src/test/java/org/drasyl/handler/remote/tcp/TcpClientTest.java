@@ -95,6 +95,7 @@ public class TcpClientTest {
                 verify(superPeerChannel.channel()).close();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
@@ -118,6 +119,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
@@ -146,6 +148,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
@@ -166,6 +169,7 @@ public class TcpClientTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
@@ -189,6 +193,7 @@ public class TcpClientTest {
                 assertNull(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }
@@ -220,6 +225,7 @@ public class TcpClientTest {
             }
             finally {
                 channel.releaseOutbound();
+                channel.checkException();
                 channel.close();
                 clientGroup.shutdownGracefully();
             }

@@ -113,6 +113,7 @@ class GroupsClientHandlerTest {
                 verify(renewTasks).clear();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -153,6 +154,7 @@ class GroupsClientHandlerTest {
                 });
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

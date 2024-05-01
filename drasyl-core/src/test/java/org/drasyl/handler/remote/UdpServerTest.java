@@ -29,7 +29,9 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -76,10 +78,12 @@ class UdpServerTest {
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, null);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.pipeline().addLast(handler);
             try {
                 verify(bootstrap.group(any()).channel(any()).handler(any()), times(1)).bind(bindAddress);
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -95,12 +99,14 @@ class UdpServerTest {
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelInactive();
 
                 verify(UdpServerTest.this.udpChannel).close();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -119,12 +125,14 @@ class UdpServerTest {
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.pipeline().addLast(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
                 verify(udpServerToDrasylHandler).enqueueWrite(any());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }

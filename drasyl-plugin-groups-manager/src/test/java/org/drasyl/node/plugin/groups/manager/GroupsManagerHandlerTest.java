@@ -179,6 +179,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(MemberJoinedMessage.of(publicKey, org.drasyl.node.plugin.groups.client.Group.of(group.getName())), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -200,6 +201,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -222,6 +224,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -245,6 +248,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -266,6 +270,7 @@ class GroupsManagerHandlerTest {
                 assertNull(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -292,6 +297,7 @@ class GroupsManagerHandlerTest {
                 assertEquals(MemberLeftMessage.of(publicKey, msg.getGroup()), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -307,10 +313,12 @@ class GroupsManagerHandlerTest {
 
                 channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, null, publicKey));
                 channel.runPendingTasks();
+                channel.checkException();
 
                 assertNull(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

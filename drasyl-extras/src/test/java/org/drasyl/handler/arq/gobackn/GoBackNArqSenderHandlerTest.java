@@ -73,6 +73,7 @@ class GoBackNArqSenderHandlerTest {
         // timeout -> write data1 again
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
+            channel.checkException();
             assertInstanceOf(GoBackNArqData.class, channel.readOutbound());
         });
 
@@ -106,6 +107,7 @@ class GoBackNArqSenderHandlerTest {
         // close channel -> fail data1
         channel.close();
         assertNull(channel.readOutbound());
+        channel.checkException();
     }
 
     @Test
@@ -136,6 +138,8 @@ class GoBackNArqSenderHandlerTest {
         assertNull(channel.readInbound());
         assertNull(channel.readOutbound());
 
+        channel.checkException();
+
         // close channel -> fail data1
         channel.close();
     }
@@ -158,6 +162,8 @@ class GoBackNArqSenderHandlerTest {
         assertFalse(write0.isDone());
         assertNull(channel.readInbound());
         assertNull(channel.readOutbound());
+
+        channel.checkException();
     }
 
     @Test
@@ -193,6 +199,7 @@ class GoBackNArqSenderHandlerTest {
         // timeout -> write data1 again
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
+            channel.checkException();
             assertInstanceOf(GoBackNArqData.class, channel.readOutbound());
         });
 

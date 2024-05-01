@@ -60,6 +60,8 @@ class MessageChunksBufferTest {
         chunk1.release();
         chunk2.release();
         chunk3.release();
+
+        channel.checkException();
     }
 
     @Test
@@ -74,6 +76,8 @@ class MessageChunksBufferTest {
 
         final MessageChunk chunk = new LastMessageChunk((byte) 42, 1_000, Unpooled.EMPTY_BUFFER);
         assertTrue(channel.writeInbound(chunk));
+
+        channel.checkException();
     }
 
     @Test
@@ -90,6 +94,8 @@ class MessageChunksBufferTest {
 
         assertEquals(0, chunk2.refCnt());
         assertEquals(0, chunk3.refCnt());
+
+        channel.checkException();
     }
 
     @Test
@@ -108,6 +114,8 @@ class MessageChunksBufferTest {
 
         assertEquals(0, chunk2.refCnt());
         assertEquals(0, chunk3.refCnt());
+
+        channel.checkException();
     }
 
     @Test
@@ -125,5 +133,7 @@ class MessageChunksBufferTest {
 
         assertEquals(0, chunk1.refCnt());
         assertEquals(0, chunk2.refCnt());
+
+        channel.checkException();
     }
 }
