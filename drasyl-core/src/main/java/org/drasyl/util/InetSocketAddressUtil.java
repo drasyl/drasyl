@@ -112,6 +112,15 @@ public final class InetSocketAddressUtil {
         return a.getPort() == b.getPort() && a.getHostString().equals(b.getHostString());
     }
 
+    /**
+     * Resolves {@code address} and returns a new {@link java.net.InetSocketAddress} with resolved
+     * {@link InetAddress}. If {@code address} is already resolved, a new resolve attempt will be
+     * performed.
+     *
+     * @param address {@link java.net.InetSocketAddress} to be resolved
+     * @return resolved {@link java.net.InetSocketAddress}
+     * @throws UnknownHostException if resolve attempt failed
+     */
     public static InetSocketAddress resolve(@NonNull final InetSocketAddress address) throws UnknownHostException {
         final InetAddress resolvedHost = DnsResolver.resolve(address.getHostString());
         return new InetSocketAddress(resolvedHost, address.getPort());
