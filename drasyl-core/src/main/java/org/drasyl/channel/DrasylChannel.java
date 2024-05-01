@@ -78,7 +78,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Queue<Object> inboundBuffer = PlatformDependent.newSpscQueue();
+    private final Queue<Object> inboundBuffer = PlatformDependent.newMpscQueue();
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
         if (!inboundBuffer.isEmpty()) {
@@ -303,11 +303,11 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                     break;
                 }
 
-                // FIXME: add IntraVmRouting (make multiple producer queue, handle closed target channels, look at LocalChannel implementation for inspiration)
-
                 // map remoteAddress to udp endpoint
                 final PeersManager peersManager = parent().config().getPeersManager();
                 peersManager.applicationMessageSent(remoteAddress);
+
+                // Intra VM
                 final DrasylServerChannel peerServerChannel = parent().serverChannels.get(remoteAddress);
                 if (peerServerChannel != null) {
                     final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
@@ -331,6 +331,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                     }
                 }
                 else {
+                    // remote
                     final InetSocketAddress endpoint = peersManager.resolve(remoteAddress);
                     if (endpoint != null) {
                         // convert to remote message

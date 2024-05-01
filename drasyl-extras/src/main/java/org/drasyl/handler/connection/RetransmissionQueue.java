@@ -55,7 +55,7 @@ public class RetransmissionQueue {
                     final Segment seg,
                     final TransmissionControlBlock tcb) {
         LOG.trace("{} Add SEG `{}` to RTNS.Q.", ctx.channel(), seg);
-        queue.add(seg.copy()); // FIXME: any change to prevent expensive copy?
+        queue.add(seg.copy()); // FIXME: any chance to prevent expensive copy?
 
         // RFC 5482: The Transmission Control Protocol (TCP) specification [RFC0793] defines a
         // RFC 5482: local, per-connection "user timeout" parameter that specifies the maximum
