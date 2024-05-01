@@ -41,7 +41,6 @@ import java.net.SocketAddress;
 @SuppressWarnings("java:S118")
 public abstract class Identity extends SocketAddress {
     public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 24);
-    public static final int DEFAULT_NETWORK_ID = 1;
 
     public abstract ProofOfWork getProofOfWork();
 
