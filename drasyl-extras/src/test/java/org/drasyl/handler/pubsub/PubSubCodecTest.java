@@ -73,6 +73,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -89,6 +91,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -105,6 +109,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -121,6 +127,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -137,6 +145,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -153,6 +163,8 @@ class PubSubCodecTest {
 
             expected.release();
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -160,6 +172,7 @@ class PubSubCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(new PubSubCodec());
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+            channel.checkException();
         }
     }
 
@@ -175,6 +188,8 @@ class PubSubCodecTest {
             assertThat(actual.content(), instanceOf(PubSubPublish.class));
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -187,6 +202,8 @@ class PubSubCodecTest {
             assertThat(actual.content(), instanceOf(PubSubPublished.class));
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -199,6 +216,8 @@ class PubSubCodecTest {
             assertThat(actual.content(), instanceOf(PubSubSubscribe.class));
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -211,6 +230,8 @@ class PubSubCodecTest {
             assertThat(actual.content(), instanceOf(PubSubSubscribed.class));
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -221,6 +242,8 @@ class PubSubCodecTest {
 
             final OverlayAddressedMessage<?> actual = channel.readInbound();
             assertThat(actual.content(), instanceOf(PubSubUnsubscribe.class));
+
+            channel.checkException();
         }
 
         @Test
@@ -233,6 +256,8 @@ class PubSubCodecTest {
             assertThat(actual.content(), instanceOf(PubSubUnsubscribed.class));
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -247,6 +272,8 @@ class PubSubCodecTest {
             assertEquals(actual, msg);
 
             actual.release();
+
+            channel.checkException();
         }
 
         @Test
@@ -261,6 +288,8 @@ class PubSubCodecTest {
             assertEquals(actual, msg);
 
             actual.release();
+
+            channel.checkException();
         }
     }
 }

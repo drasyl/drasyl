@@ -69,11 +69,12 @@ class ApplicationMessageToPayloadCodecTest {
         @Test
         void shouldPassTroughNonMatchingMessages(@Mock final IdentityPublicKey address) {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
             channel.writeAndFlush(new OverlayAddressedMessage<>("Hello World", address));
 
             assertEquals(new OverlayAddressedMessage<>("Hello World", address), channel.readOutbound());
+            channel.checkException();
         }
     }
 
@@ -82,23 +83,25 @@ class ApplicationMessageToPayloadCodecTest {
         @Test
         void shouldConvertApplicationMessageToByteStringWithIdentityPublicKey(@Mock final IdentityPublicKey sender) {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
             final ByteBuf byteBuf = Unpooled.buffer();
             channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>(ApplicationMessage.of(networkId, sender, identity.getIdentityPublicKey(), identity.getProofOfWork(), byteBuf), null, sender));
 
             assertThat(((OverlayAddressedMessage<?>) channel.readInbound()).content(), instanceOf(ByteBuf.class));
             byteBuf.release();
+            channel.checkException();
         }
 
         @Test
         void shouldPassTroughNonMatchingMessages(@Mock final IdentityPublicKey address) {
             final ChannelHandler handler = new ApplicationMessageToPayloadCodec();
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
 
             channel.pipeline().fireChannelRead(new OverlayAddressedMessage<>("Hello World", null, address));
 
             assertEquals(new OverlayAddressedMessage<>("Hello World", null, address), channel.readInbound());
+            channel.checkException();
         }
     }
 }

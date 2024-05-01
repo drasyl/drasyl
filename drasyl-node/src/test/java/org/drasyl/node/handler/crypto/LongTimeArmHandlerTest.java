@@ -73,6 +73,7 @@ class LongTimeArmHandlerTest {
                 ReferenceCountUtil.release(actual);
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -107,6 +108,7 @@ class LongTimeArmHandlerTest {
                 ReferenceCountUtil.release(actual);
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
