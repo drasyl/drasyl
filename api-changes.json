@@ -205,7 +205,7 @@
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.channel.TraversingDrasylServerChannelInitializer",
+          "old": "class org.drasyl.channel.DefaultDrasylServerChannelInitializer",
           "justification": "Internal element that was never intended to be used outside drasyl"
         },
         {
@@ -684,6 +684,42 @@
           "old": "method void io.netty.channel.ChannelHandlerAdapter::handlerRemoved(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.discovery.IntraVmDiscovery",
           "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerRemoved(io.netty.channel.ChannelHandlerContext)",
           "exception": "java.lang.Exception",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.ApplicationMessageToPayloadCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.identity.Identity",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.handler.crypto.AbstractArmHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.node.handler.crypto.LongTimeArmHandler",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]

@@ -110,6 +110,7 @@ class GroupsClientHandlerTest {
                 verify(renewTasks).clear();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -144,10 +145,12 @@ class GroupsClientHandlerTest {
             try {
                 await().untilAsserted(() -> {
                     channel.runPendingTasks();
+                    channel.checkException();
                     assertEquals(GroupJoinMessage.of(uri.getGroup(), uri.getCredentials(), proofOfWork, false), ((OverlayAddressedMessage<Object>) channel.readOutbound()).content());
                 });
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

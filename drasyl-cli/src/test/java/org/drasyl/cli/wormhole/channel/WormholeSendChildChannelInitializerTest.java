@@ -56,9 +56,10 @@ class WormholeSendChildChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
             final IdentityPublicKey sender = ID_2.getIdentityPublicKey();
             when(ctx.channel()).thenReturn(channel);
+            when(channel.identity()).thenReturn(ID_1);
             when(channel.remoteAddress()).thenReturn(sender);
 
-            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, ID_1, "abc", payload);
+            final ChannelInboundHandler handler = new WormholeSendChildChannelInitializer(out, err, exitCode, "abc", payload);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(5)).addLast(any());

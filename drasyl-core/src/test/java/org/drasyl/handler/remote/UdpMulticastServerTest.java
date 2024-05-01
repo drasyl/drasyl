@@ -47,7 +47,6 @@ import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -74,13 +73,8 @@ class UdpMulticastServerTest {
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
-            when(channelFuture.isSuccess()).thenReturn(true);
+            when(bootstrap.bind(anyString(), anyInt())).thenReturn(channelFuture);
             when(channelFuture.channel()).thenReturn(datagramChannel);
-            when(bootstrap.group(any()).channelFactory(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
-                final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
-                listener.operationComplete(channelFuture);
-                return null;
-            });
             when(datagramChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
             when(datagramChannel.joinGroup(any(InetSocketAddress.class), any(NetworkInterface.class)).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
@@ -93,10 +87,10 @@ class UdpMulticastServerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.group(any()).channelFactory(any()).handler(any()), times(2)).bind(anyString(), anyInt());
-                verify(datagramChannel).joinGroup(any(InetSocketAddress.class), any());
+                verify(bootstrap.group(any()).channelFactory(any()).handler(any())).bind(anyString(), anyInt());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 multicastServerGroup.shutdownGracefully();
             }
@@ -125,6 +119,7 @@ class UdpMulticastServerTest {
                 verify(UdpMulticastServerTest.this.channel).close();
             }
             finally {
+                channel.checkException();
                 channel.close();
                 multicastServerGroup.shutdownGracefully();
             }

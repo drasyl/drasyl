@@ -102,6 +102,7 @@ class InvalidProofOfWorkFilterTest {
         }
         finally {
             channel.releaseInbound();
+            channel.checkException();
             channel.close();
         }
     }

@@ -62,5 +62,7 @@ class SlowReadAwareHandlerTest {
                 "ChannelInboundHandlerAdapter#0",
                 "SlowReadAwareHandler$SlowReadAwareAfterHandler#0"
         ), names);
+
+        channel.checkException();
     }
 }

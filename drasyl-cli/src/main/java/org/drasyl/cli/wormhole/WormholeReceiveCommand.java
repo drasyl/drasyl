@@ -28,7 +28,6 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChildChannelInitializer;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Pair;
@@ -87,16 +86,13 @@ public class WormholeReceiveCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode,
-                                                         final Identity identity,
-                                                         final EventLoopGroup udpChannelLoop) {
-        return new WormholeReceiveChannelInitializer(identity, udpChannelLoop, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeReceiveChannelInitializer(onlineTimeoutMillis, err, exitCode, code.first());
     }
 
     @Override
-    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode,
-                                                        final Identity identity) {
-        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second());
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, code.first(), code.second());
     }
 
     @Override

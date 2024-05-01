@@ -96,6 +96,7 @@ class ProtocolArmHandlerTest {
                 ReferenceCountUtil.release(disarmedMessage);
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -115,6 +116,7 @@ class ProtocolArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -137,6 +139,7 @@ class ProtocolArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -156,6 +159,7 @@ class ProtocolArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -178,6 +182,7 @@ class ProtocolArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -198,6 +203,7 @@ class ProtocolArmHandlerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -219,6 +225,7 @@ class ProtocolArmHandlerTest {
                 actual1.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

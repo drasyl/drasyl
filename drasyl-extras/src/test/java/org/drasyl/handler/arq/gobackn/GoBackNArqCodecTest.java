@@ -61,6 +61,7 @@ class GoBackNArqCodecTest {
             });
             final ByteBuf actual = channel.readOutbound();
             assertEquals(expected, actual);
+            channel.checkException();
 
             expected.release();
             actual.release();
@@ -81,6 +82,7 @@ class GoBackNArqCodecTest {
             final ByteBuf actual = channel.readOutbound();
             System.out.println(Arrays.toString(ByteBufUtil.getBytes(actual)));
             assertEquals(expected, actual);
+            channel.checkException();
 
             expected.release();
             actual.release();
@@ -92,6 +94,7 @@ class GoBackNArqCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+            channel.checkException();
         }
     }
 
@@ -110,6 +113,7 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             assertThat(channel.readInbound(), instanceOf(GoBackNArqData.class));
+            channel.checkException();
         }
 
         @Test
@@ -124,6 +128,7 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             assertThat(channel.readInbound(), instanceOf(GoBackNArqAck.class));
+            channel.checkException();
         }
 
         @Test
@@ -135,6 +140,7 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             final ByteBuf actual = channel.readInbound();
+            channel.checkException();
 
             assertEquals(actual, msg);
             actual.release();
@@ -149,6 +155,7 @@ class GoBackNArqCodecTest {
             channel.writeInbound(msg);
 
             final ByteBuf actual = channel.readInbound();
+            channel.checkException();
 
             assertEquals(actual, msg);
             actual.release();

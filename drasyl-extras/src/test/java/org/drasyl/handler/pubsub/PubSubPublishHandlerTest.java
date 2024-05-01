@@ -55,6 +55,8 @@ class PubSubPublishHandlerTest {
 
         assertEquals(new OverlayAddressedMessage<>(publish, broker), channel.readOutbound());
         verify(requests).put(eq(publish.getId()), any());
+
+        channel.checkException();
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -70,5 +72,7 @@ class PubSubPublishHandlerTest {
         channel.writeInbound(new OverlayAddressedMessage<>(published, null, broker));
 
         verify(promise).trySuccess(null);
+
+        channel.checkException();
     }
 }

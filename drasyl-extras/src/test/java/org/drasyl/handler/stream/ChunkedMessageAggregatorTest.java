@@ -58,6 +58,8 @@ class ChunkedMessageAggregatorTest {
 
         assertEquals(Unpooled.copiedBuffer("chunk1chunk2chunk3", UTF_8), reassembledMessage.content());
         reassembledMessage.release();
+
+        channel.checkException();
     }
 
     @Test
@@ -71,5 +73,7 @@ class ChunkedMessageAggregatorTest {
         assertFalse(channel.writeInbound(chunk1));
         assertThrows(TooLongFrameException.class, () -> channel.writeInbound(chunk2));
         assertNull(channel.readInbound());
+
+        channel.checkException();
     }
 }

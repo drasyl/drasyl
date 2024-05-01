@@ -97,6 +97,7 @@ class MessagesThroughputHandlerTest {
         }
         finally {
             channel.releaseOutbound();
+            channel.checkException();
             channel.close();
         }
     }
@@ -110,6 +111,7 @@ class MessagesThroughputHandlerTest {
         }
         finally {
             channel.releaseInbound();
+            channel.checkException();
             channel.close();
         }
 
@@ -127,6 +129,7 @@ class MessagesThroughputHandlerTest {
             assertNull(channel.readOutbound());
         }
         finally {
+            channel.checkException();
             channel.close();
         }
     }
@@ -141,6 +144,7 @@ class MessagesThroughputHandlerTest {
             assertNull(channel.readInbound());
         }
         finally {
+            channel.checkException();
             channel.close();
         }
     }
