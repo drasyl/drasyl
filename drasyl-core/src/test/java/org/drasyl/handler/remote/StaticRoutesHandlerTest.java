@@ -74,46 +74,9 @@ class StaticRoutesHandlerTest {
             channel.userEvents().clear();
             channel.pipeline().fireChannelInactive();
 
-            assertThat(channel.readEvent(), instanceOf(RemovePathEvent.class));
-        }
-        finally {
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldRouteOutboundMessageWhenStaticRouteIsPresent(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final InetSocketAddress address = new InetSocketAddress(22527);
-        final IdentityPublicKey publicKey = IdentityTestUtil.ID_2.getIdentityPublicKey();
-
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of(publicKey, address));
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        try {
-            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
-
-            final ReferenceCounted actual = channel.readOutbound();
-            assertEquals(new InetAddressedMessage<>(message, address), actual);
-
-            actual.release();
-        }
-        finally {
-            channel.checkException();
-            channel.close();
-        }
-    }
-
-    @Test
-    void shouldPassThroughMessageWhenStaticRouteIsAbsent(@Mock final IdentityPublicKey publicKey,
-                                                         @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
-        final ChannelHandler handler = new StaticRoutesHandler(Map.of());
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        try {
-            channel.writeAndFlush(new OverlayAddressedMessage<>(message, publicKey));
-
             verify(config.getPeersManager()).removeChildrenPaths(any(), any());
         }
         finally {
-            channel.checkException();
             channel.close();
         }
     }

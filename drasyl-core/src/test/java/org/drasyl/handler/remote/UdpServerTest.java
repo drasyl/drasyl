@@ -57,6 +57,8 @@ class UdpServerTest {
     private DatagramChannel udpChannel;
     private InetSocketAddress bindAddress;
     private Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
 
     @BeforeEach
     void setUp() {
@@ -77,7 +79,7 @@ class UdpServerTest {
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, null);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
             channel.pipeline().addLast(handler);
             try {
                 verify(bootstrap.group(any()).channel(any()).handler(any()), times(1)).bind(bindAddress);
@@ -98,7 +100,7 @@ class UdpServerTest {
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
             channel.pipeline().addLast(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -124,7 +126,7 @@ class UdpServerTest {
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
             final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
             channel.pipeline().addLast(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
