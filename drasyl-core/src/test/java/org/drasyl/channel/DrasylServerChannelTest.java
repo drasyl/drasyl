@@ -21,6 +21,7 @@
  */
 package org.drasyl.channel;
 
+import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -44,8 +45,9 @@ class DrasylServerChannelTest {
     @Nested
     class DoBind {
         @Test
-        void shouldSetLocalAddressAndActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity localAddress) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null);
+        void shouldSetLocalAddressAndActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity localAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise activePromise) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, activePromise);
 
             channel.doBind(localAddress);
 
@@ -55,7 +57,7 @@ class DrasylServerChannelTest {
 
         @Test
         void shouldRejectNonIdentity(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null);
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, null);
 
             assertThrows(IllegalArgumentException.class, () -> channel.doBind(localAddress));
         }
@@ -65,7 +67,7 @@ class DrasylServerChannelTest {
     class DoClose {
         @Test
         void shouldRemoveLocalAddressAndCloseChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), identity);
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), identity, null, null);
 
             channel.doClose();
 

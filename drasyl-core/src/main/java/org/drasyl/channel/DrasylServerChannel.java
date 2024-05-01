@@ -84,15 +84,19 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
                         final Map<SocketAddress, DrasylChannel> channels,
-                        final Identity identity) {
+                        final Identity identity,
+                        final UdpServerToDrasylHandler udpDrasylHandler,
+                        final ChannelPromise activePromise) {
         this.state = requireNonNull(state);
         this.channels = requireNonNull(channels);
         this.identity = identity;
+        this.udpDrasylHandler = udpDrasylHandler;
+        this.activePromise = activePromise;
     }
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, new ConcurrentHashMap<>(), null);
+        this(State.OPEN, new ConcurrentHashMap<>(), null, null, null);
     }
 
     @Override
@@ -129,18 +133,8 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             final int peerNetworkId = peerChannel.config().getNetworkId();
             final PeersManager peerPeersManager = peerChannel.config().getPeersManager();
             if (config().getNetworkId() == peerNetworkId) {
-                activePromise.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(final ChannelFuture future) throws Exception {
-                        peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null);
-                    }
-                });
-                peerChannel.activePromise.addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(final ChannelFuture future) throws Exception {
-                        peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), DrasylServerChannel.this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null);
-                    }
-                });
+                activePromise.addListener((ChannelFutureListener) future -> peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null));
+                peerChannel.activePromise.addListener((ChannelFutureListener) future -> peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), DrasylServerChannel.this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null));
             }
         });
         serverChannels.put(this.identity.getAddress(), this);
