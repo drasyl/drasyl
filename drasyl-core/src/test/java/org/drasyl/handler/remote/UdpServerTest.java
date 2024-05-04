@@ -63,7 +63,7 @@ class UdpServerTest {
     @BeforeEach
     void setUp() {
         bindAddress = new InetSocketAddress(22527);
-        channelInitializerSupplier = parent -> new UdpServerChannelInitializer(parent);
+        channelInitializerSupplier = UdpServerChannelInitializer::new;
     }
 
     @Nested

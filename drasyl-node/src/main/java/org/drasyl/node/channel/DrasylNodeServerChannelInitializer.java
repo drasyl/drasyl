@@ -54,7 +54,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
-import org.drasyl.node.PeerEndpoint;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.Node;
@@ -71,7 +70,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
@@ -166,12 +164,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
                 ));
             }
             else {
-                ch.pipeline().addLast(new TcpClient(
-                        new NioEventLoopGroup(1),
-                        config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
-                        config.getRemoteTcpFallbackClientTimeout(),
-                        config.getRemoteTcpFallbackClientAddress()
-                ));
+                ch.pipeline().addLast(new TcpClient());
             }
         }
 

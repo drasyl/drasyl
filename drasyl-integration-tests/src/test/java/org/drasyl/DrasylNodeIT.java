@@ -611,12 +611,12 @@ class DrasylNodeIT {
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(true)
-                        .remoteTcpFallbackClientTimeout(ofSeconds(2))
                         .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
                         .build();
                 client = new EmbeddedNode(config).awaitStarted();

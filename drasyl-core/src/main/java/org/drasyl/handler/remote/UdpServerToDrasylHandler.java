@@ -49,6 +49,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
     private ChannelHandlerContext ctx;
+    private boolean readCompletePending;
 
     public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
@@ -61,10 +62,10 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        final PeersManager peersManager = parent.config().getPeersManager();
-
-        LOG.trace("Read Datagram {}", msg);
+        LOG.trace("Read `{}`", msg);
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && parent.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
+            final PeersManager peersManager = parent.config().getPeersManager();
+
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
             peersManager.applicationMessageReceived(appMsg.getSender());
 
@@ -75,24 +76,26 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
                 drasylChannel.queueRead(appMsg.getPayload());
-                drasylChannel.finishRead(); // FIXME: move to channelReadComplete
             }
             else {
                 parent.serve(appMsg.getSender()).addListener(future -> {
                     final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
                     drasylChannel1.queueRead(appMsg.getPayload());
-                    drasylChannel1.finishRead(); // FIXME: move to channelReadComplete
                 });
             }
         }
         else {
+            readCompletePending = true;
             parent.pipeline().fireChannelRead(msg);
         }
     }
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        parent.pipeline().fireChannelReadComplete();
+        if (readCompletePending) {
+            parent.pipeline().fireChannelReadComplete();
+        }
+        parent.getChannels().values().forEach(DrasylChannel::finishRead);
         ctx.fireChannelReadComplete();
     }
 

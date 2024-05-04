@@ -199,6 +199,21 @@ public class PeersManager {
         return null;
     }
 
+    public boolean hasPath(final PathId id) {
+        lock.readLock().lock();
+        try {
+            for (final Peer peer : peers.values()) {
+                if (peer.hasPath(id)) {
+                    return true;
+                }
+            }
+            return false;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     public boolean hasPath(final DrasylAddress peerKey) {
         lock.readLock().lock();
         try {
@@ -600,6 +615,14 @@ public class PeersManager {
         finally {
             lock.readLock().unlock();
         }
+    }
+
+    public void setTcpFallback(final ChannelHandlerContext ctx) {
+        System.out.println();
+    }
+
+    public void unsetTcpFallback(final ChannelHandlerContext ctx) {
+        System.out.println();
     }
 
     /*

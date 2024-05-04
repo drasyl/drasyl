@@ -75,7 +75,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     enum State {OPEN, ACTIVE, CLOSED}
 
     private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);
-    private final Map<SocketAddress, DrasylChannel> channels;
+    private final Map<DrasylAddress, DrasylChannel> channels;
     private volatile State state;
     private volatile Identity identity; // NOSONAR
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
@@ -83,7 +83,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
-                        final Map<SocketAddress, DrasylChannel> channels,
+                        final Map<DrasylAddress, DrasylChannel> channels,
                         final Identity identity,
                         final UdpServerToDrasylHandler udpDrasylHandler,
                         final ChannelPromise activePromise) {
@@ -201,6 +201,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
 
     protected DrasylChannel newDrasylChannel(final DrasylAddress peer) {
         return new DrasylChannel(this, peer);
+    }
+
+    public Map<DrasylAddress, DrasylChannel> getChannels() {
+        return channels;
     }
 
     public DrasylChannel getChannel(final DrasylAddress peer) {
@@ -358,7 +362,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final DrasylChannel msg) {
-            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
+            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put((DrasylAddress) msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
             if (oldValue != null) {
                 // wait for close to complete!

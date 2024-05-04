@@ -60,7 +60,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
     private static final long DEFAULT_CHILDREN_TIME = 60; // seconds
     private static final Logger LOG = LoggerFactory.getLogger(InternetDiscoveryChildrenHandler.class);
-    static final PathId PATH_ID = new PathId() {
+    public static final PathId PATH_ID = new PathId() {
         @Override
         public short priority() {
             return 100;
@@ -153,7 +153,7 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
      * Pinging
      */
 
-    void startHeartbeat(final ChannelHandlerContext ctx) throws UnknownHostException {
+    void startHeartbeat(final ChannelHandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start Heartbeat job.");
             heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);

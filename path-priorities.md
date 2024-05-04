@@ -8,4 +8,6 @@
 |     `95` | [TraversingInternetDiscoverySuperPeerHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/internet/TraversingInternetDiscoverySuperPeerHandler.java) |
 |    `100` | [InternetDiscoveryChildrenHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/internet/InternetDiscoveryChildrenHandler.java)                       |
 |    `100` | [InternetDiscoverySuperPeerHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/internet/InternetDiscoverySuperPeerHandler.java)                     |
-|    `110` | [UnconfirmedAddressResolveHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/internet/UnconfirmedAddressResolveHandler.java)                       |
+|    `110` | [TcpClient](drasyl-core/src/main/java/org/drasyl/handler/remote/tcp/TcpClient.java)                                                                          
+|    `110` | [TcpServer](drasyl-core/src/main/java/org/drasyl/handler/remote/tcp/TcpServer.java)                                                                          |
+|    `200` | [UnconfirmedAddressResolveHandler](drasyl-core/src/main/java/org/drasyl/handler/remote/internet/UnconfirmedAddressResolveHandler.java)                       |

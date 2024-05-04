@@ -28,6 +28,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.SocketChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -68,6 +69,10 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
     public static final ChannelOption<Class<? extends DatagramChannel>> UDP_CHANNEL_CLASS = valueOf("UDP_CHANNEL_CLASS");
     public static final ChannelOption<Bootstrap> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
+    public static final ChannelOption<InetSocketAddress> TCP_CLIENT_CONNECT = valueOf("TCP_CLIENT_CONNECT");
+    public static final ChannelOption<Supplier<EventLoop>> TCP_CLIENT_EVENT_LOOP_SUPPLIER = valueOf("TCP_CLIENT_EVENT_LOOP_SUPPLIER");
+    public static final ChannelOption<Class<? extends SocketChannel>> TCP_CLIENT_CHANNEL_CLASS = valueOf("TCP_CLIENT_CHANNEL_CLASS");
+    public static final ChannelOption<Bootstrap> TCP_CLIENT_BOOTSTRAP = valueOf("TCP_CLIENT_BOOTSTRAP");
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
     public static final ChannelOption<Boolean> HOLE_PUNCHING_ENABLED = valueOf("HOLE_PUNCHING");
     public static final ChannelOption<Duration> PATH_IDLE_TIME = valueOf("PATH_IDLE_TIME");
@@ -88,6 +93,11 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile Bootstrap udpBootstrap = new Bootstrap()
             .option(ChannelOption.SO_BROADCAST, false)
             .option(ChannelOption.SO_REUSEADDR, UDP_SO_REUSEADDR)
+            .option(ChannelOption.IP_TOS, 0xB8);
+    private volatile InetSocketAddress tcpClientConnect = new InetSocketAddress("sp-fkb1.drasyl.org", 443);
+    private volatile Supplier<EventLoop> tcpClientEventLoopSupplier;
+    private Class<? extends SocketChannel> tcpClientChannelClass = EventLoopGroupUtil.getSocketChannel();
+    private volatile Bootstrap tcpClientBootstrap = new Bootstrap()
             .option(ChannelOption.IP_TOS, 0xB8);
     private volatile Duration maxMessageAge = ofSeconds(60);
     private volatile boolean holePunchingEnabled = true;
@@ -115,6 +125,10 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 UDP_EVENT_LOOP_SUPPLIER,
                 UDP_CHANNEL_CLASS,
                 UDP_BOOTSTRAP,
+                TCP_CLIENT_CONNECT,
+                TCP_CLIENT_EVENT_LOOP_SUPPLIER,
+                TCP_CLIENT_CHANNEL_CLASS,
+                TCP_CLIENT_BOOTSTRAP,
                 MAX_MESSAGE_AGE,
                 HOLE_PUNCHING_ENABLED,
                 PATH_IDLE_TIME,
@@ -163,6 +177,18 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == UDP_BOOTSTRAP) {
             return (T) getUdpBootstrap();
+        }
+        if (option == TCP_CLIENT_CONNECT) {
+            return (T) getTcpClientConnect();
+        }
+        if (option == TCP_CLIENT_EVENT_LOOP_SUPPLIER) {
+            return (T) getTcpClientEventLoopSupplier();
+        }
+        if (option == TCP_CLIENT_CHANNEL_CLASS) {
+            return (T) getTcpClientChannelClass();
+        }
+        if (option == TCP_CLIENT_BOOTSTRAP) {
+            return (T) getTcpClientBootstrap();
         }
         if (option == MAX_MESSAGE_AGE) {
             return (T) getMaxMessageAge();
@@ -234,6 +260,25 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return udpBootstrap;
     }
 
+    public InetSocketAddress getTcpClientConnect() {
+        return tcpClientConnect;
+    }
+
+    public Supplier<EventLoop> getTcpClientEventLoopSupplier() {
+        if (tcpClientEventLoopSupplier == null) {
+            tcpClientEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
+        }
+        return tcpClientEventLoopSupplier;
+    }
+
+    public Class<? extends SocketChannel> getTcpClientChannelClass() {
+        return tcpClientChannelClass;
+    }
+
+    public Bootstrap getTcpClientBootstrap() {
+        return tcpClientBootstrap;
+    }
+
     public Duration getMaxMessageAge() {
         return maxMessageAge;
     }
@@ -292,6 +337,18 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         else if (option == UDP_BOOTSTRAP) {
             setUdpBootstrap((Bootstrap) value);
+        }
+        else if (option == TCP_CLIENT_CONNECT) {
+            setTcpClientConnect((InetSocketAddress) value);
+        }
+        else if (option == TCP_CLIENT_EVENT_LOOP_SUPPLIER) {
+            setTcpClientEventLoopSupplier((Supplier<EventLoop>) value);
+        }
+        else if (option == TCP_CLIENT_CHANNEL_CLASS) {
+            setTcpClientChannelClass((Class<? extends SocketChannel>) value);
+        }
+        else if (option == TCP_CLIENT_BOOTSTRAP) {
+            setTcpClientBootstrap((Bootstrap) value);
         }
         else if (option == MAX_MESSAGE_AGE) {
             setMaxMessageAge((Duration) value);
@@ -401,6 +458,35 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.udpBootstrap = requireNonNull(udpBootstrap);
+    }
+
+    public void setTcpClientConnect(final InetSocketAddress tcpClientConnect) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpClientConnect = requireNonNull(tcpClientConnect);
+    }
+
+    public void setTcpClientEventLoopSupplier(final Supplier<EventLoop> tcpClientEventLoopSupplier) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpClientEventLoopSupplier = requireNonNull(tcpClientEventLoopSupplier);
+    }
+
+    public void setTcpClientChannelClass(final Class<? extends SocketChannel> tcpClientChannelClass) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpClientChannelClass = requireNonNull(tcpClientChannelClass);
+    }
+
+
+    public void setTcpClientBootstrap(final Bootstrap tcpClientBootstrap) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpClientBootstrap = requireNonNull(tcpClientBootstrap);
     }
 
     public void setMaxMessageAge(final Duration maxMessageAge) {

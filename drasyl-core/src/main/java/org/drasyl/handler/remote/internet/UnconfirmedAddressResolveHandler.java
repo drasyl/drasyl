@@ -45,7 +45,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     public static final PathId PATH_ID = new PathId() {
         @Override
         public short priority() {
-            return 110;
+            return 200;
         }
     };
     private final long expireCacheAfter;

@@ -109,7 +109,6 @@ public abstract class DrasylConfig {
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
-    public static final String REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT = "drasyl.remote.tcp-fallback.client.timeout";
     public static final String REMOTE_TCP_FALLBACK_CLIENT_ADDRESS = "drasyl.remote.tcp-fallback.client.address";
     public static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     public static final String CHANNEL_INACTIVITY_TIMEOUT = "drasyl.channel.inactivity-timeout";
@@ -173,7 +172,6 @@ public abstract class DrasylConfig {
             builder.remoteTcpFallbackEnabled(config.getBoolean(REMOTE_TCP_FALLBACK_ENABLED));
             builder.remoteTcpFallbackServerBindHost(getInetAddress(config, REMOTE_TCP_FALLBACK_SERVER_BIND_HOST));
             builder.remoteTcpFallbackServerBindPort(config.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT));
-            builder.remoteTcpFallbackClientTimeout(config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT));
             builder.remoteTcpFallbackClientAddress(getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS));
 
             // handshake
@@ -772,8 +770,6 @@ public abstract class DrasylConfig {
 
     public abstract int getRemoteTcpFallbackServerBindPort();
 
-    public abstract Duration getRemoteTcpFallbackClientTimeout();
-
     public abstract InetSocketAddress getRemoteTcpFallbackClientAddress();
 
     public abstract boolean isIntraVmDiscoveryEnabled();
@@ -870,8 +866,6 @@ public abstract class DrasylConfig {
         public abstract Builder remoteTcpFallbackServerBindHost(final InetAddress remoteTcpFallbackServerBindHost);
 
         public abstract Builder remoteTcpFallbackServerBindPort(final int remoteTcpFallbackServerBindPort);
-
-        public abstract Builder remoteTcpFallbackClientTimeout(final Duration remoteTcpFallbackClientTimeout);
 
         public abstract Builder remoteTcpFallbackClientAddress(final InetSocketAddress remoteTcpFallbackClientAddress);
 
