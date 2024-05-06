@@ -122,4 +122,19 @@ public class InetSocketAddressUtilTest {
             System.out.println(InetSocketAddressUtil.resolve(InetSocketAddress.createUnresolved("example.com", 80)));
         }
     }
+
+    @Nested
+    class ReplaceSocketAddressPort {
+        @Test
+        void shouldReplacePort() {
+            // unresolved
+            assertEquals(InetSocketAddress.createUnresolved("example.com", 443), InetSocketAddressUtil.replaceSocketAddressPort(InetSocketAddress.createUnresolved("example.com", 80), 443));
+
+            // resolved
+            assertEquals(new InetSocketAddress("example.com", 443), InetSocketAddressUtil.replaceSocketAddressPort(new InetSocketAddress("example.com", 80), 443));
+
+            // IP address
+            assertEquals(new InetSocketAddress("192.168.188.1", 443), InetSocketAddressUtil.replaceSocketAddressPort(new InetSocketAddress("192.168.188.1", 80), 443));
+        }
+    }
 }

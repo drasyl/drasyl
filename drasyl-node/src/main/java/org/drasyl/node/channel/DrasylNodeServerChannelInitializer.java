@@ -24,7 +24,6 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
@@ -156,12 +155,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         // tcp fallback
         if (config.isRemoteTcpFallbackEnabled()) {
             if (!config.isRemoteSuperPeerEnabled()) {
-                ch.pipeline().addLast(new TcpServer(
-                        new NioEventLoopGroup(1),
-                        config.getRemoteTcpFallbackServerBindHost(),
-                        config.getRemoteTcpFallbackServerBindPort(),
-                        ch.config().getHelloTimeout()
-                ));
+                ch.pipeline().addLast(new TcpServer());
             }
             else {
                 ch.pipeline().addLast(new TcpClient());

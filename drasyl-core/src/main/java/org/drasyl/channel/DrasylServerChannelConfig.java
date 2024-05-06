@@ -22,12 +22,15 @@
 package org.drasyl.channel;
 
 import io.netty.bootstrap.Bootstrap;
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.IdentityPublicKey;
@@ -38,6 +41,9 @@ import java.time.Duration;
 import java.util.Map;
 import java.util.function.Supplier;
 
+import static io.netty.channel.ChannelOption.IP_TOS;
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
+import static io.netty.channel.ChannelOption.SO_REUSEADDR;
 import static io.netty.channel.ChannelOption.valueOf;
 import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
@@ -66,17 +72,22 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Integer> MAX_PEERS = valueOf("MAX_PEERS");
     public static final ChannelOption<Map<IdentityPublicKey, InetSocketAddress>> SUPER_PEERS = valueOf("SUPER_PEERS");
     public static final ChannelOption<InetSocketAddress> UDP_BIND = valueOf("UDP_BIND");
-    public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP_SUPPLIER = valueOf("UDP_EVENT_LOOP_SUPPLIER");
+    public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP = valueOf("UDP_EVENT_LOOP");
     public static final ChannelOption<Class<? extends DatagramChannel>> UDP_CHANNEL_CLASS = valueOf("UDP_CHANNEL_CLASS");
-    public static final ChannelOption<Bootstrap> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
-    public static final ChannelOption<InetSocketAddress> TCP_CLIENT_CONNECT = valueOf("TCP_CLIENT_CONNECT");
-    public static final ChannelOption<Supplier<EventLoop>> TCP_CLIENT_EVENT_LOOP_SUPPLIER = valueOf("TCP_CLIENT_EVENT_LOOP_SUPPLIER");
+    public static final ChannelOption<Supplier<Bootstrap>> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
+    public static final ChannelOption<Integer> TCP_CLIENT_CONNECT_PORT = valueOf("TCP_CLIENT_CONNECT_PORT");
+    public static final ChannelOption<Supplier<EventLoop>> TCP_CLIENT_EVENT_LOOP = valueOf("TCP_CLIENT_EVENT_LOOP");
     public static final ChannelOption<Class<? extends SocketChannel>> TCP_CLIENT_CHANNEL_CLASS = valueOf("TCP_CLIENT_CHANNEL_CLASS");
     public static final ChannelOption<Bootstrap> TCP_CLIENT_BOOTSTRAP = valueOf("TCP_CLIENT_BOOTSTRAP");
+    public static final ChannelOption<InetSocketAddress> TCP_SERVER_BIND = valueOf("TCP_SERVER_BIND");
+    public static final ChannelOption<Supplier<EventLoop>> TCP_SERVER_EVENT_LOOP = valueOf("TCP_SERVER_EVENT_LOOP");
+    public static final ChannelOption<Class<? extends SocketChannel>> TCP_SERVER_CHANNEL_CLASS = valueOf("TCP_SERVER_CHANNEL_CLASS");
+    public static final ChannelOption<Bootstrap> TCP_SERVER_BOOTSTRAP = valueOf("TCP_SERVER_BOOTSTRAP");
     public static final ChannelOption<Duration> MAX_MESSAGE_AGE = valueOf("MAX_MESSAGE_AGE");
     public static final ChannelOption<Boolean> HOLE_PUNCHING_ENABLED = valueOf("HOLE_PUNCHING");
     public static final ChannelOption<Duration> PATH_IDLE_TIME = valueOf("PATH_IDLE_TIME");
     public static final ChannelOption<Byte> HOP_LIMIT = valueOf("HOP_LIMIT");
+    public static final ChannelOption<Boolean> INTRA_VM_DISCOVERY_ENABLED = valueOf("INTRA_VM_DISCOVERY_ENABLED");
 
     private volatile int networkId = 1;
     private volatile PeersManager peersManager = new PeersManager();
@@ -88,21 +99,27 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile int maxPeers = 100;
     private volatile Map<IdentityPublicKey, InetSocketAddress> superPeers = DEFAULT_SUPER_PEERS;
     private volatile InetSocketAddress udpBind = new InetSocketAddress(22527);
-    private volatile Supplier<EventLoop> udpEventLoopSupplier;
+    private volatile Supplier<EventLoop> udpEventLoop = () -> EventLoopGroupUtil.getBestEventLoopGroup(1).next();
     private volatile Class<? extends DatagramChannel> udpChannelClass = EventLoopGroupUtil.getBestDatagramChannel();
-    private volatile Bootstrap udpBootstrap = new Bootstrap()
-            .option(ChannelOption.SO_BROADCAST, false)
-            .option(ChannelOption.SO_REUSEADDR, UDP_SO_REUSEADDR)
-            .option(ChannelOption.IP_TOS, 0xB8);
-    private volatile InetSocketAddress tcpClientConnect = new InetSocketAddress("sp-fkb1.drasyl.org", 443);
-    private volatile Supplier<EventLoop> tcpClientEventLoopSupplier;
+    private volatile Supplier<Bootstrap> udpBootstrap = () -> new Bootstrap()
+            .option(SO_BROADCAST, false)
+            .option(SO_REUSEADDR, UDP_SO_REUSEADDR)
+            .option(IP_TOS, 0xB8);
+    private volatile Integer tcpClientConnectPort = 443;
+    private volatile Supplier<EventLoop> tcpClientEventLoop;
     private Class<? extends SocketChannel> tcpClientChannelClass = EventLoopGroupUtil.getSocketChannel();
-    private volatile Bootstrap tcpClientBootstrap = new Bootstrap()
-            .option(ChannelOption.IP_TOS, 0xB8);
+    private volatile Supplier<Bootstrap> tcpClientBootstrap = () -> new Bootstrap()
+            .option(IP_TOS, 0xB8);
+    private volatile InetSocketAddress tcpServerBind = new InetSocketAddress(443);
+    private volatile Supplier<EventLoopGroup> tcpServerEventLoopGroup = EventLoopGroupUtil::getBestEventLoopGroup;
+    private volatile Class<? extends ServerSocketChannel> tcpServerChannelClass = EventLoopGroupUtil.getServerSocketChannel();
+    private volatile Supplier<ServerBootstrap> tcpServerBootstrap = () -> new ServerBootstrap()
+            .option(IP_TOS, 0x0);
     private volatile Duration maxMessageAge = ofSeconds(60);
     private volatile boolean holePunchingEnabled = true;
     private volatile Duration pathIdleTime = ofSeconds(60);
     private volatile Byte hopLimit = 8;
+    private volatile Boolean intraVmDiscoveryEnabled = true;
 
     public DrasylServerChannelConfig(final Channel channel) {
         super(channel);
@@ -122,17 +139,22 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 MAX_PEERS,
                 SUPER_PEERS,
                 UDP_BIND,
-                UDP_EVENT_LOOP_SUPPLIER,
+                UDP_EVENT_LOOP,
                 UDP_CHANNEL_CLASS,
                 UDP_BOOTSTRAP,
-                TCP_CLIENT_CONNECT,
-                TCP_CLIENT_EVENT_LOOP_SUPPLIER,
+                TCP_CLIENT_CONNECT_PORT,
+                TCP_CLIENT_EVENT_LOOP,
                 TCP_CLIENT_CHANNEL_CLASS,
                 TCP_CLIENT_BOOTSTRAP,
+                TCP_SERVER_BIND,
+                TCP_SERVER_EVENT_LOOP,
+                TCP_SERVER_CHANNEL_CLASS,
+                TCP_SERVER_BOOTSTRAP,
                 MAX_MESSAGE_AGE,
                 HOLE_PUNCHING_ENABLED,
                 PATH_IDLE_TIME,
-                HOP_LIMIT
+                HOP_LIMIT,
+                INTRA_VM_DISCOVERY_ENABLED
         );
     }
 
@@ -169,8 +191,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         if (option == UDP_BIND) {
             return (T) getUdpBind();
         }
-        if (option == UDP_EVENT_LOOP_SUPPLIER) {
-            return (T) getUdpEventLoopSupplier();
+        if (option == UDP_EVENT_LOOP) {
+            return (T) getUdpEventLoop();
         }
         if (option == UDP_CHANNEL_CLASS) {
             return (T) getUdpChannelClass();
@@ -178,17 +200,29 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         if (option == UDP_BOOTSTRAP) {
             return (T) getUdpBootstrap();
         }
-        if (option == TCP_CLIENT_CONNECT) {
-            return (T) getTcpClientConnect();
+        if (option == TCP_CLIENT_CONNECT_PORT) {
+            return (T) Integer.valueOf(getTcpClientConnectPort());
         }
-        if (option == TCP_CLIENT_EVENT_LOOP_SUPPLIER) {
-            return (T) getTcpClientEventLoopSupplier();
+        if (option == TCP_CLIENT_EVENT_LOOP) {
+            return (T) getTcpClientEventLoop();
         }
         if (option == TCP_CLIENT_CHANNEL_CLASS) {
             return (T) getTcpClientChannelClass();
         }
         if (option == TCP_CLIENT_BOOTSTRAP) {
             return (T) getTcpClientBootstrap();
+        }
+        if (option == TCP_SERVER_BIND) {
+            return (T) getTcpServerBind();
+        }
+        if (option == TCP_SERVER_EVENT_LOOP) {
+            return (T) getTcpServerEventLoopGroup();
+        }
+        if (option == TCP_SERVER_CHANNEL_CLASS) {
+            return (T) getTcpServerChannelClass();
+        }
+        if (option == TCP_SERVER_BOOTSTRAP) {
+            return (T) getTcpServerBootstrap();
         }
         if (option == MAX_MESSAGE_AGE) {
             return (T) getMaxMessageAge();
@@ -201,6 +235,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == HOP_LIMIT) {
             return (T) Byte.valueOf(getHopLimit());
+        }
+        if (option == INTRA_VM_DISCOVERY_ENABLED) {
+            return (T) Boolean.valueOf(isIntraVmDiscoveryEnabled());
         }
         return super.getOption(option);
     }
@@ -245,38 +282,51 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return udpBind;
     }
 
-    public Supplier<EventLoop> getUdpEventLoopSupplier() {
-        if (udpEventLoopSupplier == null) {
-            udpEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
-        }
-        return udpEventLoopSupplier;
+    public Supplier<EventLoop> getUdpEventLoop() {
+        return udpEventLoop;
     }
 
     public Class<? extends DatagramChannel> getUdpChannelClass() {
         return udpChannelClass;
     }
 
-    public Bootstrap getUdpBootstrap() {
+    public Supplier<Bootstrap> getUdpBootstrap() {
         return udpBootstrap;
     }
 
-    public InetSocketAddress getTcpClientConnect() {
-        return tcpClientConnect;
+    public int getTcpClientConnectPort() {
+        return tcpClientConnectPort;
     }
 
-    public Supplier<EventLoop> getTcpClientEventLoopSupplier() {
-        if (tcpClientEventLoopSupplier == null) {
-            tcpClientEventLoopSupplier = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
+    public Supplier<EventLoop> getTcpClientEventLoop() {
+        if (tcpClientEventLoop == null) {
+            tcpClientEventLoop = EventLoopGroupUtil.getBestEventLoopGroup(1)::next;
         }
-        return tcpClientEventLoopSupplier;
+        return tcpClientEventLoop;
     }
 
     public Class<? extends SocketChannel> getTcpClientChannelClass() {
         return tcpClientChannelClass;
     }
 
-    public Bootstrap getTcpClientBootstrap() {
+    public Supplier<Bootstrap> getTcpClientBootstrap() {
         return tcpClientBootstrap;
+    }
+
+    public InetSocketAddress getTcpServerBind() {
+        return tcpServerBind;
+    }
+
+    public Supplier<EventLoopGroup> getTcpServerEventLoopGroup() {
+        return tcpServerEventLoopGroup;
+    }
+
+    public Class<? extends ServerSocketChannel> getTcpServerChannelClass() {
+        return tcpServerChannelClass;
+    }
+
+    public Supplier<ServerBootstrap> getTcpServerBootstrap() {
+        return tcpServerBootstrap;
     }
 
     public Duration getMaxMessageAge() {
@@ -293,6 +343,10 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
 
     public byte getHopLimit() {
         return hopLimit;
+    }
+
+    public boolean isIntraVmDiscoveryEnabled() {
+        return intraVmDiscoveryEnabled;
     }
 
     @Override
@@ -329,26 +383,38 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         else if (option == UDP_BIND) {
             setUdpBind((InetSocketAddress) value);
         }
-        else if (option == UDP_EVENT_LOOP_SUPPLIER) {
-            setUdpEventLoopSupplier((Supplier<EventLoop>) value);
+        else if (option == UDP_EVENT_LOOP) {
+            setUdpEventLoop((Supplier<EventLoop>) value);
         }
         else if (option == UDP_CHANNEL_CLASS) {
             setUdpChannelClass((Class<? extends DatagramChannel>) value);
         }
         else if (option == UDP_BOOTSTRAP) {
-            setUdpBootstrap((Bootstrap) value);
+            setUdpBootstrap((Supplier<Bootstrap>) value);
         }
-        else if (option == TCP_CLIENT_CONNECT) {
-            setTcpClientConnect((InetSocketAddress) value);
+        else if (option == TCP_CLIENT_CONNECT_PORT) {
+            setTcpClientConnectPort((Integer) value);
         }
-        else if (option == TCP_CLIENT_EVENT_LOOP_SUPPLIER) {
-            setTcpClientEventLoopSupplier((Supplier<EventLoop>) value);
+        else if (option == TCP_CLIENT_EVENT_LOOP) {
+            setTcpClientEventLoop((Supplier<EventLoop>) value);
         }
         else if (option == TCP_CLIENT_CHANNEL_CLASS) {
             setTcpClientChannelClass((Class<? extends SocketChannel>) value);
         }
         else if (option == TCP_CLIENT_BOOTSTRAP) {
-            setTcpClientBootstrap((Bootstrap) value);
+            setTcpClientBootstrap((Supplier<Bootstrap>) value);
+        }
+        else if (option == TCP_SERVER_BIND) {
+            setTcpServerBind((InetSocketAddress) value);
+        }
+        else if (option == TCP_SERVER_EVENT_LOOP) {
+            setTcpServerEventLoopGroup((Supplier<EventLoopGroup>) value);
+        }
+        else if (option == TCP_SERVER_CHANNEL_CLASS) {
+            setTcpServerChannelClass((Class<? extends ServerSocketChannel>) value);
+        }
+        else if (option == TCP_SERVER_BOOTSTRAP) {
+            setTcpServerBootstrap((Supplier<ServerBootstrap>) value);
         }
         else if (option == MAX_MESSAGE_AGE) {
             setMaxMessageAge((Duration) value);
@@ -361,6 +427,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         else if (option == HOP_LIMIT) {
             setHopLimit((byte) value);
+        }
+        else if (option == INTRA_VM_DISCOVERY_ENABLED) {
+            setIntraVmDiscoveryEnabled((Boolean) value);
         }
         else {
             return super.setOption(option, value);
@@ -439,11 +508,11 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         this.udpBind = requireNonNull(udpBind);
     }
 
-    public void setUdpEventLoopSupplier(final Supplier<EventLoop> udpEventLoopSupplier) {
+    public void setUdpEventLoop(final Supplier<EventLoop> udpEventLoop) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
-        this.udpEventLoopSupplier = requireNonNull(udpEventLoopSupplier);
+        this.udpEventLoop = requireNonNull(udpEventLoop);
     }
 
     public void setUdpChannelClass(final Class<? extends DatagramChannel> udpChannelClass) {
@@ -453,25 +522,25 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         this.udpChannelClass = requireNonNull(udpChannelClass);
     }
 
-    public void setUdpBootstrap(final Bootstrap udpBootstrap) {
+    public void setUdpBootstrap(final Supplier<Bootstrap> udpBootstrap) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.udpBootstrap = requireNonNull(udpBootstrap);
     }
 
-    public void setTcpClientConnect(final InetSocketAddress tcpClientConnect) {
+    public void setTcpClientConnectPort(final int tcpClientConnectPort) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
-        this.tcpClientConnect = requireNonNull(tcpClientConnect);
+        this.tcpClientConnectPort = tcpClientConnectPort;
     }
 
-    public void setTcpClientEventLoopSupplier(final Supplier<EventLoop> tcpClientEventLoopSupplier) {
+    public void setTcpClientEventLoop(final Supplier<EventLoop> tcpClientEventLoop) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
-        this.tcpClientEventLoopSupplier = requireNonNull(tcpClientEventLoopSupplier);
+        this.tcpClientEventLoop = requireNonNull(tcpClientEventLoop);
     }
 
     public void setTcpClientChannelClass(final Class<? extends SocketChannel> tcpClientChannelClass) {
@@ -481,12 +550,39 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         this.tcpClientChannelClass = requireNonNull(tcpClientChannelClass);
     }
 
-
-    public void setTcpClientBootstrap(final Bootstrap tcpClientBootstrap) {
+    public void setTcpClientBootstrap(final Supplier<Bootstrap> tcpClientBootstrap) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.tcpClientBootstrap = requireNonNull(tcpClientBootstrap);
+    }
+
+    private void setTcpServerBind(final InetSocketAddress tcpServerBind) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpServerBind = requireNonNull(tcpServerBind);
+    }
+
+    private void setTcpServerEventLoopGroup(final Supplier<EventLoopGroup> tcpServerEventLoopGroup) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpServerEventLoopGroup = requireNonNull(tcpServerEventLoopGroup);
+    }
+
+    private void setTcpServerChannelClass(final Class<? extends ServerSocketChannel> tcpServerChannelClass) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpServerChannelClass = requireNonNull(tcpServerChannelClass);
+    }
+
+    private void setTcpServerBootstrap(final Supplier<ServerBootstrap> tcpServerBootstrap) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.tcpServerBootstrap = requireNonNull(tcpServerBootstrap);
     }
 
     public void setMaxMessageAge(final Duration maxMessageAge) {
@@ -515,5 +611,12 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.hopLimit = hopLimit;
+    }
+
+    private void setIntraVmDiscoveryEnabled(final boolean intraVmDiscoveryEnabled) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
     }
 }

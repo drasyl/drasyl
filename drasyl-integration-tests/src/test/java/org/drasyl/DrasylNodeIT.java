@@ -64,7 +64,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
 import java.util.function.Function;
 
-import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
@@ -73,6 +72,7 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -603,6 +603,8 @@ class DrasylNodeIT {
                 superPeer = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
+                await("superPeer.getTcpFallbackPort()").untilAsserted(() -> assertDoesNotThrow(() -> superPeer.getTcpFallbackPort()));
+
                 // client
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
@@ -617,7 +619,7 @@ class DrasylNodeIT {
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(true)
-                        .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
+                        .remoteTcpFallbackClientConnectPort(superPeer.getTcpFallbackPort())
                         .build();
                 client = new EmbeddedNode(config).awaitStarted();
                 client.pipeline().addAfter(client.pipeline().context(UdpServer.class).name(), "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {

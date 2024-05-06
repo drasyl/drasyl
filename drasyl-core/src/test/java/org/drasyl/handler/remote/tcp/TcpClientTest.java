@@ -41,6 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
 
@@ -75,7 +76,7 @@ public class TcpClientTest {
             when(superPeerChannel.isSuccess()).thenReturn(true);
 
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelInactive();
@@ -96,7 +97,7 @@ public class TcpClientTest {
         void shouldPassTroughInboundMessages(@Mock final InetSocketAddress sender,
                                              @Mock final Object msg) {
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -121,7 +122,7 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1337);
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, sender));
@@ -145,7 +146,7 @@ public class TcpClientTest {
         void shouldPasstroughOutboundMessagesWhenNoTcpConnectionIsPresent(@Mock final InetSocketAddress recipient,
                                                                           @Mock final ByteBuf msg) {
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -170,7 +171,7 @@ public class TcpClientTest {
             when(superPeerChannel.channel().writeAndFlush(any())).thenReturn(channelFuture);
 
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -200,7 +201,7 @@ public class TcpClientTest {
 
             final AtomicLong noResponseFromSuperPeerSince = new AtomicLong(1);
             final NioEventLoopGroup clientGroup = new NioEventLoopGroup(1);
-            final TcpClient handler = new TcpClient(channelInitializerSupplier);
+            final TcpClient handler = new TcpClient(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap(), null, false);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));

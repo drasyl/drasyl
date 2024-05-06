@@ -27,7 +27,6 @@ import io.netty.channel.socket.SocketChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
-import org.drasyl.handler.remote.DatagramCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
 import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
@@ -48,7 +47,7 @@ public class TcpClientChannelInitializer extends ChannelInitializer<SocketChanne
     protected void initChannel(final SocketChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new DatagramCodec());
+        p.addLast(new ByteBufCodec());
         p.addLast(new ByteToRemoteMessageCodec());
         p.addLast(new OtherNetworkFilter(parent.config().getNetworkId()));
         p.addLast(new InvalidProofOfWorkFilter());

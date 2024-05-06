@@ -232,6 +232,9 @@ public class TraversingInternetDiscoveryChildrenHandler extends InternetDiscover
     @Override
     protected Set<InetSocketAddress> getPrivateAddresses() {
         final Set<InetAddress> addresses;
+        if (bindAddress == null) {
+            return Set.of();
+        }
         if (bindAddress.getAddress().isAnyLocalAddress()) {
             // use all available addresses
             addresses = NetworkUtil.getAddresses();

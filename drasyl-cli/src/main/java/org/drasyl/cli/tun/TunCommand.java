@@ -88,7 +88,7 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -402,7 +402,7 @@ public class TunCommand extends ChannelOptions {
                     .option(ARMING_ENABLED, !protocolArmDisabled)
                     .option(SUPER_PEERS, superPeers)
                     .option(UDP_BIND, bindAddress)
-                    .option(UDP_EVENT_LOOP_SUPPLIER, () -> udpChannelLoop)
+                    .option(UDP_EVENT_LOOP, () -> udpChannelLoop)
                     .handler(handler)
                     .childHandler(childHandler);
             channel = (DrasylServerChannel) b.bind(identity).channel();

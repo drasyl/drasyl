@@ -21,28 +21,39 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.Channel;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelOutboundInvoker;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
-import org.drasyl.handler.remote.PeersManager.PathId;
-import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Optional;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.function.Function;
+import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.FutureListenerUtil.fireExceptionToChannelOnFailure;
+import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
+import static org.drasyl.util.InetSocketAddressUtil.replaceSocketAddressPort;
 
 /**
  * This handler monitors how long the node has not received a response from any super peer. If the
@@ -62,33 +73,39 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 @SuppressWarnings({ "java:S110" })
 public class TcpClient extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClient.class);
-    public static final PathId PATH_ID = new PathId() {
-        @Override
-        public short priority() {
-            return 110;
-        }
-    };
     private final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private final LongSupplier currentTime;
+    private final AtomicLong lastSuperPeerAcknowledgementTime;
+    private final Map<InetSocketAddress, SocketChannel> tcpChannels;
     ScheduledFuture<?> checkDisposable;
-    private SocketChannel tcpChannel;
+    boolean clientsStarted;
 
-    /**
-     * @param channelInitializerSupplier
-     */
-    @SuppressWarnings("java:S107")
-    TcpClient(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    TcpClient(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+              final LongSupplier currentTime,
+              final AtomicLong lastSuperPeerAcknowledgementTime,
+              final Map<InetSocketAddress, SocketChannel> tcpChannels,
+              final ScheduledFuture<?> checkDisposable,
+              final boolean clientsStarted) {
         this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
+        this.currentTime = requireNonNull(currentTime);
+        this.lastSuperPeerAcknowledgementTime = requireNonNull(lastSuperPeerAcknowledgementTime);
+        this.tcpChannels = requireNonNull(tcpChannels);
+        this.checkDisposable = checkDisposable;
+        this.clientsStarted = clientsStarted;
     }
 
-    /**
-     */
+    public TcpClient(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+        this(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap<>(), null, false);
+    }
+
     public TcpClient() {
         this(TcpClientChannelInitializer::new);
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws UdpServer.UdpServerBindFailedException {
+    public void channelActive(final ChannelHandlerContext ctx) {
         if (ctx.channel().isActive()) {
+            lastSuperPeerAcknowledgementTime.set(currentTime.getAsLong());
             startUnreachableSuperPeersCheck(ctx);
         }
 
@@ -98,15 +115,49 @@ public class TcpClient extends ChannelDuplexHandler {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         stopUnreachableSuperPeersCheck();
-        stopClient();
 
         ctx.fireChannelInactive();
+    }
+
+    @Override
+    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+        ctx.fireChannelRead(msg);
+
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).sender().getPort() != config(ctx).getTcpClientConnectPort() && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage && config(ctx).getSuperPeers().containsKey(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender())) {
+            lastSuperPeerAcknowledgementTime.set(currentTime.getAsLong());
+        }
+    }
+
+    @Override
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+            final Optional<Entry<InetSocketAddress, SocketChannel>> tcpChannelEntry = tcpChannels.entrySet().stream().filter(entry -> equalSocketAddress(((InetAddressedMessage<?>) msg).recipient(), entry.getKey()) && entry.getValue().isOpen()).findFirst();
+            tcpChannelEntry.ifPresent(entry -> entry.getValue().pipeline().get(TcpClientToDrasylHandler.class).enqueueWrite(msg));
+        }
+        else {
+            ctx.write(msg, promise);
+        }
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        tcpChannels.values().forEach(channel -> {
+            if (channel.isOpen()) {
+                final TcpClientToDrasylHandler outboundBufferHolder = channel.pipeline().get(TcpClientToDrasylHandler.class);
+                outboundBufferHolder.finishWrite();
+            }
+        });
+
+        ctx.flush();
     }
 
     private void startUnreachableSuperPeersCheck(ChannelHandlerContext ctx) {
         if (checkDisposable == null) {
             LOG.debug("Start unreachable super peer check.");
             checkDisposable = ctx.executor().scheduleWithFixedDelay(() -> checkForUnreachableSuperPeers(ctx), config(ctx).getHelloTimeout().toMillis(), config(ctx).getHelloTimeout().toMillis(), MILLISECONDS);
+            checkDisposable.addListener(fireExceptionToChannelOnFailure(ctx.channel()));
         }
     }
 
@@ -119,31 +170,42 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     private void checkForUnreachableSuperPeers(final ChannelHandlerContext ctx) {
-        if (config(ctx).getPeersManager().hasPath(InternetDiscoveryChildrenHandler.PATH_ID)) {
-            stopClient();
+        if (currentTime.getAsLong() - lastSuperPeerAcknowledgementTime.get() > config(ctx).getHelloTimeout().toMillis()) {
+            startClients(ctx);
         }
         else {
-            startClient(ctx);
+            stopClients();
         }
     }
 
     @SuppressWarnings({ "java:S1905", "java:S3824" })
-    private void startClient(final ChannelHandlerContext ctx) {
-        LOG.debug("No response from any super peer since more then {}ms. UDP traffic" +
-                " blocked!? Try to reach a super peer via TCP.", () -> config(ctx).getHelloTimeout().toMillis());
+    private void startClients(final ChannelHandlerContext ctx) {
+        if (!clientsStarted) {
+            clientsStarted = true;
+            LOG.debug("No response from any super peer since more then {}ms. UDP traffic" +
+                    " blocked!? Try to reach a super peers via TCP.", () -> config(ctx).getHelloTimeout().toMillis());
 
-        config(ctx).getTcpClientBootstrap()
-                .group(config(ctx).getTcpClientEventLoopSupplier().get())
-                .channel(config(ctx).getTcpClientChannelClass())
-                .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
-                .connect(config(ctx).getTcpClientConnect())
-                .addListener(new TcpClientConnectListener((DrasylServerChannel) ctx.channel()));
+            final Bootstrap bootstrap = config(ctx).getTcpClientBootstrap().get()
+                    .group(config(ctx).getTcpClientEventLoop().get())
+                    .channel(config(ctx).getTcpClientChannelClass())
+                    .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()));
+
+            for (Entry<IdentityPublicKey, InetSocketAddress> entry : config(ctx).getSuperPeers().entrySet()) {
+                final IdentityPublicKey superPeerKey = entry.getKey();
+                final InetSocketAddress superPeerAddress = entry.getValue();
+                DrasylServerChannelConfig drasylServerChannelConfig = config(ctx);
+                InetSocketAddress superPeerTcpAddress = replaceSocketAddressPort(superPeerAddress, drasylServerChannelConfig.getTcpClientConnectPort());
+
+                bootstrap.connect(superPeerTcpAddress)
+                        .addListener(new TcpClientConnectListener((DrasylServerChannel) ctx.channel(), superPeerKey, superPeerAddress));
+            }
+        }
     }
 
-    private void stopClient() {
-        if (tcpChannel != null) {
-            tcpChannel.close();
-            tcpChannel = null;
+    private void stopClients() {
+        if (clientsStarted) {
+            clientsStarted = false;
+            tcpChannels.values().forEach(ChannelOutboundInvoker::close);
         }
     }
 
@@ -152,36 +214,39 @@ public class TcpClient extends ChannelDuplexHandler {
     }
 
     /**
-     * Listener that gets called once the channel is closed.
+     * Listener that gets called once the channel is connected.
      */
-    private static class TcpClientCloseListener implements ChannelFutureListener {
+    private class TcpClientConnectListener implements ChannelFutureListener {
         private final DrasylServerChannel parent;
+        private final IdentityPublicKey publicKey;
+        private final InetSocketAddress udpEndpoint;
 
-        public TcpClientCloseListener(final DrasylServerChannel parent) {
+        public TcpClientConnectListener(final DrasylServerChannel parent,
+                                        final IdentityPublicKey publicKey,
+                                        final InetSocketAddress udpEndpoint) {
             this.parent = requireNonNull(parent);
+            this.publicKey = requireNonNull(publicKey);
+            this.udpEndpoint = requireNonNull(udpEndpoint);
         }
 
         @Override
         public void operationComplete(final ChannelFuture future) {
-            final InetSocketAddress socketAddress = (InetSocketAddress) future.channel().remoteAddress();
-            LOG.debug("Client connected tcp:/{} stopped.", socketAddress);
+            if (future.isSuccess()) {
+                // client successfully started
+                final SocketChannel channel = (SocketChannel) future.channel();
+                final InetSocketAddress socketAddress = channel.remoteAddress();
+                LOG.info("Client started and connected to tcp:/{}.", socketAddress);
 
-            parent.config().getPeersManager().unsetTcpFallback(parent.pipeline().context(TcpClient.class));
-        }
-    }
+                TcpClient.this.tcpChannels.put(udpEndpoint, channel);
+                parent.pipeline().fireUserEventTriggered(new TcpClientConnected(publicKey, socketAddress));
 
-    /**
-     * Signals that the {@link TcpClient} is connected to {@link TcpClientConnected#getConnectAddress()}.
-     */
-    public static class TcpClientConnected {
-        private final InetSocketAddress connectAddress;
-
-        public TcpClientConnected(final InetSocketAddress connectAddress) {
-            this.connectAddress = requireNonNull(connectAddress);
-        }
-
-        public InetSocketAddress getConnectAddress() {
-            return connectAddress;
+                channel.closeFuture().addListener(new TcpClientCloseListener());
+                parent.closeFuture().addListener(new DrasylServerChannelCloseListener(channel));
+            }
+            else {
+                // server start failed
+                parent.pipeline().fireExceptionCaught(new TcpClientConnectFailedException("Unable to connect client to address tcp:/" + future.channel().remoteAddress(), future.cause()));
+            }
         }
     }
 
@@ -194,31 +259,54 @@ public class TcpClient extends ChannelDuplexHandler {
         }
     }
 
-    private class TcpClientConnectListener implements ChannelFutureListener {
-        private final DrasylServerChannel parent;
+    /**
+     * Signals that the {@link TcpClient} is connected to {@link TcpClientConnected#getConnectAddress()}.
+     */
+    public static class TcpClientConnected {
+        private final IdentityPublicKey publicKey;
+        private final InetSocketAddress connectAddress;
 
-        public TcpClientConnectListener(final DrasylServerChannel parent) {
-            this.parent = requireNonNull(parent);
+        public TcpClientConnected(final IdentityPublicKey publicKey, final InetSocketAddress connectAddress) {
+            this.publicKey = requireNonNull(publicKey);
+            this.connectAddress = requireNonNull(connectAddress);
+        }
+
+        public IdentityPublicKey getPublicKey() {
+            return publicKey;
+        }
+
+        public InetSocketAddress getConnectAddress() {
+            return connectAddress;
+        }
+    }
+
+    /**
+     * Listener that gets called once the channel is closed.
+     */
+    private static class TcpClientCloseListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            LOG.debug("Client connected tcp:/{} stopped.", future.channel().remoteAddress());
+        }
+    }
+
+    /**
+     * Listener that gets callec once DrasylServerChannel is closed.
+     */
+    private static class DrasylServerChannelCloseListener implements ChannelFutureListener {
+        private final SocketChannel tcpChannel;
+
+        public DrasylServerChannelCloseListener(final SocketChannel tcpChannel) {
+            this.tcpChannel = requireNonNull(tcpChannel);
         }
 
         @Override
         public void operationComplete(final ChannelFuture future) {
-            if (future.isSuccess()) {
-                // server successfully started
-                final Channel myChannel = future.channel();
-                myChannel.closeFuture().addListener(new TcpClientCloseListener(parent));
-                final InetSocketAddress socketAddress = (InetSocketAddress) myChannel.remoteAddress();
-                LOG.info("Client started and connected to tcp:/{}.", socketAddress);
-
-                TcpClient.this.tcpChannel = (SocketChannel) myChannel;
-                parent.config().getPeersManager().setTcpFallback(parent.pipeline().context(TcpClient.class));
-
-                parent.pipeline().fireUserEventTriggered(new TcpClientConnected(socketAddress));
-            }
-            else {
-                // server start failed
-                parent.pipeline().fireExceptionCaught(new TcpClientConnectFailedException("Unable to connect client to address tcp:/" + future.channel().remoteAddress(), future.cause()));
+            if (tcpChannel.isOpen()) {
+                LOG.debug("Stop client connected to tcp:/{}...", tcpChannel.remoteAddress());
+                tcpChannel.close();
             }
         }
     }
+
 }

@@ -617,14 +617,6 @@ public class PeersManager {
         }
     }
 
-    public void setTcpFallback(final ChannelHandlerContext ctx) {
-        System.out.println();
-    }
-
-    public void unsetTcpFallback(final ChannelHandlerContext ctx) {
-        System.out.println();
-    }
-
     /*
      * Inner clases
      */

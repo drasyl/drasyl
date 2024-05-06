@@ -79,7 +79,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
                             port = ((UdpServerBound) evt).getBindAddress().getPort();
                         }
                         else if (evt instanceof TcpServerBound) {
-                            tcpFallbackPort = ((TcpServerBound) evt).getPort();
+                            tcpFallbackPort = ((TcpServerBound) evt).getBindAddress().getPort();
                         }
                         else {
                             ctx.fireUserEventTriggered(evt);
@@ -96,7 +96,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
             port = ((UdpServerBound) event).getBindAddress().getPort();
         }
         else if (event instanceof TcpServerBound) {
-            tcpFallbackPort = ((TcpServerBound) event).getPort();
+            tcpFallbackPort = ((TcpServerBound) event).getBindAddress().getPort();
         }
         else if (event instanceof InboundExceptionEvent) {
             LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());
