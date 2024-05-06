@@ -56,7 +56,7 @@ public class ApplicationMessageToPayloadCodecBenchmark extends AbstractBenchmark
 
     @Setup
     public void setup() throws CryptoException, InvalidMessageFormatException {
-        handler = new ApplicationMessageToPayloadCodec(0, ID_1.getIdentityPublicKey(), ID_1.getProofOfWork());
+        handler = new ApplicationMessageToPayloadCodec();
     }
 
     @Setup(Level.Invocation)

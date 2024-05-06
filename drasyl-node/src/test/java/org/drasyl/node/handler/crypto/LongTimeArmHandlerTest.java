@@ -73,6 +73,7 @@ class LongTimeArmHandlerTest {
                 ReferenceCountUtil.release(actual);
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -94,7 +95,7 @@ class LongTimeArmHandlerTest {
             when(agreement.getSessionPair()).thenReturn(sessionPair);
             when(crypto.decrypt(any(), any(), any(), any())).thenReturn(ByteBufUtil.getBytes(byteBuf));
 
-            final LongTimeArmHandler handler = new LongTimeArmHandler(crypto, IdentityTestUtil.ID_1, IdentityTestUtil.ID_2.getIdentityPublicKey(), session);
+            final LongTimeArmHandler handler = new LongTimeArmHandler(crypto, IdentityTestUtil.ID_2.getIdentityPublicKey(), session);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ArmHeader msg = ArmHeader.of(agreementId, nonce, byteBuf);
@@ -107,6 +108,7 @@ class LongTimeArmHandlerTest {
                 ReferenceCountUtil.release(actual);
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

@@ -23,15 +23,14 @@ package org.drasyl.cli.wormhole;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeSendChildChannelInitializer;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -66,9 +65,6 @@ public class WormholeSendCommand extends ChannelOptions {
     @SuppressWarnings("java:S107")
     WormholeSendCommand(final PrintStream out,
                         final PrintStream err,
-                        final EventLoopGroup parentGroup,
-                        final EventLoopGroup childGroup,
-                        final EventLoopGroup udpServerGroup,
                         final Level logLevel,
                         final File identityFile,
                         final InetSocketAddress bindAddress,
@@ -77,14 +73,13 @@ public class WormholeSendCommand extends ChannelOptions {
                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
                         final String password,
                         final Payload payload) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.password = requireNonNull(password);
         this.payload = requireNonNull(payload);
     }
 
     @SuppressWarnings("unused")
     public WormholeSendCommand() {
-        super(new DefaultEventLoopGroup(1));
     }
 
     @Override
@@ -97,15 +92,22 @@ public class WormholeSendCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new WormholeSendChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, password, !protocolArmDisabled);
+    protected EventLoopGroup getChildChannelLoopGroup() {
+        // we have only one peer
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        }
+        return childChannelLoopGroup;
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
-        return new WormholeSendChildChannelInitializer(out, err, exitCode, identity, password, payload);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeSendChannelInitializer(onlineTimeoutMillis, out, err, exitCode, password);
+    }
+
+    @Override
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeSendChildChannelInitializer(out, err, exitCode, password, payload);
     }
 
     @Override

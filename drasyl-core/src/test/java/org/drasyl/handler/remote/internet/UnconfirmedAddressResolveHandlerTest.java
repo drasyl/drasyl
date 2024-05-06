@@ -58,5 +58,7 @@ class UnconfirmedAddressResolveHandlerTest {
         // resolve overlay address to previously discovered inet address
         channel.writeOutbound(msg1);
         assertEquals(new InetAddressedMessage<>(remoteMsg, inetAddress), channel.readOutbound());
+
+        channel.checkException();
     }
 }

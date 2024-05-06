@@ -24,6 +24,7 @@ package org.drasyl.cli.perf;
 import ch.qos.logback.classic.Level;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.identity.IdentityPublicKey;
@@ -34,6 +35,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -71,6 +73,11 @@ class PerfCommandIT {
     private ByteArrayOutputStream clientOut;
     private Thread serverThread;
     private Thread clientThread;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setUp(final TestInfo info) throws DrasylException {
@@ -125,9 +132,6 @@ class PerfCommandIT {
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,
-                serverParentGroup,
-                serverChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 serverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -156,9 +160,6 @@ class PerfCommandIT {
         clientThread = new Thread(() -> new PerfClientCommand(
                 new PrintStream(clientOut, true),
                 System.err,
-                clientParentGroup,
-                clientChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 clientPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),

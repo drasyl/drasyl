@@ -25,11 +25,13 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.ChannelHandlerAdapter;
 import io.netty.channel.ChannelHandlerContext;
+import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.event.MessageEvent;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Set;
 
+import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static test.util.IdentityTestUtil.ID_1;
@@ -50,6 +53,11 @@ class PluginsIT {
     private static MessageEvent event2;
     private DrasylConfig config;
     private EmbeddedNode node;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setup() throws DrasylException {

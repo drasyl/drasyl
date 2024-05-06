@@ -25,35 +25,34 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AddressedEnvelope;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
+import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This codec converts {@link ApplicationMessage}s to the embedded payload and vice versa.
  */
+@UnstableApi
 public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<AddressedEnvelope<ApplicationMessage, ?>, OverlayAddressedMessage<ByteBuf>> {
-    private final int networkId;
-    private final IdentityPublicKey myPublicKey;
-    private final ProofOfWork myProofOfWork;
+    private Identity identity;
 
-    public ApplicationMessageToPayloadCodec(final int networkId,
-                                            final IdentityPublicKey myPublicKey,
-                                            final ProofOfWork myProofOfWork) {
-        this.networkId = networkId;
-        this.myPublicKey = requireNonNull(myPublicKey);
-        this.myProofOfWork = requireNonNull(myProofOfWork);
+    ApplicationMessageToPayloadCodec(Identity identity) {
+        this.identity = identity;
     }
 
-    public ApplicationMessageToPayloadCodec(final int networkId,
-                                            final Identity myIdentity) {
-        this(networkId, myIdentity.getIdentityPublicKey(), myIdentity.getProofOfWork());
+    public ApplicationMessageToPayloadCodec() {
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) {
+        identity = ((IdentityChannel) ctx.channel()).identity();
+        ctx.fireChannelActive();
     }
 
     @Override
@@ -65,7 +64,7 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
     protected void encode(final ChannelHandlerContext ctx,
                           final OverlayAddressedMessage<ByteBuf> msg,
                           final List<Object> out) throws Exception {
-        final ApplicationMessage wrappedMsg = ApplicationMessage.of(networkId, (IdentityPublicKey) msg.recipient(), myPublicKey, myProofOfWork, msg.content().retain());
+        final ApplicationMessage wrappedMsg = ApplicationMessage.of(config(ctx).getNetworkId(), (IdentityPublicKey) msg.recipient(), identity.getIdentityPublicKey(), identity.getProofOfWork(), msg.content().retain());
         out.add(msg.replace(wrappedMsg));
     }
 
@@ -79,5 +78,9 @@ public class ApplicationMessageToPayloadCodec extends MessageToMessageCodec<Addr
                           final AddressedEnvelope<ApplicationMessage, ?> msg,
                           final List<Object> out) {
         out.add(new OverlayAddressedMessage<>(msg.content().getPayload().retain(), msg.content().getRecipient(), msg.content().getSender()));
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

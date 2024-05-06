@@ -21,6 +21,7 @@
  */
 package org.drasyl.node.plugin;
 
+import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -36,6 +37,7 @@ import org.drasyl.node.plugin.groups.manager.data.Group;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -59,6 +61,11 @@ class GroupsPluginIT {
     private EmbeddedNode manager;
     private EmbeddedNode client1;
     private EmbeddedNode client2;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setUp() throws DrasylException {

@@ -28,7 +28,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
@@ -72,23 +71,23 @@ import static java.util.Objects.requireNonNull;
  * @see DrasylChannel
  */
 @UnstableApi
-public class DrasylServerChannel extends AbstractServerChannel {
+public class DrasylServerChannel extends AbstractServerChannel implements IdentityChannel {
     enum State {OPEN, ACTIVE, CLOSED}
 
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
+    private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);
     private volatile State state;
-    private final DefaultChannelConfig config = new DefaultChannelConfig(this);
     public final Map<SocketAddress, DrasylChannel> channels;
-    private volatile DrasylAddress localAddress; // NOSONAR
     final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
+    private volatile Identity identity; // NOSONAR
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
                         final Map<SocketAddress, DrasylChannel> channels,
-                        final DrasylAddress localAddress) {
+                        final Identity identity) {
         this.state = requireNonNull(state);
-        this.channels = channels;
-        this.localAddress = localAddress;
+        this.channels = requireNonNull(channels);
+        this.identity = identity;
     }
 
     @SuppressWarnings("unused")
@@ -102,17 +101,27 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    protected DrasylAddress localAddress0() {
-        return localAddress;
+    public Identity identity() {
+        return identity;
     }
 
     @Override
-    protected void doBind(final SocketAddress localAddress) {
-        if (!(localAddress instanceof DrasylAddress)) {
-            throw new IllegalArgumentException("Unsupported address type! Expected `" + DrasylAddress.class.getSimpleName() + "`, but got `" + localAddress.getClass().getSimpleName() + "`.");
+    protected DrasylAddress localAddress0() {
+        if (identity != null) {
+            return identity.getAddress();
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    protected void doBind(final SocketAddress identity) {
+        if (!(identity instanceof Identity)) {
+            throw new IllegalArgumentException("Unsupported address type! Expected `" + Identity.class.getSimpleName() + "`, but got `" + identity.getClass().getSimpleName() + "`.");
         }
 
-        this.localAddress = (DrasylAddress) localAddress;
+        this.identity = (Identity) identity;
         state = State.ACTIVE;
     }
 
@@ -134,8 +143,8 @@ public class DrasylServerChannel extends AbstractServerChannel {
     protected void doClose() {
         if (state != State.CLOSED) {
             // Update the internal state before the closeFuture<?> is notified.
-            if (localAddress != null) {
-                localAddress = null;
+            if (identity != null) {
+                identity = null;
             }
             state = State.CLOSED;
         }
@@ -149,7 +158,7 @@ public class DrasylServerChannel extends AbstractServerChannel {
     }
 
     @Override
-    public DefaultChannelConfig config() {
+    public DrasylServerChannelConfig config() {
         return config;
     }
 
@@ -344,6 +353,10 @@ public class DrasylServerChannel extends AbstractServerChannel {
             if (paths.put(address, path) && firstPath && channel != null) {
                 channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
             }
+        }
+
+        private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+            return (DrasylServerChannelConfig) ctx.channel().config();
         }
 
         private void removePath(final ChannelHandlerContext ctx,

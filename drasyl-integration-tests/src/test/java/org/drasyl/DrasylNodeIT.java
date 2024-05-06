@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import org.awaitility.Awaitility;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.UdpServer;
@@ -42,6 +43,7 @@ import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -60,6 +62,7 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
 import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
@@ -83,6 +86,11 @@ class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
     public static final long TIMEOUT = 15000L;
     public static final int MESSAGE_MTU = 1024;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setup(final TestInfo info) {
@@ -999,7 +1007,13 @@ class DrasylNodeIT {
                         .remoteBindPort(socket.getLocalPort())
                         .build();
                 final EmbeddedNode node = new EmbeddedNode(config);
-                node.start();
+                node.start().exceptionally(new Function<Throwable, Void>() {
+                    @Override
+                    public Void apply(Throwable t) {
+                        t.printStackTrace();
+                        return null;
+                    }
+                });
 
                 await("NodeUpEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
                 await("NodeUnrecoverableErrorEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));

@@ -57,6 +57,7 @@ class StopAndWaitArqCodecTest {
             });
             final ByteBuf actual = channel.readOutbound();
             assertEquals(expected, actual);
+            channel.checkException();
 
             expected.release();
             actual.release();
@@ -76,6 +77,7 @@ class StopAndWaitArqCodecTest {
             });
             final ByteBuf actual = channel.readOutbound();
             assertEquals(expected, actual);
+            channel.checkException();
 
             expected.release();
             actual.release();
@@ -87,6 +89,7 @@ class StopAndWaitArqCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+            channel.checkException();
         }
     }
 
@@ -106,6 +109,7 @@ class StopAndWaitArqCodecTest {
 
             final StopAndWaitArqData actual = channel.readInbound();
             assertThat(actual, instanceOf(StopAndWaitArqData.class));
+            channel.checkException();
 
             actual.release();
         }
@@ -123,6 +127,7 @@ class StopAndWaitArqCodecTest {
 
             final StopAndWaitArqAck actual = channel.readInbound();
             assertThat(actual, instanceOf(StopAndWaitArqAck.class));
+            channel.checkException();
         }
 
         @Test
@@ -137,6 +142,7 @@ class StopAndWaitArqCodecTest {
 
             assertEquals(actual, msg);
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -151,6 +157,7 @@ class StopAndWaitArqCodecTest {
 
             assertEquals(actual, msg);
             actual.release();
+            channel.checkException();
         }
     }
 }

@@ -67,6 +67,7 @@ class JacksonCodecTest {
 
             expected.release();
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -79,6 +80,7 @@ class JacksonCodecTest {
             final ChannelFuture channelFuture = channel.writeAndFlush(new MyObject("Hello")).awaitUninterruptibly();
 
             assertThat(channelFuture.cause(), instanceOf(EncoderException.class));
+            channel.checkException();
         }
     }
 
@@ -92,6 +94,7 @@ class JacksonCodecTest {
             channel.pipeline().fireChannelRead(msg);
 
             assertEquals(new MyObject("Hello"), channel.readInbound());
+            channel.checkException();
         }
 
         @Test

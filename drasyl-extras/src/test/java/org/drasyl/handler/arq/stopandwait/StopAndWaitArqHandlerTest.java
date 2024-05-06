@@ -77,6 +77,7 @@ class StopAndWaitArqHandlerTest {
         data1.release();
         data1.release();
         assertThat(write1.cause(), instanceOf(ClosedChannelException.class));
+        channel.checkException();
     }
 
     @Test
@@ -97,5 +98,6 @@ class StopAndWaitArqHandlerTest {
         assertNull(channel.readInbound());
         assertEquals(STOP_AND_WAIT_ACK_1, channel.readOutbound());
         assertEquals(0, data0.refCnt());
+        channel.checkException();
     }
 }
