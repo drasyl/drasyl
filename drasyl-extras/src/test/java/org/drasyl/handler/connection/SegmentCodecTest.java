@@ -84,6 +84,7 @@ class SegmentCodecTest {
 
             expected.release();
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -91,6 +92,7 @@ class SegmentCodecTest {
             final EmbeddedChannel channel = new EmbeddedChannel(new SegmentCodec());
 
             assertThrows(EncoderException.class, () -> channel.writeOutbound(msg));
+            channel.checkException();
         }
     }
 
@@ -107,6 +109,7 @@ class SegmentCodecTest {
             assertEquals(new Segment(srcPort, dstPort, seq, ack, ACK, options, data), actual);
 
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -121,6 +124,7 @@ class SegmentCodecTest {
             assertEquals(msg, actual);
 
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -135,6 +139,7 @@ class SegmentCodecTest {
             assertEquals(msg, actual);
 
             actual.release();
+            channel.checkException();
         }
 
         @Test
@@ -144,6 +149,7 @@ class SegmentCodecTest {
             channel.writeInbound(Unpooled.wrappedBuffer(encodedMagicNumber, encodedSrcPort, encodedDstPort, Unpooled.buffer(Integer.BYTES).writeInt((int) seq - 1), encodedAck, encodedCks, encodedCtl, encodedWnd, encodedOptions, content));
 
             assertNull(channel.readInbound());
+            channel.checkException();
         }
     }
 }

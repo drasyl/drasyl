@@ -26,6 +26,7 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
+import io.netty.handler.codec.DecoderException;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.ImmutableByteArray;
 import org.junit.jupiter.api.Nested;
@@ -44,6 +45,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -72,6 +74,7 @@ class MessageSerializerTest {
                 assertEquals("Hallo Welt", channel.readInbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -89,6 +92,7 @@ class MessageSerializerTest {
                 assertEquals(NULL, channel.readInbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -106,6 +110,7 @@ class MessageSerializerTest {
                 channel.pipeline().fireChannelRead(payload);
 
                 assertNull(channel.readInbound());
+                assertThrows(DecoderException.class, channel::checkException);
             }
             finally {
                 channel.close();
@@ -125,6 +130,7 @@ class MessageSerializerTest {
                 channel.pipeline().fireChannelRead(payload);
 
                 assertNull(channel.readInbound());
+                assertThrows(DecoderException.class, channel::checkException);
             }
             finally {
                 channel.close();
@@ -154,6 +160,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -174,6 +181,7 @@ class MessageSerializerTest {
                 assertNull(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -195,6 +203,7 @@ class MessageSerializerTest {
                 assertNull(channel.readOutbound());
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -219,6 +228,7 @@ class MessageSerializerTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -236,6 +246,8 @@ class MessageSerializerTest {
             assertEquals(msg, channel.readOutbound());
 
             msg.release();
+
+            channel.checkException();
         }
     }
 }

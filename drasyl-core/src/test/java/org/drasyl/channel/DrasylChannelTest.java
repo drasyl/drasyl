@@ -27,7 +27,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.channel.DrasylChannel.State;
-import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -95,18 +95,18 @@ class DrasylChannelTest {
     class DoWrite {
         @Test
         void shouldThrowExceptionIfChannelIsNotBound(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                                      @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, localAddress, remoteAddress);
+            final DrasylChannel channel = new DrasylChannel(parent, State.OPEN, identity, remoteAddress);
 
             assertThrows(NotYetConnectedException.class, () -> channel.doWrite(null));
         }
 
         @Test
         void shouldThrowExceptionIfChannelIsAlreadyClosed(@Mock(answer = RETURNS_DEEP_STUBS) final Channel parent,
-                                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
+                                                          @Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
                                                           @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
-            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, localAddress, remoteAddress);
+            final DrasylChannel channel = new DrasylChannel(parent, State.CLOSED, identity, remoteAddress);
 
             assertThrows(ClosedChannelException.class, () -> channel.doWrite(null));
         }

@@ -79,6 +79,7 @@ class ByteToRemoteMessageCodecTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -103,6 +104,7 @@ class ByteToRemoteMessageCodecTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }

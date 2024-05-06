@@ -31,7 +31,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordHousekeepingHandler;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
@@ -49,9 +49,11 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.LocalChordNode.BIND_NAME;
@@ -88,7 +90,8 @@ public class ChordCircleNode {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 50000 + (int) (myId % 10000)) {
+                .option(UDP_BIND, new InetSocketAddress(50000 + (int) (myId % 10000)))
+                .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
                         super.initChannel(ch);
@@ -128,7 +131,7 @@ public class ChordCircleNode {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
 
             // begin to take user input
             final Scanner userInput = new Scanner(System.in);

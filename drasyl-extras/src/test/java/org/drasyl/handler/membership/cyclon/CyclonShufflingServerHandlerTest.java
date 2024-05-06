@@ -82,5 +82,7 @@ class CyclonShufflingServerHandlerTest {
         assertThat(view.getNeighbors(), hasSize(4)); // not bigger than view size
         assertThat(view.getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of(sender, 0))));
         assertThat(view.getNeighbors(), hasItem(equalNeighborWithSameAge(CyclonNeighbor.of(address4, 2))));
+
+        ch.checkException();
     }
 }

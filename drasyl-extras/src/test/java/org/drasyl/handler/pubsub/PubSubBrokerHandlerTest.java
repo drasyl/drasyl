@@ -69,6 +69,8 @@ class PubSubBrokerHandlerTest {
 
             // no more messages
             assertNull(channel.readOutbound());
+
+            channel.checkException();
         }
 
         @SuppressWarnings("unchecked")
@@ -103,6 +105,8 @@ class PubSubBrokerHandlerTest {
 
             // no more messages
             assertNull(channel.readOutbound());
+
+            channel.checkException();
         }
     }
 
@@ -128,6 +132,8 @@ class PubSubBrokerHandlerTest {
             assertNull(channel.readOutbound());
 
             assertEquals(Set.of(sender), subscriptions.get("animals/cat"));
+
+            channel.checkException();
         }
     }
 
@@ -154,6 +160,8 @@ class PubSubBrokerHandlerTest {
             assertNull(channel.readOutbound());
 
             assertTrue(subscriptions.isEmpty());
+
+            channel.checkException();
         }
     }
 
@@ -169,6 +177,8 @@ class PubSubBrokerHandlerTest {
 
             final EmbeddedChannel channel = new EmbeddedChannel(new PubSubBrokerHandler(subscriptions));
             assertTrue(channel.close().syncUninterruptibly().isSuccess());
+
+            channel.checkException();
         }
     }
 }

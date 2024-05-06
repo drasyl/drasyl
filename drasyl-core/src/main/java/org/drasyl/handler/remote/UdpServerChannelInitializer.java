@@ -26,16 +26,17 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
 @UnstableApi
 public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChannel> {
-    private final ChannelHandlerContext drasylCtx;
+    private final DrasylServerChannel parent;
 
-    public UdpServerChannelInitializer(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public UdpServerChannelInitializer(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
@@ -48,8 +49,8 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
             public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
                 if (ctx.channel().isWritable()) {
                     // UDP channel is writable again. Make sure (any existing) pending writes will be written
-                    final UdpServer udpServer = (UdpServer) drasylCtx.handler();
-                    udpServer.writePendingWrites(drasylCtx);
+                    final UdpServer udpServer = ch.parent().pipeline().get(UdpServer.class);
+                    udpServer.writePendingWrites(ch.parent().pipeline().context(UdpServer.class));
                 }
 
                 ctx.fireChannelWritabilityChanged();
@@ -61,6 +62,6 @@ public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChan
     }
 
     protected void lastStage(final DatagramChannel ch) {
-        ch.pipeline().addLast(new UdpServerToDrasylHandler(drasylCtx));
+        ch.pipeline().addLast(new UdpServerToDrasylHandler(parent));
     }
 }
