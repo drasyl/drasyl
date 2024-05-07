@@ -220,22 +220,30 @@
                         </executions>
                     </plugin>
                     <plugin>
-                        <groupId>org.graalvm.nativeimage</groupId>
-                        <artifactId>native-image-maven-plugin</artifactId>
-                        <version>21.2.0</version>
+                        <groupId>org.graalvm.buildtools</groupId>
+                        <artifactId>native-maven-plugin</artifactId>
+                        <version>0.10.1</version>
                         <executions>
                             <execution>
+                                <id>build-native</id>
                                 <goals>
-                                    <goal>native-image</goal>
+                                    <goal>compile-no-fork</goal>
                                 </goals>
                                 <phase>package</phase>
+                            </execution>
+                            <execution>
+                                <id>test-native</id>
+                                <goals>
+                                    <goal>test</goal>
+                                </goals>
+                                <phase>test</phase>
                             </execution>
                         </executions>
                         <configuration>
                             <imageName>drasyl</imageName>
                             <mainClass>org.drasyl.cli.Cli</mainClass>
                             <outputDirectory>${project.parent.basedir}</outputDirectory>
-                            <buildArgs>--no-fallback</buildArgs>
+                            <fallback>false</fallback>
                         </configuration>
                     </plugin>
                     <plugin>
