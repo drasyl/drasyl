@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -30,7 +29,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
@@ -62,16 +60,16 @@ public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
     static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
-    final Map<IdentityPublicKey, SocketChannel> tcpClientChannels;
     private final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    final Map<IdentityPublicKey, SocketChannel> tcpClientChannels;
     private ServerSocketChannel tcpServerChannel;
 
     /**
      */
     @SuppressWarnings("java:S107")
-    TcpServer(final Map<IdentityPublicKey, SocketChannel> tcpClientChannels,
-              final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
-              final ServerSocketChannel tcpServerChannel) {
+    TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+              final ServerSocketChannel tcpServerChannel,
+              final Map<IdentityPublicKey, SocketChannel> tcpClientChannels) {
         this.tcpClientChannels = requireNonNull(tcpClientChannels);
         this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
         this.tcpServerChannel = tcpServerChannel;
@@ -81,14 +79,10 @@ public class TcpServer extends ChannelDuplexHandler {
      */
     public TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
-                new ConcurrentHashMap<>(),
-                channelInitializerSupplier,
-                null
+                channelInitializerSupplier, null, new ConcurrentHashMap<>()
         );
     }
 
-    /**
-     */
     public TcpServer() {
         this(TcpServerChannelInitializer::new);
     }
@@ -117,19 +111,25 @@ public class TcpServer extends ChannelDuplexHandler {
             final SocketAddress recipient = ((InetAddressedMessage<RemoteMessage>) msg).recipient();
 
             // check if we can route the message via a tcp connection
-            final Channel client = tcpClientChannels.get(recipient);
-            if (client != null) {
-                LOG.trace("Send message `{}` via TCP to client `{}`", msg, recipient);
-                PromiseNotifier.cascade(client.writeAndFlush(msg), promise);
-            }
-            else {
-                // message is not addressed to any of our clients. pass through message
-                ctx.write(msg, promise);
+            final SocketChannel clientChannel = tcpClientChannels.get(recipient);
+            if (clientChannel != null) {
+                final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
+                tcpDrasylHandler.enqueueWrite(msg);
+                return;
             }
         }
-        else {
-            ctx.write(msg, promise);
+
+        ctx.write(msg, promise);
+    }
+
+    @Override
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        for (final SocketChannel clientChannel : tcpClientChannels.values()) {
+            final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
+            tcpDrasylHandler.finishWrite();
         }
+
+        ctx.flush();
     }
 
     protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {

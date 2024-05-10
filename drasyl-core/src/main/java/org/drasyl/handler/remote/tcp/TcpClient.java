@@ -30,6 +30,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelOutboundInvoker;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
@@ -51,7 +52,6 @@ import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.FutureListenerUtil.fireExceptionToChannelOnFailure;
 import static org.drasyl.util.InetSocketAddressUtil.equalSocketAddress;
 import static org.drasyl.util.InetSocketAddressUtil.replaceSocketAddressPort;
 
@@ -134,11 +134,17 @@ public class TcpClient extends ChannelDuplexHandler {
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             final Optional<Entry<InetSocketAddress, SocketChannel>> tcpChannelEntry = tcpChannels.entrySet().stream().filter(entry -> equalSocketAddress(((InetAddressedMessage<?>) msg).recipient(), entry.getKey()) && entry.getValue().isOpen()).findFirst();
-            tcpChannelEntry.ifPresent(entry -> entry.getValue().pipeline().get(TcpClientToDrasylHandler.class).enqueueWrite(msg));
+            if (tcpChannelEntry.isPresent()) {
+                final SocketChannel tcpChannel = tcpChannelEntry.get().getValue();
+                if (tcpChannel.isOpen()) {
+                    final TcpClientToDrasylHandler tcpDrasylHandler = tcpChannel.pipeline().get(TcpClientToDrasylHandler.class);
+                    tcpDrasylHandler.enqueueWrite(msg);
+                    return;
+                }
+            }
         }
-        else {
-            ctx.write(msg, promise);
-        }
+
+        ctx.write(msg, promise);
     }
 
     @Override
@@ -157,7 +163,11 @@ public class TcpClient extends ChannelDuplexHandler {
         if (checkDisposable == null) {
             LOG.debug("Start unreachable super peer check.");
             checkDisposable = ctx.executor().scheduleWithFixedDelay(() -> checkForUnreachableSuperPeers(ctx), config(ctx).getHelloTimeout().toMillis(), config(ctx).getHelloTimeout().toMillis(), MILLISECONDS);
-            checkDisposable.addListener(fireExceptionToChannelOnFailure(ctx.channel()));
+            checkDisposable.addListener((FutureListener) future -> {
+                if (ctx.channel().isOpen() && !future.isSuccess()) {
+                    ctx.pipeline().fireExceptionCaught(future.cause());
+                }
+            });
         }
     }
 

@@ -26,6 +26,7 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
@@ -48,7 +49,6 @@ import java.util.function.LongSupplier;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.FutureListenerUtil.fireExceptionToChannelOnFailure;
 
 /**
  * Joins one or multiple super peer(s) as a children. Uses the super peer with the best RTT as a
@@ -158,7 +158,11 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
         if (heartbeatDisposable == null) {
             LOG.debug("Start Heartbeat job.");
             heartbeatDisposable = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), initialPingDelayMillis, config(ctx).getHelloInterval().toMillis(), MILLISECONDS);
-            heartbeatDisposable.addListener(fireExceptionToChannelOnFailure(ctx.channel()));
+            heartbeatDisposable.addListener((FutureListener) future -> {
+                if (ctx.channel().isOpen() && !future.isSuccess()) {
+                    ctx.pipeline().fireExceptionCaught(future.cause());
+                }
+            });
         }
     }
 

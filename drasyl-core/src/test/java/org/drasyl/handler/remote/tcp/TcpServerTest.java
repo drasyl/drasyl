@@ -105,7 +105,7 @@ class TcpServerTest {
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(clientChannels, channelInitializerSupplier, null);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, null, clientChannels);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()), times(2)).bind(bindHost, bindPort);
@@ -125,7 +125,7 @@ class TcpServerTest {
             when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(clientChannels, channelInitializerSupplier, serverChannel);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, serverChannel, clientChannels);
             try {
                 handler.channelInactive(ctx);
 
@@ -147,7 +147,7 @@ class TcpServerTest {
 //            when(clientChannels.get(any())).thenReturn(client);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(clientChannels, channelInitializerSupplier, serverChannel);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, serverChannel, clientChannels);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
@@ -169,7 +169,7 @@ class TcpServerTest {
 //            when(clientChannels.get(any())).thenReturn(client);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(clientChannels, channelInitializerSupplier, serverChannel);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, serverChannel, clientChannels);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 final ChannelPromise promise = channel.newPromise();
@@ -187,7 +187,7 @@ class TcpServerTest {
         void shouldPassThroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
                                                                  @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(clientChannels, channelInitializerSupplier, serverChannel);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, serverChannel, clientChannels);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));

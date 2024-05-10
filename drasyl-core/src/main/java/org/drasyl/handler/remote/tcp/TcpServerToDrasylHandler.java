@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.tcp;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
@@ -60,15 +61,8 @@ public class TcpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelActive(final ChannelHandlerContext ctx) {
-        LOG.debug("New TCP connection from client `{}`.", ctx.channel()::remoteAddress);
-        ctx.fireChannelActive();
-    }
-
-    @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        LOG.debug("TCP connection to client `{}` closed.", ctx.channel()::remoteAddress);
-        ctx.fireChannelInactive();
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        this.ctx = ctx;
     }
 
     @Override
@@ -113,8 +107,78 @@ public class TcpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-        LOG.debug("Close TCP connection to `{}` due to an exception: ", ctx.channel()::remoteAddress, () -> cause);
-        ctx.close();
+    public void channelReadComplete(final ChannelHandlerContext ctx) {
+        if (readCompletePending) {
+            parent.pipeline().fireChannelReadComplete();
+        }
+        parent.getChannels().values().forEach(DrasylChannel::finishRead);
+        ctx.fireChannelReadComplete();
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        releaseOutboundBuffer();
+
+        ctx.fireChannelInactive();
+    }
+
+    /**
+     * This method places the message {@code o} in the queue for outbound messages to be written by
+     * this channel. Queued message are not processed until {@link #finishWrite()} is called.
+     */
+    public void enqueueWrite(final Object o) {
+        outboundBuffer.add(o);
+    }
+
+    /**
+     * This method start processing (if any) queued outbound messages for the UDP channel. This
+     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
+     * reading, these reads are performed first and the writes are performed afterwards.
+     */
+    public void finishWrite() {
+        // check whether the channel is currently reading; if so, we must schedule the event in the
+        // event loop to maintain the read/write order.
+        if (ctx.executor().inEventLoop()) {
+            finishWrite0(ctx);
+        }
+        else {
+            runFinishWriteTask(ctx);
+        }
+    }
+
+    private void finishWrite0(final ChannelHandlerContext ctx) {
+        if (!outboundBuffer.isEmpty()) {
+            writeOutbound(ctx);
+        }
+
+    }
+
+    private void runFinishWriteTask(final ChannelHandlerContext ctx) {
+        ctx.executor().execute(() -> this.finishWrite0(ctx));
+    }
+
+    void writeOutbound(final ChannelHandlerContext ctx) {
+        final ChannelPipeline pipeline = ctx.pipeline();
+        do {
+            final Object o = outboundBuffer.poll();
+            if (o == null) {
+                break;
+            }
+            pipeline.write(o).addListener(future -> {
+                if (!future.isSuccess()) {
+                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> o, future::cause);
+                }
+            });
+        } while (true); // TODO: use isWritable?
+
+        // all messages written, fire flush event
+        pipeline.flush();
+    }
+
+    private void releaseOutboundBuffer() {
+        Object msg;
+        while ((msg = outboundBuffer.poll()) != null) {
+            ReferenceCountUtil.release(msg);
+        }
     }
 }
