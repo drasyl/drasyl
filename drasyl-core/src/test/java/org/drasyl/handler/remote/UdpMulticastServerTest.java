@@ -44,6 +44,7 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -54,7 +55,7 @@ import static org.mockito.Mockito.when;
 class UdpMulticastServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Supplier<Bootstrap> bootstrapSupplier;
-    @Mock(answer = RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_SELF)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatagramChannel channel;

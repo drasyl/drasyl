@@ -27,7 +27,6 @@ import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.Test;
@@ -49,6 +48,8 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static test.util.IdentityTestUtil.ID_1;
+import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
 class InternetDiscoveryChildrenHandlerTest {
@@ -89,16 +90,14 @@ class InternetDiscoveryChildrenHandlerTest {
     }
 
     @Test
-    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock final IdentityPublicKey superPeerKey,
-                                                         @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeer,
+    void shouldHandleAcknowledgementMessageFromSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress superPeer,
                                                          @Mock(answer = RETURNS_DEEP_STUBS) final AcknowledgementMessage acknowledgementMsg,
-                                                         @Mock final InetSocketAddress inetAddress,
-                                                         @Mock final DrasylAddress myPublicKey) throws Exception {
-        final Map<IdentityPublicKey, InetSocketAddress> superPeers = Map.of(superPeerKey, superPeer);
-        when(acknowledgementMsg.getSender()).thenReturn(superPeerKey);
+                                                         @Mock final InetSocketAddress inetAddress) {
+        final Map<IdentityPublicKey, InetSocketAddress> superPeers = Map.of(ID_1.getIdentityPublicKey(), superPeer);
+        when(acknowledgementMsg.getSender()).thenReturn(ID_1.getIdentityPublicKey());
         when(acknowledgementMsg.getTime()).thenReturn(1L);
-        when(identity.getAddress()).thenReturn(myPublicKey);
-        when(acknowledgementMsg.getRecipient()).thenReturn(myPublicKey);
+        when(acknowledgementMsg.getRecipient()).thenReturn(ID_2.getIdentityPublicKey());
+        when(acknowledgementMsg.getRecipient()).thenReturn(ID_2.getIdentityPublicKey());
         when(currentTime.getAsLong()).thenReturn(2L);
         when(config.getSuperPeers()).thenReturn(superPeers);
         when(config.getHelloInterval().toMillis()).thenReturn(5_000L);
@@ -106,7 +105,7 @@ class InternetDiscoveryChildrenHandlerTest {
         final InetAddressedMessage<AcknowledgementMessage> msg = new InetAddressedMessage<>(acknowledgementMsg, null, inetAddress);
 
         final InternetDiscoveryChildrenHandler handler = new InternetDiscoveryChildrenHandler(currentTime, 0L, null);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);
+        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, ID_2);
         channel.pipeline().addFirst(handler);
 
         channel.writeInbound(msg);
