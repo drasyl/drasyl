@@ -254,12 +254,18 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
      * reading, these reads are performed first and the writes are performed afterwards.
      */
     public void finishUdpWrite() {
-        outboundUdpBufferHolder().finishWrite();
+        final UdpServerToDrasylHandler handler = outboundUdpBufferHolder();
+        if (handler != null) {
+            handler.finishWrite();
+        }
     }
 
     private UdpServerToDrasylHandler outboundUdpBufferHolder() {
         if (udpDrasylHandler == null) {
             final UdpServer udpServer = pipeline().get(UdpServer.class);
+            if (udpServer == null) {
+                return null;
+            }
             final DatagramChannel udpChannel = udpServer.udpChannel();
             udpDrasylHandler = udpChannel.pipeline().get(UdpServerToDrasylHandler.class);
         }
