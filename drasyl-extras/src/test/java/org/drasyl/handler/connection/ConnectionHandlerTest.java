@@ -1494,7 +1494,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallStatus());
                     }
