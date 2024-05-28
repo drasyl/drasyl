@@ -124,17 +124,17 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.5.6</logback.version>
         <junit.version>5.10.2</junit.version>
-        <mockito.version>5.11.0</mockito.version>
+        <mockito.version>5.12.0</mockito.version>
         <jackson.version>2.17.1</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <awaitility.version>4.2.1</awaitility.version>
-        <netty.version>4.1.109.Final</netty.version>
+        <netty.version>4.1.110.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>2.0.13</slf4j.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.38.0</json-unit-assertj.version>
-        <protobuf.version>4.26.1</protobuf.version>
+        <protobuf.version>4.27.0</protobuf.version>
         <auto-value.version>1.10.4</auto-value.version>
         <jna.version>5.14.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -428,7 +428,7 @@
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
                     <artifactId>nexus-staging-maven-plugin</artifactId>
-                    <version>1.6.13</version>
+                    <version>1.7.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -578,7 +578,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.16.0</version>
+                        <version>10.17.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
