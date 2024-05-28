@@ -51,7 +51,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClientToDrasylHandler.class);
     private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
-    private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet() ;
+    private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
 
