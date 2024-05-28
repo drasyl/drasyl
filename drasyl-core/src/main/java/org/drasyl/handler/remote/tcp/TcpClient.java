@@ -203,8 +203,8 @@ public class TcpClient extends ChannelDuplexHandler {
             for (Entry<IdentityPublicKey, InetSocketAddress> entry : config(ctx).getSuperPeers().entrySet()) {
                 final IdentityPublicKey superPeerKey = entry.getKey();
                 final InetSocketAddress superPeerAddress = entry.getValue();
-                DrasylServerChannelConfig drasylServerChannelConfig = config(ctx);
-                InetSocketAddress superPeerTcpAddress = replaceSocketAddressPort(superPeerAddress, drasylServerChannelConfig.getTcpClientConnectPort());
+                final DrasylServerChannelConfig drasylServerChannelConfig = config(ctx);
+                final InetSocketAddress superPeerTcpAddress = replaceSocketAddressPort(superPeerAddress, drasylServerChannelConfig.getTcpClientConnectPort());
 
                 bootstrap.connect(superPeerTcpAddress)
                         .addListener(new TcpClientConnectListener((DrasylServerChannel) ctx.channel(), superPeerKey, superPeerAddress));

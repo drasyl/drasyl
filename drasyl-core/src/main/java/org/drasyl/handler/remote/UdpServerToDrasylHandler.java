@@ -30,11 +30,14 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.Queue;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler.PATH_ID;
@@ -48,8 +51,9 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
+    private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet() ;
     private ChannelHandlerContext ctx;
-    private boolean readCompletePending;
+    private boolean parentReadCompletePending;
 
     public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
@@ -62,7 +66,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        LOG.trace("Read `{}`", msg);
+        LOG.trace("{} Read `{}`", ctx.channel(), msg);
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && parent.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
             final PeersManager peersManager = parent.config().getPeersManager();
 
@@ -75,27 +79,44 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
+                LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
                 drasylChannel.queueRead(appMsg.getPayload());
             }
             else {
+                readCompletePending.add(appMsg.getSender());
                 parent.serve(appMsg.getSender()).addListener(future -> {
                     final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
                     drasylChannel1.queueRead(appMsg.getPayload());
                 });
             }
         }
         else {
-            readCompletePending = true;
+            parentReadCompletePending = true;
             parent.pipeline().fireChannelRead(msg);
         }
     }
 
     @Override
     public void channelReadComplete(final ChannelHandlerContext ctx) {
-        if (readCompletePending) {
+        if (parentReadCompletePending) {
+            parentReadCompletePending = false;
             parent.pipeline().fireChannelReadComplete();
         }
-        parent.getChannels().values().forEach(DrasylChannel::finishRead);
+        for (final DrasylChannel drasylChannel : parent.getChannels().values()) {
+            if (drasylChannel.isRegistered()) {
+                LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel);
+                drasylChannel.finishRead();
+            }
+        }
+        for (final DrasylAddress address : readCompletePending) {
+            parent.serve(address).addListener(future -> {
+                final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel1);
+                drasylChannel1.finishRead();
+            });
+        }
+        readCompletePending.clear();
         ctx.fireChannelReadComplete();
     }
 

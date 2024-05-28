@@ -187,7 +187,8 @@ public class InternetDiscoveryChildrenHandler extends ChannelDuplexHandler {
             // if possible, resolve the given address every single time. This ensures, that we are aware of DNS record updates
             try {
                 endpoint = InetSocketAddressUtil.resolve(endpoint);
-            } catch (final UnknownHostException e) {
+            }
+            catch (final UnknownHostException e) {
                 // ignore (continue to use previous resolved address
             }
             config(ctx).getPeersManager().helloMessageSent(publicKey, PATH_ID);

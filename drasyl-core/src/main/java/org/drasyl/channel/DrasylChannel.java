@@ -312,6 +312,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 if (peerServerChannel != null) {
                     final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
                     if (drasylChannel != null) {
+                        LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
                         drasylChannel.queueRead(buf.retain());
                         if (in.size() == 1) {
                             // we passed last entry
@@ -323,6 +324,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         final boolean lastMsg = in.size() == 1;
                         peerServerChannel.serve(identity.getAddress()).addListener(future -> {
                             final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                            LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
                             drasylChannel1.queueRead(buf);
                             if (lastMsg) {
                                 drasylChannel1.finishRead();
@@ -338,6 +340,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
                         final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
+                        LOG.trace("Resolve message to endpoint `{}`.", endpoint);
                         parent().enqueueUdpWrite(inetMsg);
                     }
                     else {

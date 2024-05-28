@@ -27,12 +27,14 @@ import io.netty.handler.codec.MessageToMessageEncoder;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
 /**
  * Encodes {@link GroupsClientMessage}s to {@link ByteBuf}s.
  */
+@UnstableApi
 public class GroupsClientMessageEncoder extends MessageToMessageEncoder<GroupsClientMessage> {
     public static final int MAGIC_NUMBER_JOIN = -578_611_198;
     public static final int MAGIC_NUMBER_LEAVE = -578_611_199;

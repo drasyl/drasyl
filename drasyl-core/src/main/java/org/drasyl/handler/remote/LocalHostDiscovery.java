@@ -278,7 +278,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
         final PeersManager peersManager = config(ctx).getPeersManager();
-        Set<DrasylAddress> peers = peersManager.getPeers(PATH_ID);
+        final Set<DrasylAddress> peers = peersManager.getPeers(PATH_ID);
         for (final DrasylAddress publicKey : peers) {
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);

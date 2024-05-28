@@ -27,6 +27,7 @@ import io.netty.handler.codec.MessageToMessageDecoder;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
@@ -36,6 +37,7 @@ import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MA
 /**
  * Decodes {@link ByteBuf}s to {@link GroupsClientMessage}s.
  */
+@UnstableApi
 public class GroupsClientMessageDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,

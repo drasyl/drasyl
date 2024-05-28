@@ -22,6 +22,7 @@
 package org.drasyl.node.handler.plugin;
 
 import com.typesafe.config.Config;
+import org.drasyl.util.internal.UnstableApi;
 
 /**
  * This interface is implemented by all drasyl plugins.
@@ -29,6 +30,7 @@ import com.typesafe.config.Config;
  * <b>Every drasyl plugin must implement a constructor with the {@link Config} as only
  * parameter.</b>
  */
+@UnstableApi
 public interface DrasylPlugin {
     /**
      * This method gets called before the drasyl node is started. <br />

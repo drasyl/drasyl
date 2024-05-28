@@ -36,6 +36,7 @@ import org.drasyl.node.plugin.groups.manager.data.Group;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseAdapterManager;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseException;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -46,6 +47,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Starting point for the groups master plugin.
  */
+@UnstableApi
 public class GroupsManagerPlugin implements DrasylPlugin {
     public static final String GROUPS_MANAGER_HANDLER = "GROUPS_MANAGER_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerPlugin.class);

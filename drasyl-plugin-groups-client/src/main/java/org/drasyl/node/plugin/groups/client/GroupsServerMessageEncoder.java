@@ -29,12 +29,14 @@ import org.drasyl.node.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.node.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.node.plugin.groups.client.message.MemberLeftMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
 /**
  * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s.
  */
+@UnstableApi
 public class GroupsServerMessageEncoder extends MessageToMessageEncoder<GroupsServerMessage> {
     public static final int MAGIC_NUMBER_JOINED = -578_611_194;
     public static final int MAGIC_NUMBER_LEFT = -578_611_195;

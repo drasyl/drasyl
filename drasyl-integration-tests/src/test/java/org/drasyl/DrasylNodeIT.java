@@ -647,8 +647,8 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent superPeer").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent client").untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
     }

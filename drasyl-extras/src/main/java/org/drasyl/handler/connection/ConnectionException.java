@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
@@ -28,7 +29,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public abstract class ConnectionException extends RuntimeException {
-    protected ConnectionException(final String message) {
-        super(message);
+    protected ConnectionException(final Channel channel, final String message) {
+        super(channel + " " + message);
     }
 }

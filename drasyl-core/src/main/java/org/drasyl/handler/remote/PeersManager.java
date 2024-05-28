@@ -217,7 +217,7 @@ public class PeersManager {
     public boolean hasPath(final DrasylAddress peerKey) {
         lock.readLock().lock();
         try {
-            Peer peer = peers.get(peerKey);
+            final Peer peer = peers.get(peerKey);
             if (peer != null) {
                 return peer.hasPath();
             }
@@ -233,7 +233,7 @@ public class PeersManager {
     public boolean hasPath(final DrasylAddress peerKey, final PathId id) {
         lock.readLock().lock();
         try {
-            Peer peer = peers.get(peerKey);
+            final Peer peer = peers.get(peerKey);
             if (peer != null) {
                 return peer.hasPath(id);
             }
@@ -939,7 +939,7 @@ public class PeersManager {
             if (o == null || getClass() != o.getClass()) {
                 return false;
             }
-            PeerPath path = (PeerPath) o;
+            final PeerPath path = (PeerPath) o;
             return lastHelloMessageReceivedTime == path.lastHelloMessageReceivedTime && Objects.equals(id, path.id) && Objects.equals(endpoint, path.endpoint) && Objects.equals(next, path.next);
         }
 

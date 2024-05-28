@@ -250,7 +250,7 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        DrasylChannel drasylChannel = ((DrasylServerChannel) ctx.channel()).serve0(groupManager);
+        final DrasylChannel drasylChannel = ((DrasylServerChannel) ctx.channel()).serve0(groupManager);
         drasylChannel.writeAndFlush(GroupJoinMessage.of(group.getGroup(), group.getCredentials(), proofOfWork, renew)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send GroupJoinMessage", future::cause);
