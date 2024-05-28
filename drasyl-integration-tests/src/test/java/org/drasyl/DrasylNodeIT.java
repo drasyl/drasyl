@@ -573,7 +573,6 @@ class DrasylNodeIT {
          * udp messages.
          */
         @Nested
-        @Disabled
         class SuperPeerAndOneClientWhenOnlyRemoteIsEnabledAndAllUdpTrafficIsBlocked {
             private EmbeddedNode superPeer;
             private EmbeddedNode client;
