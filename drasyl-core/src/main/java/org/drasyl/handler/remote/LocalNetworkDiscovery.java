@@ -24,8 +24,8 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -164,7 +164,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     }
 
     private void pingLocalNetworkNodes(final ChannelHandlerContext ctx) {
-        final HelloMessage messageEnvelope = HelloMessage.of(config(ctx).getNetworkId(), ((DrasylChannel) ctx.channel()).identity().getIdentityPublicKey(), ((DrasylChannel) ctx.channel()).identity().getProofOfWork());
+        final HelloMessage messageEnvelope = HelloMessage.of(config(ctx).getNetworkId(), ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork());
         LOG.debug("Send {} to {}", messageEnvelope, recipient);
         ctx.writeAndFlush(new InetAddressedMessage<>(messageEnvelope, recipient)).addListener(future -> {
             if (!future.isSuccess()) {

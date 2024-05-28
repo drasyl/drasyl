@@ -79,8 +79,6 @@ public class UdpServer extends ChannelDuplexHandler {
                 .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
                 .bind(config(ctx).getUdpBind())
                 .addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel()));
-
-        ctx.fireChannelActive();
     }
 
     @Override
@@ -140,6 +138,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
                 UdpServer.this.udpChannel = channel;
                 parent.pipeline().fireUserEventTriggered(new UdpServerBound(socketAddress));
+                parent.pipeline().context(UdpServer.class).fireChannelActive();
 
                 channel.closeFuture().addListener(new UdpServerCloseListener());
                 parent.closeFuture().addListener(new DrasylServerChannelCloseListener(channel));
