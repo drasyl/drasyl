@@ -145,7 +145,6 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
         if (event != null) {
             ReferenceCountUtil.touch(event, "Caller of readEvent() will handle the user event from this point");
         }
-        System.out.printf(identity().getAddress() + " readEvent(): %s%n", event);
         return event;
     }
 
