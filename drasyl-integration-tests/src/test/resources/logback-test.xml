@@ -34,7 +34,7 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <root level="TRACE">
+    <root level="${logLevel:-info}">
         <appender-ref ref="Console"/>
     </root>
 </configuration>
