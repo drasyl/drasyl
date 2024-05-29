@@ -99,7 +99,7 @@ class PluginsIT {
         }
 
         @Override
-        public void onAfterStart(final PluginEnvironment environment) {
+        public void onServerChannelActive(final PluginEnvironment environment) {
             environment.getPipeline().addFirst("TestHandler", new ChannelHandlerAdapter() {
                 @Override
                 public void handlerAdded(final ChannelHandlerContext ctx) {

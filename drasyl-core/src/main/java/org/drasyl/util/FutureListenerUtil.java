@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,29 +19,26 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.handler.discovery;
+package org.drasyl.util;
 
-import org.junit.jupiter.api.Nested;
-import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
+import io.netty.channel.Channel;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.FutureListener;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+public class FutureListenerUtil {
+    private FutureListenerUtil() {
+        // util class
+    }
 
-@ExtendWith(MockitoExtension.class)
-class DuplicatePathEventFilterTest {
-    @Nested
-    class Add {
-        @Test
-        void shouldReturnTrueForNewEvents(@Mock final PathEvent event1,
-                                          @Mock final PathEvent event2) {
-            final DuplicatePathEventFilter filter = new DuplicatePathEventFilter();
-
-            assertTrue(filter.add(event1));
-            assertFalse(filter.add(event1));
-            assertTrue(filter.add(event2));
-        }
+    /**
+     * Create a {@link FutureListener} that forwards the {@link Throwable} of the {@link Future} into the
+     * given {@link Channel}.
+     */
+    public static <V> FutureListener<V> fireExceptionToChannelOnFailure(final Channel channel) {
+        return future -> {
+            if (!future.isSuccess()) {
+                channel.pipeline().fireExceptionCaught(future.cause());
+            }
+        };
     }
 }

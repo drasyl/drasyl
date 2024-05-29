@@ -21,6 +21,8 @@
  */
 package org.drasyl.handler.remote.internet;
 
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler.ChildrenPeer;
@@ -29,8 +31,8 @@ import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -49,18 +51,20 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TraversingInternetDiscoverySuperPeerHandlerTest {
     @Mock
-    private IdentityPublicKey myPublicKey;
-    @Mock
-    private ProofOfWork myProofOfWork;
-    @Mock
     private LongSupplier currentTime;
     @Mock
     private HopCount hopLimit;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
 
     @Test
     void shouldInitiateRendezvousWhenRelayingMessageBetweenTwoChildrenPeers(@Mock final IdentityPublicKey publicKeyA,
@@ -71,17 +75,19 @@ class TraversingInternetDiscoverySuperPeerHandlerTest {
                                                                             @Mock final InetSocketAddress inetAddress) {
         final InetSocketAddress childrenAInetAddress = new InetSocketAddress(22527);
         final InetSocketAddress childrenBInetAddress = new InetSocketAddress(22528);
-        when(childrenPeerA.publicInetAddress()).thenReturn(childrenAInetAddress);
-        when(childrenPeerB.publicInetAddress()).thenReturn(childrenBInetAddress);
+        when(config.getPeersManager().resolveInetAddress(eq(publicKeyA), any())).thenReturn(childrenAInetAddress);
+        when(config.getPeersManager().resolveInetAddress(eq(publicKeyB), any())).thenReturn(childrenBInetAddress);
         final Map<DrasylAddress, ChildrenPeer> childrenPeers = new HashMap<>(Map.of(publicKeyA, childrenPeerA, publicKeyB, childrenPeerB));
         when(applicationMsg.getRecipient()).thenReturn(publicKeyA);
         when(applicationMsg.getSender()).thenReturn(publicKeyB);
         when(applicationMsg.incrementHopCount()).thenReturn(applicationMsg);
         final InetAddressedMessage<ApplicationMessage> msg = new InetAddressedMessage<>(applicationMsg, null, inetAddress);
         final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache = new HashSet<>();
+        when(config.getHelloInterval().toMillis()).thenReturn(2L);
 
-        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(0, myPublicKey, myProofOfWork, currentTime, 5L, 30L, 60L, hopLimit, childrenPeers, null, uniteAttemptsCache);
-        final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+        final TraversingInternetDiscoverySuperPeerHandler handler = new TraversingInternetDiscoverySuperPeerHandler(currentTime, hopLimit, childrenPeers, null, uniteAttemptsCache);
+        final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config, identity);
+        channel.pipeline().addLast(handler);
 
         channel.writeInbound(msg);
 

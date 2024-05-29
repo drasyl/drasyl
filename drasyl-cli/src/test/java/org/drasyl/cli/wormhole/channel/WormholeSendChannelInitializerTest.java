@@ -24,7 +24,6 @@ package org.drasyl.cli.wormhole.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,8 +32,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -51,16 +48,13 @@ class WormholeSendChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream out,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final PrintStream err,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey publicKey,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress inetAddress) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode) throws Exception {
             when(ctx.channel()).thenReturn(channel);
-            when(channel.config().getSuperPeers()).thenReturn(Map.of(publicKey, inetAddress));
 
             final ChannelInboundHandler handler = new WormholeSendChannelInitializer(1, out, err, exitCode, "abc");
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(8)).addLast(any());
+            verify(channel.pipeline(), times(6)).addLast(any());
         }
     }
 }

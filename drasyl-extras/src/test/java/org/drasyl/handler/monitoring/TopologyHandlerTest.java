@@ -23,12 +23,11 @@ package org.drasyl.handler.monitoring;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.monitoring.TopologyHandler.Topology;
 import org.drasyl.identity.DrasylAddress;
@@ -64,13 +63,13 @@ class TopologyHandlerTest {
 
         @BeforeEach
         void setUp() {
-            handler = new TopologyHandler(superPeers, childrenPeers, peers) {
+            handler = new TopologyHandler(superPeers, childrenPeers) {
             };
         }
 
         @Test
         void shouldHandleAddPathAndSuperPeerEvent(final @Mock AddPathAndSuperPeerEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(superPeers).put(any(), any());
@@ -78,7 +77,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleRemoveSuperPeerAndPathEvent(final @Mock RemoveSuperPeerAndPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(superPeers).remove(any());
@@ -86,7 +85,7 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleAddPathAndChildrenEvent(final @Mock AddPathAndChildrenEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(childrenPeers).put(any(), any());
@@ -94,26 +93,10 @@ class TopologyHandlerTest {
 
         @Test
         void shouldHandleRemoveChildrenAndPathEvent(final @Mock RemoveChildrenAndPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
             channel.pipeline().fireUserEventTriggered(event);
 
             verify(childrenPeers).remove(any());
-        }
-
-        @Test
-        void shouldHandleAddPathEvent(final @Mock AddPathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(peers).put(any(), any());
-        }
-
-        @Test
-        void shouldHandleRemovePathEvent(final @Mock RemovePathEvent event) {
-            final UserEventAwareEmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(peers).remove(any());
         }
     }
 
@@ -123,10 +106,10 @@ class TopologyHandlerTest {
         void shouldReturnCurrentTopology(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
             when(ctx.channel().localAddress()).thenReturn(ID_1.getAddress());
 
-            final TopologyHandler handler = new TopologyHandler(superPeers, childrenPeers, peers) {
+            final TopologyHandler handler = new TopologyHandler(superPeers, childrenPeers) {
             };
 
-            assertEquals(new Topology(ID_1.getAddress(), superPeers, childrenPeers, peers), handler.topology(ctx));
+            assertEquals(new Topology(ID_1.getAddress(), superPeers, childrenPeers), handler.topology(ctx));
         }
     }
 }

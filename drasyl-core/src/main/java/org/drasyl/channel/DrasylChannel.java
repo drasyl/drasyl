@@ -27,21 +27,34 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
+import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
+import io.netty.channel.RecvByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.internal.InternalThreadLocalMap;
+import io.netty.util.internal.PlatformDependent;
 import io.netty.util.internal.StringUtil;
+import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.Queue;
+import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -57,15 +70,27 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylChannel.class);
     private static final String EXPECTED_TYPES =
             " (expected: " + StringUtil.simpleClassName(ByteBuf.class) + ')';
+    private static final int MAX_READER_STACK_DEPTH = 8;
+    private static final AtomicReferenceFieldUpdater<DrasylChannel, Future> FINISH_READ_FUTURE_UPDATER =
+            AtomicReferenceFieldUpdater.newUpdater(DrasylChannel.class, Future.class, "finishReadFuture");
 
     enum State {OPEN, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
+    private final Queue<Object> inboundBuffer = PlatformDependent.newMpscQueue();
+    private final Runnable readTask = () -> {
+        // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
+        if (!inboundBuffer.isEmpty()) {
+            readInbound();
+        }
+    };
     private volatile State state;
-    volatile boolean pendingWrites;
     private volatile Identity identity; // NOSONAR
     private final DrasylAddress remoteAddress;
+    private volatile boolean readInProgress;
+    private volatile boolean writeInProgress;
+    private volatile Future<?> finishReadFuture;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
@@ -74,11 +99,12 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                   final DrasylAddress remoteAddress) {
         super(parent);
         this.state = state;
-        this.identity = identity;
+        this.identity = requireNonNull(identity);
         this.remoteAddress = remoteAddress;
     }
 
-    DrasylChannel(final DrasylServerChannel parent, final DrasylAddress remoteAddress) {
+    DrasylChannel(final DrasylServerChannel parent,
+                  final DrasylAddress remoteAddress) {
         this(parent, null, parent.identity(), remoteAddress);
     }
 
@@ -127,25 +153,129 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
     @Override
     protected void doClose() {
+        assert eventLoop() == null || eventLoop().inEventLoop();
+
         identity = null;
 
         state = State.CLOSED;
+
+        releaseInboundBuffer();
+    }
+
+    void readInbound() {
+        final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
+        handle.reset(config());
+        final ChannelPipeline pipeline = pipeline();
+        do {
+            final Object received = inboundBuffer.poll();
+            if (received == null) {
+                break;
+            }
+            handle.incMessagesRead(1);
+            pipeline.fireChannelRead(received);
+        } while (handle.continueReading());
+        handle.readComplete();
+
+        // all messages read, fire channelReadComplete event
+        pipeline.fireChannelReadComplete();
     }
 
     @Override
     protected void doBeginRead() {
-        // NOOP
-        // UdpServer, UdpMulticastServer, TcpServer are currently pushing their readings
-    }
-
-    @Override
-    protected Object filterOutboundMessage(final Object msg) throws Exception {
-        if (msg instanceof ByteBuf) {
-            return super.filterOutboundMessage(msg);
+        if (readInProgress) {
+            return;
         }
 
-        throw new UnsupportedOperationException(
-                "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+        if (inboundBuffer.isEmpty()) {
+            // set to true to make sure this read operation will be performed when something is
+            // written to the inbound buffer
+            readInProgress = true;
+            return;
+        }
+
+        // check stack depth; this is relevant when multiple channels with the same event loop are
+        // heavily interacting with each other and, therefore pass messages to each other in one run
+        final InternalThreadLocalMap threadLocals = InternalThreadLocalMap.get();
+        final int stackDepth = threadLocals.localChannelReaderStackDepth();
+        if (stackDepth < MAX_READER_STACK_DEPTH) {
+            threadLocals.setLocalChannelReaderStackDepth(stackDepth + 1);
+            try {
+                readInbound();
+            }
+            finally {
+                threadLocals.setLocalChannelReaderStackDepth(stackDepth);
+            }
+        }
+        else {
+            try {
+                eventLoop().execute(readTask);
+            }
+            catch (final Throwable cause) {
+                LOG.warn("Closing DrasylChannel {} because exception occurred!", this, cause);
+                close();
+                PlatformDependent.throwException(cause);
+            }
+        }
+    }
+
+    /**
+     * This method places the message {@code o} in the queue for inbound messages to be read by
+     * this channel. Queued messages are not processed until {@link #finishRead()} is called.
+     */
+    public void queueRead(final Object o) {
+        inboundBuffer.add(o);
+    }
+
+    /**
+     * This method start processing (if any) queued inbound messages. This method ensures that
+     * read/write order is respected. Therefore, if channel is currently writing, these writes are
+     * performed first and the reads are performed afterwards.
+     */
+    public void finishRead() {
+        // check whether the channel is currently writing; if so, we must schedule the event in the
+        // event loop to maintain the read/write order.
+        if (eventLoop().inEventLoop() && !writeInProgress) {
+            finishRead0();
+        }
+        else {
+            runFinishReadTask();
+        }
+    }
+
+    private void finishRead0() {
+        final Future<?> thisFinishReadFuture = this.finishReadFuture;
+        if (thisFinishReadFuture != null) {
+            if (!thisFinishReadFuture.isDone()) {
+                runFinishReadTask();
+                return;
+            }
+            else {
+                // lazy unset to make sure we don't prematurely unset it while scheduling a new task.
+                FINISH_READ_FUTURE_UPDATER.compareAndSet(this, thisFinishReadFuture, null);
+            }
+        }
+        // we should only set readInProgress to false if there is any data that was read as
+        // otherwise we may miss to forward data later on.
+        if (readInProgress && !inboundBuffer.isEmpty()) {
+            readInProgress = false;
+            readInbound();
+        }
+    }
+
+    private void runFinishReadTask() {
+        try {
+            if (writeInProgress) {
+                finishReadFuture = eventLoop().submit(this::finishRead0);
+            }
+            else {
+                eventLoop().execute(this::finishRead0);
+            }
+        }
+        catch (final Throwable cause) {
+            LOG.warn("Closing DrasylChannel {} because execption occurred!", this, cause);
+            close();
+            PlatformDependent.throwException(cause);
+        }
     }
 
     @Override
@@ -165,32 +295,84 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 break;
         }
 
-        boolean wroteToParent = false;
-        pendingWrites = false;
-        while (true) {
-            final Object msg = in.current();
-            if (msg == null) {
-                break;
-            }
-
-            if (!parent().isWritable()) {
-                pendingWrites = true;
-                break;
-            }
-
-            ReferenceCountUtil.retain(msg);
-            parent().write(new OverlayAddressedMessage<>(msg, remoteAddress, identity.getAddress())).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written from channel `{}` to server channel failed:", () -> msg, () -> this, future::cause);
+        writeInProgress = true;
+        try {
+            while (true) {
+                final ByteBuf buf = (ByteBuf) in.current();
+                if (buf == null) {
+                    break;
                 }
-            });
-            in.remove();
-            wroteToParent = true;
+
+                // map remoteAddress to udp endpoint
+                final PeersManager peersManager = parent().config().getPeersManager();
+                peersManager.applicationMessageSent(remoteAddress);
+
+                // Intra VM
+                final DrasylServerChannel peerServerChannel = parent().serverChannels.get(remoteAddress);
+                if (peerServerChannel != null) {
+                    final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
+                    if (drasylChannel != null) {
+                        LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
+                        drasylChannel.queueRead(buf.retain());
+                        if (in.size() == 1) {
+                            // we passed last entry
+                            drasylChannel.finishRead();
+                        }
+                    }
+                    else {
+                        buf.retain();
+                        final boolean lastMsg = in.size() == 1;
+                        peerServerChannel.serve(identity.getAddress()).addListener(future -> {
+                            final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                            LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
+                            drasylChannel1.queueRead(buf);
+                            if (lastMsg) {
+                                drasylChannel1.finishRead();
+                            }
+                        });
+                    }
+                }
+                else {
+                    // remote
+                    final InetSocketAddress endpoint = peersManager.resolve(remoteAddress);
+                    if (endpoint != null) {
+                        // convert to remote message
+                        final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
+                        final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
+
+                        LOG.trace("Resolve message to endpoint `{}`.", endpoint);
+                        parent().enqueueUdpWrite(inetMsg);
+                    }
+                    else {
+                        LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
+                    }
+                }
+
+                in.remove();
+            }
+        }
+        finally {
+            writeInProgress = false;
         }
 
-        if (wroteToParent) {
-            // only pass flush event to parent channel if we actually have wrote something
-            parent().flush();
+        parent().finishUdpWrite();
+    }
+
+    @Override
+    protected Object filterOutboundMessage(final Object msg) throws Exception {
+        if (msg instanceof ByteBuf) {
+            return super.filterOutboundMessage(msg);
+        }
+
+        throw new UnsupportedOperationException(
+                "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
+    }
+
+    private void releaseInboundBuffer() {
+        readInProgress = false;
+        Object msg;
+        while ((msg = inboundBuffer.poll()) != null) {
+            ReferenceCountUtil.release(msg);
         }
     }
 
@@ -220,7 +402,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
      * @return {@code true} if remote peer is reachable via a direct path.
      */
     public boolean isDirectPathPresent() {
-        return ((DrasylServerChannel) parent()).paths.get(remoteAddress) != null;
+        return parent().config().getPeersManager().hasPath(remoteAddress);
     }
 
     private class DrasylChannelUnsafe extends AbstractUnsafe {

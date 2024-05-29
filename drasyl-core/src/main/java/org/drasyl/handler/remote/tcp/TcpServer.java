@@ -21,32 +21,28 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelOption;
 import io.netty.channel.ChannelPromise;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.PromiseNotifier;
 import io.netty.util.internal.SystemPropertyUtil;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.time.Duration;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Function;
 
@@ -61,77 +57,49 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public class TcpServer extends ChannelDuplexHandler {
-    /*
-     * On MacOS -Djava.net.preferIPv4Stack=true must be set to work.
-     */
-    public static final int IP_TOS = Integer.decode(System.getProperty("ipTos", "0x0")); // real-time 0xB8
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
     static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
-    private final ServerBootstrap bootstrap;
-    private final Map<SocketAddress, Channel> clientChannels;
-    private final InetAddress bindHost;
-    private final int bindPort;
-    private final Duration pingTimeout;
-    private final EventLoopGroup group;
-    private final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
-    private Channel serverChannel;
+    private final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    final Map<IdentityPublicKey, SocketChannel> tcpClientChannels;
+    private ServerSocketChannel tcpServerChannel;
 
     /**
-     * @param group                      the {@link NioEventLoopGroup} the underlying tcp server
-     *                                   should run on
-     * @param channelInitializerSupplier
      */
     @SuppressWarnings("java:S107")
-    TcpServer(final ServerBootstrap bootstrap,
-              final NioEventLoopGroup group,
-              final Map<SocketAddress, Channel> clientChannels,
-              final InetAddress bindHost,
-              final int bindPort,
-              final Duration pingTimeout,
-              final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
-              final Channel serverChannel) {
-        this.bootstrap = requireNonNull(bootstrap);
-        this.clientChannels = requireNonNull(clientChannels);
-        this.bindHost = bindHost;
-        this.bindPort = bindPort;
-        this.pingTimeout = pingTimeout;
-        this.group = requireNonNull(group);
+    TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+              final ServerSocketChannel tcpServerChannel,
+              final Map<IdentityPublicKey, SocketChannel> tcpClientChannels) {
+        this.tcpClientChannels = requireNonNull(tcpClientChannels);
         this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
-        this.serverChannel = serverChannel;
+        this.tcpServerChannel = tcpServerChannel;
     }
 
     /**
-     * @param group                      the {@link NioEventLoopGroup} the underlying tcp server
-     *                                   should run on
-     * @param channelInitializerSupplier
      */
-    public TcpServer(final NioEventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort,
-                     final Duration pingTimeout,
-                     final Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    public TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
-                new ServerBootstrap(),
-                group,
-                new ConcurrentHashMap<>(),
-                bindHost,
-                bindPort,
-                pingTimeout,
-                channelInitializerSupplier,
-                null
+                channelInitializerSupplier, null, new ConcurrentHashMap<>()
         );
     }
 
-    /**
-     * @param group                      the {@link NioEventLoopGroup} the underlying tcp server
-     *                                   should run on
-     */
-    public TcpServer(final NioEventLoopGroup group,
-                     final InetAddress bindHost,
-                     final int bindPort,
-                     final Duration pingTimeout) {
-        this(group, bindHost, bindPort, pingTimeout, TcpServerChannelInitializer::new);
+    public TcpServer() {
+        this(TcpServerChannelInitializer::new);
+    }
+
+    @SuppressWarnings("java:S1905")
+    @Override
+    public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
+        LOG.debug("Start Server...");
+
+        config(ctx).getTcpServerBootstrap().get()
+                .group(config(ctx).getTcpServerEventLoopGroup().get())
+                .channel(config(ctx).getTcpServerChannelClass())
+                .childHandler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
+                .bind(config(ctx).getTcpServerBind())
+                .addListener(new TcpServerBindListener((DrasylServerChannel) ctx.channel()));
+
+        ctx.fireChannelActive();
     }
 
     @SuppressWarnings("unchecked")
@@ -143,83 +111,73 @@ public class TcpServer extends ChannelDuplexHandler {
             final SocketAddress recipient = ((InetAddressedMessage<RemoteMessage>) msg).recipient();
 
             // check if we can route the message via a tcp connection
-            final Channel client = clientChannels.get(recipient);
-            if (client != null) {
-                LOG.trace("Send message `{}` via TCP to client `{}`", msg, recipient);
-                PromiseNotifier.cascade(client.writeAndFlush(msg), promise);
-            }
-            else {
-                // message is not addressed to any of our clients. pass through message
-                ctx.write(msg, promise);
+            final SocketChannel clientChannel = tcpClientChannels.get(recipient);
+            if (clientChannel != null) {
+                final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
+                tcpDrasylHandler.enqueueWrite(msg);
+                return;
             }
         }
-        else {
-            ctx.write(msg, promise);
-        }
-    }
 
-    @SuppressWarnings("java:S1905")
-    @Override
-    public void channelActive(final ChannelHandlerContext ctx) throws TcpServerBindFailedException {
-        LOG.debug("Start Server...");
-        bootstrap
-                .option(ChannelOption.IP_TOS, IP_TOS)
-                .group(group)
-                .channel(NioServerSocketChannel.class)
-                .childHandler(channelInitializerSupplier.apply(ctx))
-                .bind(bindHost, bindPort)
-                .addListener(new TcpServerFutureListener(ctx));
+        ctx.write(msg, promise);
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        ctx.fireChannelInactive();
-
-        if (serverChannel != null) {
-            LOG.debug("Stop Server listening at tcp:/{}...", serverChannel.localAddress());
-            // shutdown server
-            serverChannel.close().addListener(future -> {
-                serverChannel = null;
-                LOG.debug("Server stopped.");
-            });
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
+        for (final SocketChannel clientChannel : tcpClientChannels.values()) {
+            final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
+            tcpDrasylHandler.finishWrite();
         }
+
+        ctx.flush();
     }
 
-    Map<SocketAddress, Channel> clientChannels() {
-        return clientChannels;
+    protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 
-    Duration pingTimeout() {
-        return pingTimeout;
-    }
+    /**
+     * Listener that gets called once the channel is bound.
+     */
+    private class TcpServerBindListener implements ChannelFutureListener {
+        private final DrasylServerChannel parent;
 
-    private class TcpServerFutureListener implements ChannelFutureListener {
-        private final ChannelHandlerContext ctx;
-
-        TcpServerFutureListener(final ChannelHandlerContext ctx) {
-            this.ctx = ctx;
+        TcpServerBindListener(final DrasylServerChannel parent) {
+            this.parent = requireNonNull(parent);
         }
 
         @Override
         public void operationComplete(final ChannelFuture future) {
             if (future.isSuccess()) {
                 // server successfully started
-                TcpServer.this.serverChannel = future.channel();
-                final InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-                LOG.info("Server started and listening at tcp:/{}", socketAddress);
+                final ServerSocketChannel channel = (ServerSocketChannel) future.channel();
+                final InetSocketAddress socketAddress = channel.localAddress();
+                LOG.debug("Server started and bound to tcp:/{}.", socketAddress);
 
-                ctx.fireUserEventTriggered(new TcpServerBound(socketAddress));
-                ctx.fireChannelActive();
+                TcpServer.this.tcpServerChannel = channel;
+                parent.pipeline().fireUserEventTriggered(new TcpServerBound(socketAddress));
+
+                channel.closeFuture().addListener(new TcpServerCloseListener());
+                parent.closeFuture().addListener(new DrasylServerChannelCloseListener(channel));
             }
             else {
                 // server start failed
-                ctx.fireExceptionCaught(new TcpServerBindFailedException("Unable to bind server to address tcp://" + bindHost + ":" + bindPort, future.cause()));
+                parent.pipeline().fireExceptionCaught(new TcpServerBindFailedException("Unable to bind server to address tcp://" + future.channel().localAddress(), future.cause()));
             }
         }
     }
 
     /**
-     * Signals that the {@link TcpServer} is bind to {@link TcpServerBound#getPort()}.
+     * Signals that the {@link TcpServer} was unable to bind to given address.
+     */
+    public static class TcpServerBindFailedException extends Exception {
+        public TcpServerBindFailedException(final String message, final Throwable cause) {
+            super(message, cause);
+        }
+    }
+
+    /**
+     * Signals that the {@link TcpServer} is bound to {@link TcpServerBound#getBindAddress()}.
      */
     public static class TcpServerBound {
         private final InetSocketAddress bindAddress;
@@ -231,18 +189,34 @@ public class TcpServer extends ChannelDuplexHandler {
         public InetSocketAddress getBindAddress() {
             return bindAddress;
         }
+    }
 
-        public int getPort() {
-            return getBindAddress().getPort();
+    /**
+     * Listener that gets called once the channel is closed.
+     */
+    private static class TcpServerCloseListener implements ChannelFutureListener {
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            LOG.debug("Server bound to tcp:/{} stopped.", future.channel().localAddress());
         }
     }
 
     /**
-     * Signals that the {@link TcpServer} was unable to bind to port.
+     * Listener that gets called once DrasylServerChannel is closed.
      */
-    public static class TcpServerBindFailedException extends Exception {
-        public TcpServerBindFailedException(final String message, final Throwable cause) {
-            super(message, cause);
+    private static class DrasylServerChannelCloseListener implements ChannelFutureListener {
+        private final ServerSocketChannel tcpChannel;
+
+        public DrasylServerChannelCloseListener(final ServerSocketChannel tcpChannel) {
+            this.tcpChannel = Objects.requireNonNull(tcpChannel);
+        }
+
+        @Override
+        public void operationComplete(final ChannelFuture future) {
+            if (tcpChannel.isOpen()) {
+                LOG.debug("Stop server bound to udp:/{}...", tcpChannel.localAddress());
+                tcpChannel.close();
+            }
         }
     }
 }

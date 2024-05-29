@@ -26,12 +26,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
-import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.channel.DrasylNodeServerChannelInitializer;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
@@ -67,7 +66,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     public EmbeddedNode(final DrasylConfig config) throws DrasylException {
         this(config, new ArrayDeque<>());
 
-        bootstrap.handler(new DrasylNodeServerChannelInitializer(config, identity, this, DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup()) {
+        bootstrap.handler(new DrasylNodeServerChannelInitializer(config, this) {
             @Override
             protected void initChannel(final DrasylServerChannel ch) {
                 super.initChannel(ch);
@@ -76,11 +75,11 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
                     @Override
                     public void userEventTriggered(final ChannelHandlerContext ctx,
                                                    final Object evt) {
-                        if (evt instanceof UdpServer.UdpServerBound) {
-                            port = ((UdpServer.UdpServerBound) evt).getBindAddress().getPort();
+                        if (evt instanceof UdpServerBound) {
+                            port = ((UdpServerBound) evt).getBindAddress().getPort();
                         }
                         else if (evt instanceof TcpServerBound) {
-                            tcpFallbackPort = ((TcpServerBound) evt).getPort();
+                            tcpFallbackPort = ((TcpServerBound) evt).getBindAddress().getPort();
                         }
                         else {
                             ctx.fireUserEventTriggered(evt);
@@ -93,11 +92,11 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
 
     @Override
     public void onEvent(@NonNull final Event event) {
-        if (event instanceof UdpServer.UdpServerBound) {
-            port = ((UdpServer.UdpServerBound) event).getBindAddress().getPort();
+        if (event instanceof UdpServerBound) {
+            port = ((UdpServerBound) event).getBindAddress().getPort();
         }
         else if (event instanceof TcpServerBound) {
-            tcpFallbackPort = ((TcpServerBound) event).getPort();
+            tcpFallbackPort = ((TcpServerBound) event).getBindAddress().getPort();
         }
         else if (event instanceof InboundExceptionEvent) {
             LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());

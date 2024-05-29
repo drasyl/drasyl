@@ -43,10 +43,10 @@ import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -54,7 +54,7 @@ import static org.mockito.Mockito.when;
 class UdpBroadcastServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Supplier<Bootstrap> bootstrapSupplier;
-    @Mock(answer = RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_SELF)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatagramChannel channel;
@@ -72,10 +72,11 @@ class UdpBroadcastServerTest {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
                                               @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel datagramChannel) {
+            when(bootstrap.bind(anyString(), anyInt())).thenReturn(channelFuture);
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(channelFuture.isSuccess()).thenReturn(true);
             when(channelFuture.channel()).thenReturn(datagramChannel);
-            when(bootstrap.group(any()).channel(any()).handler(any()).bind(anyString(), anyInt()).addListener(any())).then(invocation -> {
+            when(channelFuture.addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
@@ -92,7 +93,7 @@ class UdpBroadcastServerTest {
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
                 verify(nodes).add(channel.pipeline().context(handler));
-                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(anyString(), anyInt());
+                verify(bootstrap).bind(anyString(), anyInt());
             }
             finally {
                 channel.close();

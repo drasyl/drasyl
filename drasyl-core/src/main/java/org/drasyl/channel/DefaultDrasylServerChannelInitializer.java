@@ -23,15 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.handler.LoopbackHandler;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
-import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
-import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
-import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
@@ -46,33 +38,13 @@ public class DefaultDrasylServerChannelInitializer extends ChannelInitializer<Dr
     protected void initChannel(final DrasylServerChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer(ctx -> new UdpServerChannelInitializer(ch) {
-            @Override
-            protected void lastStage(final DatagramChannel datagramCh) {
-                datagramCh.pipeline().addLast(new OtherNetworkFilter(ch.config().getNetworkId()));
-                if (ch.config().isArmingEnabled()) {
-                    datagramCh.pipeline().addLast(new ProtocolArmHandler(
-                            ch.identity(),
-                            Crypto.INSTANCE,
-                            ch.config().getArmingSessionMaxCount(),
-                            ch.config().getArmingSessionExpireAfter()
-                    ));
-                }
-                else {
-                    datagramCh.pipeline().addLast(new UnarmedMessageDecoder());
-                }
-
-                super.lastStage(datagramCh);
-            }
-        }));
+        p.addLast(new UdpServer());
         p.addLast(new UnconfirmedAddressResolveHandler());
         if (ch.config().isHolePunchingEnabled()) {
-            p.addLast(new TraversingInternetDiscoveryChildrenHandler(ch.config().getSuperPeers()));
+            p.addLast(new TraversingInternetDiscoveryChildrenHandler());
         }
         else {
-            p.addLast(new InternetDiscoveryChildrenHandler(ch.config().getSuperPeers()));
+            p.addLast(new InternetDiscoveryChildrenHandler());
         }
-        p.addLast(new ApplicationMessageToPayloadCodec());
-        p.addLast(new LoopbackHandler());
     }
 }

@@ -72,12 +72,15 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_EXPIRE
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
 import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_INTERVAL;
 import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_TIMEOUT;
+import static org.drasyl.channel.DrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.MAX_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.PATH_IDLE_TIME;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
+import static org.drasyl.channel.DrasylServerChannelConfig.TCP_SERVER_BIND;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP_SUPPLIER;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -185,9 +188,12 @@ public abstract class DrasylNode {
                 .option(MAX_PEERS, config.getRemotePingMaxPeers())
                 .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
                 .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
-                .option(UDP_EVENT_LOOP_SUPPLIER, udpServerGroup::next)
+                .option(UDP_EVENT_LOOP, udpServerGroup::next)
+                .option(TCP_CLIENT_CONNECT_PORT, config.getRemoteTcpFallbackClientConnectPort())
+                .option(TCP_SERVER_BIND, new InetSocketAddress(config.getRemoteTcpFallbackServerBindHost(), config.getRemoteTcpFallbackServerBindPort()))
                 .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
-                .handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
+                .option(INTRA_VM_DISCOVERY_ENABLED, config.isIntraVmDiscoveryEnabled())
+                .handler(new DrasylNodeServerChannelInitializer(config, this)).childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
@@ -456,7 +462,6 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S1905", "java:S2142" })
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
-
             try {
                 final Long offset;
                 // check system time

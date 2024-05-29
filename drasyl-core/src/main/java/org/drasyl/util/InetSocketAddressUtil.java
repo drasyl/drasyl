@@ -125,4 +125,11 @@ public final class InetSocketAddressUtil {
         final InetAddress resolvedHost = DnsResolver.resolve(address.getHostString());
         return new InetSocketAddress(resolvedHost, address.getPort());
     }
+
+    public static InetSocketAddress replaceSocketAddressPort(@NonNull final InetSocketAddress address, final int port) {
+        if (address.isUnresolved()) {
+            return InetSocketAddress.createUnresolved(address.getHostName(), port);
+        }
+        return new InetSocketAddress(address.getHostName(), port);
+    }
 }

@@ -24,41 +24,37 @@ package org.drasyl.node.plugin.groups.client;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
 /**
  * Encodes {@link GroupsClientMessage}s to {@link ByteBuf}s.
  */
-public class GroupsClientMessageEncoder extends MessageToMessageEncoder<OverlayAddressedMessage<GroupsClientMessage>> {
+@UnstableApi
+public class GroupsClientMessageEncoder extends MessageToMessageEncoder<GroupsClientMessage> {
     public static final int MAGIC_NUMBER_JOIN = -578_611_198;
     public static final int MAGIC_NUMBER_LEAVE = -578_611_199;
 
     @Override
-    public boolean acceptOutboundMessage(final Object msg) {
-        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof GroupsClientMessage;
-    }
-
-    @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final OverlayAddressedMessage<GroupsClientMessage> msg,
+                          final GroupsClientMessage msg,
                           final List<Object> out) {
         final ByteBuf byteBuf = ctx.alloc().buffer();
-        if (msg.content() instanceof GroupJoinMessage) {
+        if (msg instanceof GroupJoinMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_JOIN);
         }
-        else if (msg.content() instanceof GroupLeaveMessage) {
+        else if (msg instanceof GroupLeaveMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_LEAVE);
         }
         else {
             throw new IllegalArgumentException("Unknown message");
         }
 
-        msg.content().writeTo(byteBuf);
-        out.add(msg.replace(byteBuf));
+        msg.writeTo(byteBuf);
+        out.add(byteBuf);
     }
 }

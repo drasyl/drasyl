@@ -24,51 +24,47 @@ package org.drasyl.node.plugin.groups.client;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupWelcomeMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.node.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.node.plugin.groups.client.message.MemberLeftMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
 /**
  * Encodes {@link GroupsServerMessage}s to {@link ByteBuf}s.
  */
-public class GroupsServerMessageEncoder extends MessageToMessageEncoder<OverlayAddressedMessage<GroupsServerMessage>> {
+@UnstableApi
+public class GroupsServerMessageEncoder extends MessageToMessageEncoder<GroupsServerMessage> {
     public static final int MAGIC_NUMBER_JOINED = -578_611_194;
     public static final int MAGIC_NUMBER_LEFT = -578_611_195;
     public static final int MAGIC_NUMBER_WELCOME = -578_611_196;
     public static final int MAGIC_NUMBER_FAILED = -578_611_197;
 
     @Override
-    public boolean acceptOutboundMessage(final Object msg) {
-        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof GroupsServerMessage;
-    }
-
-    @Override
     protected void encode(final ChannelHandlerContext ctx,
-                          final OverlayAddressedMessage<GroupsServerMessage> msg,
+                          final GroupsServerMessage msg,
                           final List<Object> out) {
         final ByteBuf byteBuf = ctx.alloc().buffer();
-        if (msg.content() instanceof MemberJoinedMessage) {
+        if (msg instanceof MemberJoinedMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_JOINED);
         }
-        else if (msg.content() instanceof MemberLeftMessage) {
+        else if (msg instanceof MemberLeftMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_LEFT);
         }
-        else if (msg.content() instanceof GroupWelcomeMessage) {
+        else if (msg instanceof GroupWelcomeMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_WELCOME);
         }
-        else if (msg.content() instanceof GroupJoinFailedMessage) {
+        else if (msg instanceof GroupJoinFailedMessage) {
             byteBuf.writeInt(MAGIC_NUMBER_FAILED);
         }
         else {
             throw new IllegalArgumentException("Unknown message");
         }
 
-        msg.content().writeTo(byteBuf);
-        out.add(msg.replace(byteBuf));
+        msg.writeTo(byteBuf);
+        out.add(byteBuf);
     }
 }

@@ -23,5 +23,4 @@
  * Codecs, Channel Handlers, and Messages for sending large data streams asynchronously neither
  * spending a lot of memory nor getting {@link java.lang.OutOfMemoryError}
  */
-@Deprecated
 package org.drasyl.handler.stream;

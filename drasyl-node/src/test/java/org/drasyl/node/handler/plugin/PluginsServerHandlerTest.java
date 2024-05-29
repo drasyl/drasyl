@@ -22,6 +22,7 @@
 package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,13 +40,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class PluginsHandlerTest {
+class PluginsServerHandlerTest {
     @Mock
     private DrasylConfig config;
     @Mock
-    private Identity identity;
-    @Mock
     private DrasylPlugin plugin;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannel channel;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     @BeforeEach
     void setUp() {
@@ -56,11 +59,13 @@ class PluginsHandlerTest {
     class ChannelRegistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            when(ctx.channel()).thenReturn(channel);
+
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelRegistered(ctx);
 
-            verify(plugin).onBeforeStart(any());
+            verify(plugin).onServerChannelRegistered(any());
         }
     }
 
@@ -68,11 +73,13 @@ class PluginsHandlerTest {
     class ChannelActive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            when(ctx.channel()).thenReturn(channel);
+
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelActive(ctx);
 
-            verify(plugin).onAfterStart(any());
+            verify(plugin).onServerChannelActive(any());
         }
     }
 
@@ -80,11 +87,13 @@ class PluginsHandlerTest {
     class ChannelInactive {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            when(ctx.channel()).thenReturn(channel);
+
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelInactive(ctx);
 
-            verify(plugin).onBeforeShutdown(any());
+            verify(plugin).onServerChannelInactive(any());
         }
     }
 
@@ -92,11 +101,13 @@ class PluginsHandlerTest {
     class ChannelUnregistered {
         @Test
         void test(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) {
-            final PluginsHandler handler = new PluginsHandler(config, identity);
+            when(ctx.channel()).thenReturn(channel);
+
+            final PluginsServerHandler handler = new PluginsServerHandler(config, identity);
 
             handler.channelUnregistered(ctx);
 
-            verify(plugin).onAfterShutdown(any());
+            verify(plugin).onServerChannelUnregistered(any());
         }
     }
 }

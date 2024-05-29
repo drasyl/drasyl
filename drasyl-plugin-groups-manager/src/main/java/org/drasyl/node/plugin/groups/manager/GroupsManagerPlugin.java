@@ -22,15 +22,21 @@
 package org.drasyl.node.plugin.groups.manager;
 
 import com.typesafe.config.Config;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
+import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.plugin.groups.client.GroupsClientMessageDecoder;
 import org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder;
+import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
 import org.drasyl.node.plugin.groups.manager.data.Group;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseAdapterManager;
 import org.drasyl.node.plugin.groups.manager.database.DatabaseException;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -41,6 +47,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Starting point for the groups master plugin.
  */
+@UnstableApi
 public class GroupsManagerPlugin implements DrasylPlugin {
     public static final String GROUPS_MANAGER_HANDLER = "GROUPS_MANAGER_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerPlugin.class);
@@ -63,7 +70,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
     }
 
     @Override
-    public void onBeforeStart(final PluginEnvironment env) {
+    public void onServerChannelRegistered(final PluginEnvironment env) {
         try {
             // init database
             if (database == null) {
@@ -81,9 +88,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
                 }
             }
 
-            env.getPipeline().addAfter(env.getPipeline().context(ApplicationMessageToPayloadCodec.class).name(), GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
-            env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_MANAGER_ENCODER", new GroupsServerMessageEncoder());
-            env.getPipeline().addBefore(GROUPS_MANAGER_HANDLER, "GROUPS_CLIENT_DECODER", new GroupsClientMessageDecoder());
+            env.getPipeline().addLast(new GroupsManagerHandler(database));
             LOG.debug("Groups Manager Plugin was started with options: {}", config);
         }
         catch (final DatabaseException e) {
@@ -92,7 +97,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
     }
 
     @Override
-    public void onAfterStart(final PluginEnvironment env) {
+    public void onServerChannelActive(final PluginEnvironment env) {
         // start api
         if (config.isApiEnabled()) {
             api = new GroupsManagerApi(config, database);
@@ -101,12 +106,12 @@ public class GroupsManagerPlugin implements DrasylPlugin {
     }
 
     @Override
-    public void onBeforeShutdown(final PluginEnvironment env) {
+    public void onServerChannelInactive(final PluginEnvironment env) {
         if (api != null) {
             api.shutdown();
         }
 
-        env.getPipeline().remove(GROUPS_MANAGER_HANDLER);
+        env.getPipeline().remove(GroupsManagerHandler.class);
         try {
             database.close();
             database = null;
@@ -116,5 +121,24 @@ public class GroupsManagerPlugin implements DrasylPlugin {
         }
 
         LOG.debug("Groups Manager Plugin was stopped.");
+    }
+
+    @Override
+    public void onChildChannelRegistered(final PluginEnvironment env) {
+        env.getPipeline().addBefore(env.getPipeline().context(MessageSerializer.class).name(), null, new GroupsClientMessageDecoder());
+        env.getPipeline().addBefore(env.getPipeline().context(MessageSerializer.class).name(), null, new SimpleChannelInboundHandler<GroupsClientMessage>() {
+            @Override
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final GroupsClientMessage msg) {
+                ctx.channel().parent().pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, (DrasylAddress) ctx.channel().localAddress(), (DrasylAddress) ctx.channel().remoteAddress()));
+            }
+        });
+        env.getPipeline().addAfter(env.getPipeline().context(MessageSerializer.class).name(), null, new GroupsServerMessageEncoder());
+    }
+
+    @Override
+    public void onChildChannelInactive(final PluginEnvironment env) {
+        env.getPipeline().remove(GroupsClientMessageDecoder.class);
+        env.getPipeline().remove(GroupsServerMessageEncoder.class);
     }
 }

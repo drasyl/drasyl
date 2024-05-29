@@ -24,6 +24,7 @@ package org.drasyl.handler.remote.tcp;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
@@ -31,11 +32,14 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.util.Objects;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -43,19 +47,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This handler passes messages from the {@link io.netty.channel.socket.SocketChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
+ * This handler passes all receiving messages to the pipeline and updates {@link #clients} on
+ * new/closed connections.
  */
 @UnstableApi
-public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(TcpClientToDrasylHandler.class);
+public class TcpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(TcpServerToDrasylHandler.class);
     private final DrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
     private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
+    private IdentityPublicKey remoteKey;
 
-    public TcpClientToDrasylHandler(final DrasylServerChannel parent) {
+    TcpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
     }
 
@@ -65,32 +70,46 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        LOG.trace("Read `{}`", msg);
+    public void channelRead(final ChannelHandlerContext ctx,
+                            final Object msg) {
+        LOG.trace("Read `{}` received via TCP from `{}`.", () -> msg, ctx.channel()::remoteAddress);
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+            final RemoteMessage remoteMsg = (RemoteMessage) ((InetAddressedMessage<?>) msg).content();
+            if (remoteKey == null) {
+                remoteKey = (IdentityPublicKey) remoteMsg.getSender();
+                parent.pipeline().get(TcpServer.class).tcpClientChannels.put(remoteKey, (SocketChannel) ctx.channel());
+                LOG.trace("Lock in channel `{}` to peer `{}`.", ctx::channel, () -> remoteKey);
+            }
+            if (!Objects.equals(remoteKey, remoteMsg.getSender())) {
+                LOG.trace("Channel `{}` is locked in to peer `{}` but we got message from `{}`. Close.", ctx::channel, () -> remoteKey, remoteMsg::getSender);
+                ReferenceCountUtil.release(msg);
+                ctx.channel().close();
+            }
 
-        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage && parent.localAddress().equals(((ApplicationMessage) ((InetAddressedMessage<?>) msg).content()).getRecipient())) {
-            final PeersManager peersManager = parent.config().getPeersManager();
+            if (remoteMsg instanceof ApplicationMessage && parent.localAddress().equals(remoteMsg.getRecipient())) {
+                final PeersManager peersManager = parent.config().getPeersManager();
 
-            final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
-            peersManager.applicationMessageReceived(appMsg.getSender());
+                final ApplicationMessage appMsg = (ApplicationMessage) remoteMsg;
+                peersManager.applicationMessageReceived(appMsg.getSender());
 
-            final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
-            if (drasylChannel != null) {
-                LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
-                drasylChannel.queueRead(appMsg.getPayload());
+                final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
+                if (drasylChannel != null) {
+                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                    drasylChannel.queueRead(appMsg.getPayload());
+                }
+                else {
+                    readCompletePending.add(appMsg.getSender());
+                    parent.serve(appMsg.getSender()).addListener(future -> {
+                        final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                        drasylChannel1.queueRead(appMsg.getPayload());
+                    });
+                }
             }
             else {
-                readCompletePending.add(appMsg.getSender());
-                parent.serve(appMsg.getSender()).addListener(future -> {
-                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
-                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
-                    drasylChannel1.queueRead(appMsg.getPayload());
-                });
+                parentReadCompletePending = true;
+                parent.pipeline().fireChannelRead(msg);
             }
-        }
-        else {
-            parentReadCompletePending = true;
-            parent.pipeline().fireChannelRead(msg);
         }
     }
 
@@ -168,7 +187,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
             }
             pipeline.write(o).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written to socket channel failed:", () -> o, future::cause);
+                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> o, future::cause);
                 }
             });
         } while (true); // TODO: use isWritable?

@@ -25,21 +25,21 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
-import io.netty.util.ReferenceCounted;
 import io.netty.util.concurrent.EventExecutor;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.identity.IdentityPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -51,36 +51,30 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.net.UnknownHostException;
-import java.time.Duration;
 import java.util.Map;
 import java.util.function.Function;
 
 import static io.netty.util.CharsetUtil.UTF_8;
 import static java.net.InetSocketAddress.createUnresolved;
-import static java.time.Duration.ofSeconds;
 import static org.drasyl.handler.remote.tcp.TcpServer.HTTP_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
+import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TcpServerTest {
-    private final Duration pingTimeout = ofSeconds(10);
-    @Mock(answer = RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_SELF)
     private ServerBootstrap bootstrap;
     @Mock
-    private Map<SocketAddress, Channel> clientChannels;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel serverChannel;
+    private Map<IdentityPublicKey, SocketChannel> clientChannels;
     private InetAddress bindHost;
     private int bindPort;
-    private Function<ChannelHandlerContext, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
 
     @BeforeEach
     void setUp() throws UnknownHostException {
@@ -92,132 +86,28 @@ class TcpServerTest {
     @Nested
     class StartServer {
         @Test
-        void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(channelFuture.isSuccess()).thenReturn(true);
+        void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannelConfig config) {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
-            when(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()).bind(bindHost, bindPort).addListener(any())).then(invocation -> {
+            when(bootstrap.bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
+            when(bootstrap.bind(bindHost, bindPort).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, channelInitializerSupplier, null);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final TcpServer handler = new TcpServer(channelInitializerSupplier, null, clientChannels);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
+            channel.pipeline().addLast(handler);
             try {
-                verify(bootstrap.option(any(), any()).group(any()).channel(any()).childHandler(any()), times(2)).bind(bindHost, bindPort);
+                verify(bootstrap).bind(bindHost, bindPort);
             }
             finally {
                 channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
-        }
-    }
-
-    @Nested
-    class StopServer {
-        @Test
-        void shouldStopServerOnChannelInactive(@Mock final ChannelHandlerContext ctx) {
-            when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(443));
-
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, channelInitializerSupplier, serverChannel);
-            try {
-                handler.channelInactive(ctx);
-
-                verify(serverChannel).close();
-            }
-            finally {
-                serverGroup.shutdownGracefully();
-            }
-        }
-    }
-
-    @Nested
-    class MessagePassing {
-        @SuppressWarnings("SuspiciousMethodCalls")
-        @Test
-        void shouldPassOutgoingMessageToTcpClient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
-                                                  @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            when(clientChannels.get(any())).thenReturn(client);
-
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, channelInitializerSupplier, serverChannel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
-
-                verify(client).writeAndFlush(any());
-            }
-            finally {
-                channel.checkException();
-                channel.close();
-                serverGroup.shutdownGracefully();
-            }
-        }
-
-        @SuppressWarnings("SuspiciousMethodCalls")
-        @Test
-        void shouldRejectMessageIfClientChannelIsNotWritable(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final Channel client,
-                                                             @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            when(clientChannels.get(any())).thenReturn(client);
-
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, channelInitializerSupplier, serverChannel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                final ChannelPromise promise = channel.newPromise();
-                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient), promise);
-                assertFalse(promise.isSuccess());
-            }
-            finally {
-                channel.checkException();
-                channel.close();
-                serverGroup.shutdownGracefully();
-            }
-        }
-
-        @Test
-        void shouldPassThroughOutgoingMessageForUnknownRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress recipient,
-                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg) {
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final TcpServer handler = new TcpServer(bootstrap, serverGroup, clientChannels, bindHost, bindPort, pingTimeout, channelInitializerSupplier, serverChannel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
-
-                final ReferenceCounted actual = channel.readOutbound();
-                assertEquals(new InetAddressedMessage<>(msg, recipient), actual);
-
-                actual.release();
-            }
-            finally {
-                channel.checkException();
-                channel.close();
-                serverGroup.shutdownGracefully();
-            }
-        }
-    }
-
-    @Nested
-    class TcpServerChannelInitializerTest {
-        @Mock
-        private Map<SocketAddress, Channel> clients;
-        @Mock(answer = RETURNS_DEEP_STUBS)
-        private ChannelHandlerContext ctx;
-
-        @Test
-        void shouldAddCorrectHandlersToChannel(@Mock(answer = RETURNS_DEEP_STUBS) final SocketChannel ch,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final TcpServer tcpServer) {
-            when(ctx.handler()).thenReturn(tcpServer);
-
-            new TcpServerChannelInitializer(ctx).initChannel(ch);
-
-            verify(ch.pipeline()).addLast(any(IdleStateHandler.class));
-            verify(ch.pipeline()).addLast(any(TcpServerHandler.class));
         }
     }
 
@@ -225,25 +115,8 @@ class TcpServerTest {
     class TcpServerHandlerTest {
         @Captor
         ArgumentCaptor<ByteBuf> outboundMsg;
-        @Mock
-        private Map<SocketAddress, Channel> clients;
         @Mock(answer = RETURNS_DEEP_STUBS)
         private ChannelHandlerContext ctx;
-
-        @Test
-        void shouldAddClientOnNewConnection(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
-            new TcpServerHandler(clients, ctx).channelActive(nettyCtx);
-
-            verify(clients).put(any(), any());
-        }
-
-        @SuppressWarnings("SuspiciousMethodCalls")
-        @Test
-        void shouldRemoveClientOnConnection(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext nettyCtx) {
-            new TcpServerHandler(clients, ctx).channelInactive(nettyCtx);
-
-            verify(clients).remove(any());
-        }
 
         @Test
         void shouldPassInboundMessageToPipeline(@Mock(answer = RETURNS_DEEP_STUBS) final ByteBuf msg,

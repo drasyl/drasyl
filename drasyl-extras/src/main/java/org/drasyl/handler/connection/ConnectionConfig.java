@@ -82,7 +82,7 @@ public abstract class ConnectionConfig {
             // new connection for this time period.
             // Thus, we set MSL to 2 seconds for efficiency.
             .msl(ofSeconds(2))
-            .noDelay(false)
+            .noDelay(true)
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
             .userTimeout(ofSeconds(60))

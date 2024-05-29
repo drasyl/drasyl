@@ -22,10 +22,16 @@
 package org.drasyl.node.plugin.groups.client;
 
 import com.typesafe.config.Config;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import org.drasyl.channel.OverlayAddressedMessage;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.plugin.PluginEnvironment;
+import org.drasyl.node.handler.serialization.MessageSerializer;
+import org.drasyl.node.plugin.groups.client.message.GroupsServerMessage;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -34,8 +40,8 @@ import org.drasyl.util.logging.LoggerFactory;
  * startup to join groups. The manager can then inform the node about existing memberships as well
  * as leaving and joining nodes.
  */
+@UnstableApi
 public class GroupsClientPlugin implements DrasylPlugin {
-    public static final String GROUPS_CLIENT_HANDLER = "GROUPS_CLIENT_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientPlugin.class);
     private final GroupsClientConfig config;
 
@@ -53,18 +59,35 @@ public class GroupsClientPlugin implements DrasylPlugin {
     }
 
     @Override
-    public void onBeforeStart(final PluginEnvironment environment) {
+    public void onServerChannelRegistered(final PluginEnvironment env) {
         LOG.debug("Start Groups Client Plugin with options: {}", config);
 
-        environment.getPipeline().addAfter(environment.getPipeline().context(ApplicationMessageToPayloadCodec.class).name(), GROUPS_CLIENT_HANDLER, new GroupsClientHandler(config.getGroups(), environment.getIdentity()));
-        environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_MANAGER_DECODER", new GroupsServerMessageDecoder());
-        environment.getPipeline().addBefore(GROUPS_CLIENT_HANDLER, "GROUPS_CLIENT_ENCODER", new GroupsClientMessageEncoder());
+        env.getPipeline().addLast(new GroupsClientHandler(config.getGroups(), env.getIdentity()));
     }
 
     @Override
-    public void onBeforeShutdown(final PluginEnvironment environment) {
+    public void onServerChannelInactive(final PluginEnvironment env) {
         LOG.debug("Stop Groups Client Plugin.");
 
-        environment.getPipeline().remove(GROUPS_CLIENT_HANDLER);
+        env.getPipeline().remove(GroupsClientHandler.class);
+    }
+
+    @Override
+    public void onChildChannelRegistered(final PluginEnvironment env) {
+        env.getPipeline().addBefore(env.getPipeline().context(MessageSerializer.class).name(), null, new GroupsServerMessageDecoder());
+        env.getPipeline().addBefore(env.getPipeline().context(MessageSerializer.class).name(), null, new SimpleChannelInboundHandler<GroupsServerMessage>() {
+            @Override
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final GroupsServerMessage msg) {
+                ctx.channel().parent().pipeline().fireChannelRead(new OverlayAddressedMessage<>(msg, (DrasylAddress) ctx.channel().localAddress(), (DrasylAddress) ctx.channel().remoteAddress()));
+            }
+        });
+        env.getPipeline().addAfter(env.getPipeline().context(MessageSerializer.class).name(), null, new GroupsClientMessageEncoder());
+    }
+
+    @Override
+    public void onChildChannelInactive(final PluginEnvironment env) {
+        env.getPipeline().remove(GroupsServerMessageDecoder.class);
+        env.getPipeline().remove(GroupsClientMessageEncoder.class);
     }
 }

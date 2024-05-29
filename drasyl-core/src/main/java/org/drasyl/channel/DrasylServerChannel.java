@@ -24,38 +24,35 @@ package org.drasyl.channel;
 import io.netty.channel.AbstractServerChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.ReferenceCountUtil;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.DefaultPromise;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
+import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.HashSetMultimap;
-import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.SocketAddress;
-import java.util.HashSet;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
@@ -72,27 +69,34 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public class DrasylServerChannel extends AbstractServerChannel implements IdentityChannel {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
+    static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
+
     enum State {OPEN, ACTIVE, CLOSED}
 
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);
+    private final Map<DrasylAddress, DrasylChannel> channels;
     private volatile State state;
-    public final Map<SocketAddress, DrasylChannel> channels;
-    final SetMultimap<DrasylAddress, Object> paths = new HashSetMultimap<>();
     private volatile Identity identity; // NOSONAR
+    private volatile UdpServerToDrasylHandler udpDrasylHandler;
+    private ChannelPromise activePromise;
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
-                        final Map<SocketAddress, DrasylChannel> channels,
-                        final Identity identity) {
+                        final Map<DrasylAddress, DrasylChannel> channels,
+                        final Identity identity,
+                        final UdpServerToDrasylHandler udpDrasylHandler,
+                        final ChannelPromise activePromise) {
         this.state = requireNonNull(state);
         this.channels = requireNonNull(channels);
         this.identity = identity;
+        this.udpDrasylHandler = udpDrasylHandler;
+        this.activePromise = activePromise;
     }
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, new ConcurrentHashMap<>(), null);
+        this(State.OPEN, new ConcurrentHashMap<>(), null, null, null);
     }
 
     @Override
@@ -123,18 +127,40 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
 
         this.identity = (Identity) identity;
         state = State.ACTIVE;
+
+        if (config().isIntraVmDiscoveryEnabled()) {
+            final PeersManager peersManager = config().getPeersManager();
+            serverChannels.forEach((peerKey, peerChannel) -> {
+                if (peerChannel.config().isIntraVmDiscoveryEnabled() && config().getNetworkId() == peerChannel.config().getNetworkId()) {
+                    final PeersManager peerPeersManager = peerChannel.config().getPeersManager();
+                    activePromise.addListener((ChannelFutureListener) future -> peersManager.addChildrenPath(pipeline().firstContext(), peerKey, IntraVmDiscovery.PATH_ID, null));
+                    peerChannel.activePromise.addListener((ChannelFutureListener) future -> peerPeersManager.addChildrenPath(peerChannel.pipeline().firstContext(), DrasylServerChannel.this.identity.getAddress(), IntraVmDiscovery.PATH_ID, null));
+                }
+            });
+            serverChannels.put(this.identity.getAddress(), this);
+        }
     }
 
     @Override
     protected void doRegister() throws Exception {
         super.doRegister();
 
+        activePromise = newPromise();
+
         pipeline().addLast(new ChannelInitializer<>() {
             @Override
             public void initChannel(final Channel ch) {
-                ch.pipeline().addLast(new ChildChannelRouter(paths));
+                ch.pipeline().addLast(new ChildChannelRouter());
                 ch.pipeline().addLast(new DuplicateChannelFilter());
-                ch.pipeline().addLast(new PendingWritesFlusher());
+                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelActive(final ChannelHandlerContext ctx) {
+                        ctx.fireChannelActive();
+
+                        ctx.executor().execute(() -> activePromise.setSuccess());
+                        ctx.pipeline().remove(this);
+                    }
+                });
             }
         });
     }
@@ -143,6 +169,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     protected void doClose() {
         if (state != State.CLOSED) {
             // Update the internal state before the closeFuture<?> is notified.
+            if (config().isIntraVmDiscoveryEnabled()) {
+                serverChannels.remove(identity.getAddress());
+            }
+
             if (identity != null) {
                 identity = null;
             }
@@ -176,27 +206,34 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         return new DrasylChannel(this, peer);
     }
 
+    public Map<DrasylAddress, DrasylChannel> getChannels() {
+        return channels;
+    }
+
+    public DrasylChannel getChannel(final DrasylAddress peer) {
+        return channels.get(peer);
+    }
+
     public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
         if (eventLoop().inEventLoop()) {
-            serve0(peer, promise);
+            promise.trySuccess(serve0(peer));
         }
         else {
-            eventLoop().execute(() -> serve0(peer, promise));
+            eventLoop().execute(() -> promise.trySuccess(serve0(peer)));
         }
 
         return promise;
     }
 
-    private void serve0(DrasylAddress peer, Promise<DrasylChannel> promise) {
-        if (!promise.isCancelled()) {
-            DrasylChannel channel = channels.get(peer);
-            if (channel == null) {
-                channel = newDrasylChannel(peer);
-                pipeline().fireChannelRead(channel);
-                pipeline().fireChannelReadComplete();
-            }
-            promise.trySuccess(channel);
+    public DrasylChannel serve0(final DrasylAddress peer) {
+        assert eventLoop().inEventLoop();
+        DrasylChannel channel = channels.get(peer);
+        if (channel == null && isOpen()) {
+            channel = newDrasylChannel(peer);
+            pipeline().fireChannelRead(channel);
+            pipeline().fireChannelReadComplete();
         }
+        return channel;
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer) {
@@ -204,22 +241,44 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     }
 
     /**
+     * This method places the message {@code o} in the queue for outbound messages to be written by
+     * the UDP channel. Queued message are not processed until {@link #finishUdpWrite()} is called.
+     */
+    public void enqueueUdpWrite(final Object o) {
+        outboundUdpBufferHolder().enqueueWrite(o);
+    }
+
+    /**
+     * This method start processing (if any) queued outbound messages for the UDP channel. This
+     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
+     * reading, these reads are performed first and the writes are performed afterwards.
+     */
+    public void finishUdpWrite() {
+        final UdpServerToDrasylHandler handler = outboundUdpBufferHolder();
+        if (handler != null) {
+            handler.finishWrite();
+        }
+    }
+
+    private UdpServerToDrasylHandler outboundUdpBufferHolder() {
+        if (udpDrasylHandler == null) {
+            final UdpServer udpServer = pipeline().get(UdpServer.class);
+            if (udpServer == null) {
+                return null;
+            }
+            final DatagramChannel udpChannel = udpServer.udpChannel();
+            udpDrasylHandler = udpChannel.pipeline().get(UdpServerToDrasylHandler.class);
+        }
+        return udpDrasylHandler;
+    }
+
+    /**
      * This handler routes inbound messages and events to the correct child channel. If there is
      * currently no child channel, a new one is automatically created.
      */
     private static class ChildChannelRouter extends ChannelDuplexHandler {
-        private final SetMultimap<DrasylAddress, Object> paths;
-        private final Set<IdentityPublicKey> fireReadCompleteChannels;
-
         @SuppressWarnings("java:S2384")
-        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths,
-                           final Set<IdentityPublicKey> fireReadCompleteChannels) {
-            this.paths = requireNonNull(paths);
-            this.fireReadCompleteChannels = requireNonNull(fireReadCompleteChannels);
-        }
-
-        ChildChannelRouter(final SetMultimap<DrasylAddress, Object> paths) {
-            this(paths, new HashSet<>());
+        ChildChannelRouter() {
         }
 
         @Override
@@ -247,79 +306,6 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         }
 
         @Override
-        public void channelRead(final ChannelHandlerContext ctx,
-                                final Object msg) {
-            if (msg instanceof Channel) {
-                // pass through
-                ctx.fireChannelRead(msg);
-            }
-            else if (ctx.channel().isOpen()) {
-                try {
-                    final OverlayAddressedMessage<?> childMsg = (OverlayAddressedMessage<?>) msg;
-                    final Object o = childMsg.content();
-                    final IdentityPublicKey peer = (IdentityPublicKey) childMsg.sender();
-                    fireChildChannelRead(ctx, o, peer, true);
-                    fireReadCompleteChannels.add(peer);
-                }
-                catch (final ClassCastException e) {
-                    LOG.error("Can't cast message or sender of message `{}`: ", msg, e);
-                }
-            }
-        }
-
-        @Override
-        public void channelReadComplete(final ChannelHandlerContext ctx) {
-            // pass channelReadComplete to all channels that have read something
-            for (final IdentityPublicKey peer : fireReadCompleteChannels) {
-                fireChildChannelReadComplete(ctx, peer);
-            }
-            fireReadCompleteChannels.clear();
-
-            ctx.fireChannelReadComplete();
-        }
-
-        private void fireChildChannelRead(final ChannelHandlerContext ctx,
-                                          final Object o,
-                                          final IdentityPublicKey peer,
-                                          final boolean recreateClosedChannel) {
-            ((DrasylServerChannel) ctx.channel()).serve(peer).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                if (future.isSuccess()) {
-                    final DrasylChannel channel = future.getNow();
-
-                    // pass event to channel
-                    channel.eventLoop().execute(() -> {
-                        if (channel.isActive()) {
-                            channel.pipeline().fireChannelRead(o);
-                        }
-                        else if (ctx.channel().isOpen() && recreateClosedChannel) {
-                            // channel to which the message is to be passed to has been closed in the
-                            // meantime. give message chance to be consumed by recreate a new channel once
-                            ctx.executor().execute(() -> fireChildChannelRead(ctx, o, peer, false));
-                        }
-                        else {
-                            // drop message
-                            ReferenceCountUtil.release(o);
-                        }
-                    });
-                }
-            });
-        }
-
-        private void fireChildChannelReadComplete(final ChannelHandlerContext ctx,
-                                                  final IdentityPublicKey peer) {
-            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(peer);
-
-            if (channel != null) {
-                // pass event to channel
-                channel.eventLoop().execute(() -> {
-                    if (channel.isActive()) {
-                        channel.pipeline().fireChannelReadComplete();
-                    }
-                });
-            }
-        }
-
-        @Override
         public void userEventTriggered(final ChannelHandlerContext ctx,
                                        final Object evt) {
             if (evt instanceof PathEvent) {
@@ -327,10 +313,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
                     final PathEvent pathEvent = (PathEvent) evt;
                     final DrasylAddress peer = pathEvent.getAddress();
 
-                    if (pathEvent instanceof AddPathEvent || pathEvent instanceof AddPathAndSuperPeerEvent || pathEvent instanceof AddPathAndChildrenEvent) {
+                    if (pathEvent instanceof AddPathAndSuperPeerEvent || pathEvent instanceof AddPathAndChildrenEvent) {
                         addPath(ctx, peer, pathEvent.getPath());
                     }
-                    else if (pathEvent instanceof RemovePathEvent || pathEvent instanceof RemoveSuperPeerAndPathEvent || pathEvent instanceof RemoveChildrenAndPathEvent) {
+                    else if (pathEvent instanceof RemoveSuperPeerAndPathEvent || pathEvent instanceof RemoveChildrenAndPathEvent) {
                         removePath(ctx, peer, pathEvent.getPath());
                     }
                 }
@@ -348,9 +334,8 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             requireNonNull(address);
             requireNonNull(path);
 
-            final boolean firstPath = paths.get(address).isEmpty();
             final Channel channel = getChildChannel(ctx, address);
-            if (paths.put(address, path) && firstPath && channel != null) {
+            if (config(ctx).getPeersManager().hasPath(address) && channel != null) {
                 channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
             }
         }
@@ -366,7 +351,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             requireNonNull(path);
 
             final Channel channel = getChildChannel(ctx, address);
-            if (paths.remove(address, path) && paths.get(address).isEmpty() && channel != null) {
+            if (!config(ctx).getPeersManager().hasPath(address) && channel != null) {
                 channel.pipeline().fireUserEventTriggered(ChannelDirectPathChanged.INSTANCE);
             }
         }
@@ -386,32 +371,19 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final DrasylChannel msg) {
-            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put(msg.remoteAddress(), msg);
+            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put((DrasylAddress) msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
             if (oldValue != null) {
-                oldValue.close();
-                // wait for close to complete!?
-            }
-
-            ctx.fireChannelRead(msg);
-        }
-    }
-
-    /**
-     * This handler is part of the backpressure mechanisms of the server channel. It informs all
-     * child channels to flush once the server channel has become writable again.
-     */
-    private static class PendingWritesFlusher extends ChannelInboundHandlerAdapter {
-        @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-            ctx.fireChannelWritabilityChanged();
-
-            if (ctx.channel().isWritable()) {
-                for (final DrasylChannel channel : ((DrasylServerChannel) ctx.channel()).channels.values()) {
-                    if (channel.pendingWrites) {
-                        channel.flush();
+                // wait for close to complete!
+                oldValue.close().addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        ctx.fireChannelRead(msg);
                     }
-                }
+                });
+            }
+            else {
+                ctx.fireChannelRead(msg);
             }
         }
     }

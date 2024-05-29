@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
 import java.time.Duration;
@@ -31,7 +32,7 @@ import java.time.Duration;
  */
 @UnstableApi
 public class ConnectionAbortedDueToUserTimeoutException extends ConnectionException {
-    public ConnectionAbortedDueToUserTimeoutException(final Duration userTimeout) {
-        super("connection aborted due to user timeout " + userTimeout.toMillis() + "ms");
+    public ConnectionAbortedDueToUserTimeoutException(final Channel channel, final Duration userTimeout) {
+        super(channel, "connection aborted due to user timeout " + userTimeout.toMillis() + "ms");
     }
 }

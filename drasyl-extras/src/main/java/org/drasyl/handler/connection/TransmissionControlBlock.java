@@ -483,8 +483,7 @@ public class TransmissionControlBlock {
         while (readableBytes > 0) {
             LOG.trace("{} {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
             final long wnd = min(sndWnd(), cwnd());
-            final long flightSize = flightSize();
-            final long usableWindow = max(0, wnd - flightSize);
+            final long usableWindow = max(0, wnd - flightSize());
             if (!config().noDelay()) {
                 // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
                 // RFC 9293: sender (MUST-38).
