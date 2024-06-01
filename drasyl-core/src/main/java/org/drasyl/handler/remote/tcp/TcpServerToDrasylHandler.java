@@ -26,6 +26,8 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -78,6 +80,12 @@ public class TcpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             if (remoteKey == null) {
                 remoteKey = (IdentityPublicKey) remoteMsg.getSender();
                 parent.pipeline().get(TcpServer.class).tcpClientChannels.put(remoteKey, (SocketChannel) ctx.channel());
+                ctx.channel().closeFuture().addListener(new GenericFutureListener<Future<? super Void>>() {
+                    @Override
+                    public void operationComplete(Future<? super Void> future) throws Exception {
+                        parent.pipeline().get(TcpServer.class).tcpClientChannels.remove(remoteKey);
+                    }
+                });
                 LOG.trace("Lock in channel `{}` to peer `{}`.", ctx::channel, () -> remoteKey);
             }
             if (!Objects.equals(remoteKey, remoteMsg.getSender())) {
