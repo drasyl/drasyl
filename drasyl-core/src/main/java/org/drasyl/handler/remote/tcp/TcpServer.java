@@ -125,8 +125,12 @@ public class TcpServer extends ChannelDuplexHandler {
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
         for (final SocketChannel clientChannel : tcpClientChannels.values()) {
-            final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
-            tcpDrasylHandler.finishWrite();
+            if (clientChannel.isOpen()) {
+                final TcpServerToDrasylHandler tcpDrasylHandler = clientChannel.pipeline().get(TcpServerToDrasylHandler.class);
+                if (tcpDrasylHandler != null) {
+                    tcpDrasylHandler.finishWrite();
+                }
+            }
         }
 
         ctx.flush();
