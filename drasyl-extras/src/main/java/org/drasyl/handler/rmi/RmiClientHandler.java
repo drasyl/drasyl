@@ -116,6 +116,9 @@ public class RmiClientHandler extends SimpleChannelInboundHandler<AddressedEnvel
         if (invocationHandler != null && invocationHandler.getAddress().equals(sender)) {
             invocationHandler.handleResult(id, result);
         }
+        else {
+            LOG.debug("Response `{}` does not belong to any request ({}).", response, requests);
+        }
     }
 
     private void handleError(final RmiError error, final SocketAddress sender) {
