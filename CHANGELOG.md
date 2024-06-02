@@ -10,17 +10,23 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - CLI: Option `--rc-start-node` to sub-command `node` added.
+- CLI: Option `--unavailability-cause` to sub-command `version` added.
 - CLI: Sub-command `node-rc peers` added.
 - [`EventTypeDrasylNode`](drasyl-examples/src/main/java/org/drasyl/example/EventTypeDrasylNodeExample.java) added.
 - `DrasylNode` will now check local time is correct on start as this is mandatory for drasyl protocol to work.
 - [`InboundExceptionEvent`](drasyl-node/src/main/java/org/drasyl/node/event/InboundExceptionEvent.java) now contains exception in string presentation.
-- 
+- `DrasylConfig`: Option `drasyl.remove.tcp-fallback.connect-port` added.
+
 
 ### Changed
 
 - Dependencies have been updated.
--
--
+- TCP fallback now connects to all super peers.
+- Application messages are not longer passed through the `DrasylServerChannel` (this was a performance bottleneck).
+- CLI: Option `--ack-interval` from sub-command `wormhole receive` removed (the new reliability layer determines this value automatically).
+- CLI: Options `--window-size` and `--window-timeout` from sub-command `wormhole send` removed (the new reliability layer determines this value automatically).
+- `DrasylConfig`: Options `drasyl.remove.message.mtu`, `drasyl.remove.message.max-content-length`, `drasyl.remove.message.composed-message-transfer-timeout`, `drasyl.remove.message.arq` removed (the new reliability layer determines this value automatically).
+- `DrasylConfig`: Options `drasyl.remove.tcp-fallback.timeout`, `drasyl.remove.tcp-fallback.address` removed.
 
 ### Fixed
 
