@@ -44,7 +44,7 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.SocketChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
+ * {@link DrasylServerChannel}'s context.
  */
 @UnstableApi
 public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {

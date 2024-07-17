@@ -44,7 +44,7 @@ import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandle
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
+ * {@link DrasylServerChannel}'s context.
  */
 @UnstableApi
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
