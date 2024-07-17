@@ -48,6 +48,7 @@ jobs:
           - linux-amd64
           - linux-arm64
           - macos-amd64
+          - macos-arm64
           - windows-amd64
 
         include:
@@ -58,6 +59,9 @@ jobs:
             os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
+            os: macOS-13
+
+          - job_name: macos-arm64
             os: macOS-latest
 
           - job_name: windows-amd64
@@ -119,7 +123,7 @@ jobs:
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.job_name == 'linux-arm64'
 
-      - name: Build Package on Mac x86
+      - name: Build Package on Mac
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/

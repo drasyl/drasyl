@@ -43,6 +43,7 @@ jobs:
         job_name:
           - linux-amd64
           - macos-amd64
+          - macos-arm64
           - windows-amd64
 
         include:
@@ -50,6 +51,9 @@ jobs:
             os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: macos-amd64
+            os: macOS-13
+
+          - job_name: macos-arm64
             os: macOS-latest
 
           - job_name: windows-amd64
