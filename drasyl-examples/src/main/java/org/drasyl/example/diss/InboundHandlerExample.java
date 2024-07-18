@@ -21,35 +21,14 @@
  */
 package org.drasyl.example.diss;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.DefaultEventLoopGroup;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.identity.Identity;
-import org.drasyl.node.identity.IdentityManager;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 
-import java.io.IOException;
-import java.nio.file.Path;
-
-public class BootstrapExample {
-    public static void main(final String[] args) throws IOException {
-Identity i = IdentityManager.readIdentityFile(Path.of("drasyl.identity"));
-
-ServerBootstrap b = new ServerBootstrap()
-        .channel(DrasylServerChannel.class)
-        .handler(new DefaultDrasylServerChannelInitializer())
-        .childHandler(new ChannelInitializer<>() {
-            @Override
-            protected void initChannel(Channel ch) throws Exception {
-                ch.pipeline().addLast(null);
-            }
-        }).group(new DefaultEventLoopGroup(1));
-Channel ch = b.bind(i).syncUninterruptibly().channel();
-
-        while (ch.isOpen()) {
-            //System.out.printf("x");
-        }
+public class InboundHandlerExample extends ChannelInboundHandlerAdapter {
+    @Override
+    public void channelRead(ChannelHandlerContext ctx,
+                            Object msg) {
+        // TODO: do something
+        ctx.fireChannelRead(msg);
     }
 }
