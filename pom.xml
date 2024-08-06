@@ -126,15 +126,15 @@
         <junit.version>5.10.3</junit.version>
         <mockito.version>5.12.0</mockito.version>
         <jackson.version>2.17.2</jackson.version>
-        <hamcrest.version>2.2</hamcrest.version>
+        <hamcrest.version>3.0</hamcrest.version>
         <awaitility.version>4.2.1</awaitility.version>
-        <netty.version>4.1.111.Final</netty.version>
+        <netty.version>4.1.112.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
         <slf4j.version>2.0.13</slf4j.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
-        <protobuf.version>4.27.2</protobuf.version>
+        <protobuf.version>4.27.3</protobuf.version>
         <auto-value.version>1.11.0</auto-value.version>
         <jna.version>5.14.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -423,7 +423,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-release-plugin</artifactId>
-                    <version>3.1.0</version>
+                    <version>3.1.1</version>
                 </plugin>
                 <plugin>
                     <groupId>org.sonatype.plugins</groupId>
