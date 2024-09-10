@@ -24,7 +24,7 @@ jobs:
           fetch-depth: 0
       # sign artefacts to check if signing works, otherwise we would only find out after merging with the master, which is too late
       - name: Set up JDK
-        uses: actions/setup-java@v4.2.2
+        uses: actions/setup-java@v4.3.0
         with:
           java-version: ${{ matrix.java }}
           distribution: 'adopt'
