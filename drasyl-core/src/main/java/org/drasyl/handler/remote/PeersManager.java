@@ -194,7 +194,12 @@ public class PeersManager {
     private InetSocketAddress resolveDefault() {
         if (defaultPeerKey != null) {
             final Peer defaultPeer = peers.get(defaultPeerKey);
-            return defaultPeer.resolve();
+            if (defaultPeer != null) {
+                return defaultPeer.resolve();
+            }
+            else {
+                return null;
+            }
         }
         return null;
     }
