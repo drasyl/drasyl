@@ -73,19 +73,20 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start server...");
 
-        config(ctx).getUdpBootstrap().get()
+        final ChannelFuture future = config(ctx).getUdpBootstrap().get()
                 .group(config(ctx).getUdpEventLoop().get())
                 .channel(config(ctx).getUdpChannelClass())
                 .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
-                .bind(config(ctx).getUdpBind())
-                .addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel()));
+                .bind(config(ctx).getUdpBind());
+        udpChannel = (DatagramChannel) future.channel();
+        future.addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel()));
     }
 
     @Override
     public void write(final ChannelHandlerContext ctx,
                       final Object msg,
                       final ChannelPromise promise) {
-        if (udpChannel != null && msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
+        if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
             outboundUdpBufferHolder().enqueueWrite(msg);
         }
         else {
@@ -95,10 +96,8 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        if (udpChannel != null) {
-            final UdpServerToDrasylHandler outboundBufferHolder = outboundUdpBufferHolder();
-            outboundBufferHolder.finishWrite();
-        }
+        final UdpServerToDrasylHandler outboundBufferHolder = outboundUdpBufferHolder();
+        outboundBufferHolder.finishWrite();
 
         ctx.flush();
     }
@@ -136,7 +135,6 @@ public class UdpServer extends ChannelDuplexHandler {
                 final InetSocketAddress socketAddress = channel.localAddress();
                 LOG.debug("Server started and bound to udp:/{}.", socketAddress);
 
-                UdpServer.this.udpChannel = channel;
                 parent.pipeline().fireUserEventTriggered(new UdpServerBound(socketAddress));
                 parent.pipeline().context(UdpServer.class).fireChannelActive();
 
