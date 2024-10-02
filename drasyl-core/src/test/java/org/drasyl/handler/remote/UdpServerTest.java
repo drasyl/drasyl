@@ -109,7 +109,7 @@ class UdpServerTest {
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(udpServerToDrasylHandler).enqueueWrite(any());
+                verify(udpChannel).write(any(), any());
             }
             finally {
                 channel.checkException();

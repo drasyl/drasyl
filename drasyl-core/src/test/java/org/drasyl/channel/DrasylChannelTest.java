@@ -27,7 +27,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
-import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylChannel.State;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -126,10 +125,10 @@ class DrasylChannelTest {
         @Test
         void shouldWriteMessageToParentChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final DatagramChannel udpChannel,
                                                @Mock final Object msg,
                                                @Mock final ChannelPromise promise) throws Exception {
             when(parent.config().getNetworkId()).thenReturn(0);
+            when(parent.udpChannel().isWritable()).thenReturn(true);
 
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
             channel.doRegister();
@@ -140,8 +139,8 @@ class DrasylChannelTest {
 
             channel.doWrite(in);
 
-            verify(parent).enqueueUdpWrite(any());
-            verify(parent).finishUdpWrite();
+            verify(parent.udpChannel()).write(any());
+            verify(parent.udpChannel()).flush();
         }
     }
 

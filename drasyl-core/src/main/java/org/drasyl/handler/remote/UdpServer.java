@@ -29,6 +29,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.concurrent.PromiseNotifier;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
@@ -87,7 +88,7 @@ public class UdpServer extends ChannelDuplexHandler {
                       final Object msg,
                       final ChannelPromise promise) {
         if (msg instanceof InetAddressedMessage && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage) {
-            outboundUdpBufferHolder().enqueueWrite(msg);
+            udpChannel.write(msg, PromiseNotifier.cascade(udpChannel.newPromise(), promise));
         }
         else {
             ctx.write(msg, promise);
@@ -96,9 +97,7 @@ public class UdpServer extends ChannelDuplexHandler {
 
     @Override
     public void flush(final ChannelHandlerContext ctx) throws Exception {
-        final UdpServerToDrasylHandler outboundBufferHolder = outboundUdpBufferHolder();
-        outboundBufferHolder.finishWrite();
-
+        udpChannel.flush();
         ctx.flush();
     }
 
