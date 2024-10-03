@@ -21,11 +21,9 @@
  */
 package org.drasyl.handler.remote;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelPipeline;
-import io.netty.util.ReferenceCountUtil;
-import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
@@ -35,7 +33,8 @@ import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.util.Queue;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -50,10 +49,10 @@ import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandle
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
     private final DrasylServerChannel parent;
-    private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
     private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
+    private Set<Channel> flushChannels = new HashSet<>();
 
     public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
@@ -121,69 +120,34 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
-    public void channelInactive(final ChannelHandlerContext ctx) {
-        releaseOutboundBuffer();
+    public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
+        if (ctx.channel().isWritable()) {
+            final Iterator<Channel> iterator = flushChannels.iterator();
+            while (iterator.hasNext()) {
+                final Channel channel = iterator.next();
+                iterator.remove();
+                channel.flush();
+            }
+        }
 
-        ctx.fireChannelInactive();
+        ctx.fireChannelWritabilityChanged();
     }
 
-    /**
-     * This method places the message {@code o} in the queue for outbound messages to be written by
-     * this channel. Queued message are not processed until {@link #finishWrite()} is called.
-     */
-    public void enqueueWrite(final Object o) {
-        outboundBuffer.add(o);
-    }
-
-    /**
-     * This method start processing (if any) queued outbound messages for the UDP channel. This
-     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
-     * reading, these reads are performed first and the writes are performed afterwards.
-     */
-    public void finishWrite() {
-        // check whether the channel is currently reading; if so, we must schedule the event in the
-        // event loop to maintain the read/write order.
-        if (ctx.executor().inEventLoop()) {
-            finishWrite0(ctx);
+    public void flushIfBecomeWritable(final Channel channel) {
+        if (ctx.channel().eventLoop().inEventLoop()) {
+            if (ctx.channel().isWritable()) {
+                channel.flush();
+            }
+            flushChannels.add(channel);
         }
         else {
-            runFinishWriteTask(ctx);
-        }
-    }
-
-    private void finishWrite0(final ChannelHandlerContext ctx) {
-        if (!outboundBuffer.isEmpty()) {
-            writeOutbound(ctx);
-        }
-
-    }
-
-    private void runFinishWriteTask(final ChannelHandlerContext ctx) {
-        ctx.executor().execute(() -> this.finishWrite0(ctx));
-    }
-
-    void writeOutbound(final ChannelHandlerContext ctx) {
-        final ChannelPipeline pipeline = ctx.pipeline();
-        do {
-            final Object o = outboundBuffer.poll();
-            if (o == null) {
-                break;
-            }
-            pipeline.write(o).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn("Outbound message `{}` written to datagram channel failed:", () -> o, future::cause);
+            ctx.channel().eventLoop().execute(() -> {
+                if (ctx.channel().isWritable()) {
+                    channel.flush();
                 }
+                flushChannels.add(channel);
             });
-        } while (true); // TODO: use isWritable?
-
-        // all messages written, fire flush event
-        pipeline.flush();
-    }
-
-    private void releaseOutboundBuffer() {
-        Object msg;
-        while ((msg = outboundBuffer.poll()) != null) {
-            ReferenceCountUtil.release(msg);
         }
+
     }
 }

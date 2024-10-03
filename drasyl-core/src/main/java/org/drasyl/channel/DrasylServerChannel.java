@@ -78,6 +78,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private final Map<DrasylAddress, DrasylChannel> channels;
     private volatile State state;
     private volatile Identity identity; // NOSONAR
+    private DatagramChannel udpChannel;
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
     private ChannelPromise activePromise;
 
@@ -240,36 +241,23 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         return serve(peer, new DefaultPromise<>(eventLoop()));
     }
 
-    /**
-     * This method places the message {@code o} in the queue for outbound messages to be written by
-     * the UDP channel. Queued message are not processed until {@link #finishUdpWrite()} is called.
-     */
-    public void enqueueUdpWrite(final Object o) {
-        outboundUdpBufferHolder().enqueueWrite(o);
-    }
-
-    /**
-     * This method start processing (if any) queued outbound messages for the UDP channel. This
-     * method ensures that read/write order is respected. Therefore, if UDP channel is currently
-     * reading, these reads are performed first and the writes are performed afterwards.
-     */
-    public void finishUdpWrite() {
-        final UdpServerToDrasylHandler handler = outboundUdpBufferHolder();
-        if (handler != null) {
-            handler.finishWrite();
-        }
-    }
-
-    private UdpServerToDrasylHandler outboundUdpBufferHolder() {
-        if (udpDrasylHandler == null) {
+    public DatagramChannel udpChannel() {
+        if (udpChannel == null) {
             final UdpServer udpServer = pipeline().get(UdpServer.class);
-            if (udpServer == null) {
-                return null;
-            }
-            final DatagramChannel udpChannel = udpServer.udpChannel();
-            udpDrasylHandler = udpChannel.pipeline().get(UdpServerToDrasylHandler.class);
+            udpChannel = udpServer.udpChannel();
+        }
+        return udpChannel;
+    }
+
+    private UdpServerToDrasylHandler udpChannelHandler() {
+        if (udpDrasylHandler == null) {
+            udpDrasylHandler = udpChannel().pipeline().get(UdpServerToDrasylHandler.class);
         }
         return udpDrasylHandler;
+    }
+
+    public void flushMeIfUdpChannelBecomeWritable(final Channel channel) {
+        udpChannelHandler().flushIfBecomeWritable(channel);
     }
 
     /**

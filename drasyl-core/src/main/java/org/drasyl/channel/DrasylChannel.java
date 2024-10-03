@@ -295,8 +295,8 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 break;
         }
 
-        boolean somethingWrittenToUdp = false;
         writeInProgress = true;
+        boolean doUdpFlush = false;
         try {
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
@@ -342,8 +342,14 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
                         LOG.trace("Resolve message to endpoint `{}`.", endpoint);
-                        parent().enqueueUdpWrite(inetMsg);
-                        somethingWrittenToUdp = true;
+                        if (parent().udpChannel().isWritable()) {
+                            doUdpFlush = true;
+                            parent().udpChannel().write(inetMsg);
+                        }
+                        else {
+                            parent().flushMeIfUdpChannelBecomeWritable(this);
+                            break;
+                        }
                     }
                     else {
                         LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
@@ -357,8 +363,8 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
             writeInProgress = false;
         }
 
-        if (somethingWrittenToUdp) {
-            parent().finishUdpWrite();
+        if (doUdpFlush) {
+            parent().udpChannel().flush();
         }
     }
 
