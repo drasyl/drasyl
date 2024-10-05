@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,10 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.IdentityPublicKey;
@@ -80,14 +82,14 @@ class UnarmedProtocolMessageTest {
     }
 
     @Nested
-    class WriteTo {
+    class EncodeMessage {
         @Test
         void shouldNotModifyMessageByteBuf() throws IOException {
             final UnarmedProtocolMessage unarmedMessage = UnarmedProtocolMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
 
             final int readableBytes = unarmedMessage.getBytes().readableBytes();
-            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-            unarmedMessage.writeTo(byteBuf);
+            final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+            final ByteBuf byteBuf = unarmedMessage.encodeMessage(alloc);
 
             assertEquals(readableBytes, unarmedMessage.getBytes().readableBytes());
 
@@ -98,11 +100,10 @@ class UnarmedProtocolMessageTest {
         void multipleCallsShouldWriteSameBytes() throws IOException {
             final UnarmedProtocolMessage unarmedMessage = UnarmedProtocolMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
 
-            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-            unarmedMessage.writeTo(byteBuf);
+            final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
 
-            final ByteBuf byteBuf2 = PooledByteBufAllocator.DEFAULT.buffer();
-            unarmedMessage.writeTo(byteBuf2);
+            final ByteBuf byteBuf = unarmedMessage.encodeMessage(alloc);
+            final ByteBuf byteBuf2 = unarmedMessage.encodeMessage(alloc);
 
             assertEquals(byteBuf, byteBuf2);
 
@@ -118,14 +119,17 @@ class UnarmedProtocolMessageTest {
             final UnarmedProtocolMessage unarmedMessage = UnarmedProtocolMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
             final int length = unarmedMessage.getLength();
 
-            final ByteBuf byteBuf = Unpooled.buffer();
+            final ByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
+            ByteBuf byteBuf = null;
             try {
-                unarmedMessage.writeTo(byteBuf);
+                byteBuf = unarmedMessage.encodeMessage(alloc);
 
                 assertEquals(byteBuf.readableBytes(), length);
             }
             finally {
-                byteBuf.release();
+                if (byteBuf != null) {
+                    byteBuf.release();
+                }
             }
         }
     }

@@ -871,6 +871,30 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.example.chat.ChatGui",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void org.drasyl.handler.remote.protocol.AbstractFullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>::writeTo(io.netty.buffer.ByteBuf) @ org.drasyl.handler.remote.protocol.AcknowledgementMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.removed",
+          "old": "method void org.drasyl.handler.remote.protocol.AbstractFullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>::writeTo(io.netty.buffer.ByteBuf) @ org.drasyl.handler.remote.protocol.ApplicationMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.ArmedProtocolMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.UnarmedProtocolMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

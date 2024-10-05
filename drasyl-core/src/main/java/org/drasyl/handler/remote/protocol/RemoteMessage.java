@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.internal.UnstableApi;
@@ -80,11 +81,12 @@ public interface RemoteMessage {
     RemoteMessage incrementHopCount();
 
     /**
-     * Writes this message to the buffer {@code out}.
+     * Writes this message to a buffer created by {@code alloc}.
      *
-     * @param out writes this envelope to this buffer
+     * @param out writes this envelope to a buffer created by the given allocator
+     * @return the buffer written to
      */
-    void writeTo(final ByteBuf out);
+    ByteBuf encodeMessage(final ByteBufAllocator alloc);
 
     int getLength();
 }

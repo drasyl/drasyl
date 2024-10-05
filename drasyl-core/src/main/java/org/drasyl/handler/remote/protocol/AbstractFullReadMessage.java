@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,12 +25,14 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.sodium.SessionPair;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 
 /**
  * Skeleton implementation for a {@link FullReadMessage}.
  */
+@UnstableApi
 abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements FullReadMessage<T> {
     @Override
     public ArmedProtocolMessage arm(final ByteBufAllocator alloc,
@@ -55,12 +57,14 @@ abstract class AbstractFullReadMessage<T extends FullReadMessage<?>> implements 
     }
 
     @Override
-    public void writeTo(final ByteBuf out) {
+    public ByteBuf encodeMessage(final ByteBufAllocator alloc) {
+        final ByteBuf out = alloc.buffer(getLength());
         // message (partially) present as java objects. get bytes and transfer to buffer
         out.writeInt(MAGIC_NUMBER);
         writePublicHeaderTo(out);
         writePrivateHeaderTo(out);
         writeBodyTo(out);
+        return out;
     }
 
     protected void writePublicHeaderTo(final ByteBuf out) {
