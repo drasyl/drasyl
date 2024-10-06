@@ -40,6 +40,9 @@ import static test.util.IdentityTestUtil.ID_2;
 
 @ExtendWith(MockitoExtension.class)
 public class ApplicationMessageTest {
+    private static final byte[] NONCE = new byte[]{
+            0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23
+    };
     private IdentityPublicKey sender;
     private IdentityPublicKey recipient;
     private ProofOfWork proofOfWork;
@@ -114,6 +117,142 @@ public class ApplicationMessageTest {
                     byteBuf.release();
                 }
                 buffer.release();
+            }
+        }
+    }
+
+    @Nested
+    class EncodeMessage {
+        @Test
+        void shouldWriteCorrectBytes() {
+            final ByteBuf payload = Unpooled.buffer(10).writerIndex(10);
+            final ApplicationMessage application = ApplicationMessage.of(HopCount.of(), false, 1, Nonce.of(NONCE), recipient, sender, proofOfWork, payload);
+
+            final ByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
+            ByteBuf out = null;
+            try {
+                out = application.encodeMessage(alloc);
+
+                assertEquals(Unpooled.wrappedBuffer(new byte[]{
+                        30,
+                        63,
+                        80,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        1,
+                        0,
+                        1,
+                        2,
+                        3,
+                        4,
+                        5,
+                        6,
+                        7,
+                        8,
+                        9,
+                        10,
+                        11,
+                        12,
+                        13,
+                        14,
+                        15,
+                        16,
+                        17,
+                        18,
+                        19,
+                        20,
+                        21,
+                        22,
+                        23,
+                        98,
+                        45,
+                        -122,
+                        10,
+                        35,
+                        81,
+                        123,
+                        14,
+                        32,
+                        -27,
+                        -99,
+                        -118,
+                        72,
+                        29,
+                        -76,
+                        -38,
+                        44,
+                        -119,
+                        100,
+                        -100,
+                        -105,
+                        -99,
+                        115,
+                        24,
+                        -68,
+                        78,
+                        -15,
+                        -104,
+                        40,
+                        -12,
+                        102,
+                        62,
+                        24,
+                        -51,
+                        -78,
+                        -126,
+                        -66,
+                        -115,
+                        18,
+                        -109,
+                        -11,
+                        4,
+                        12,
+                        -42,
+                        32,
+                        -87,
+                        26,
+                        -54,
+                        -122,
+                        -92,
+                        117,
+                        104,
+                        46,
+                        77,
+                        -36,
+                        57,
+                        125,
+                        -22,
+                        -66,
+                        48,
+                        10,
+                        -83,
+                        -111,
+                        39,
+                        -125,
+                        -34,
+                        18,
+                        -99,
+                        1,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0,
+                        0
+                }), out);
+            }
+            finally {
+                out.release();
+                payload.release();
             }
         }
     }
