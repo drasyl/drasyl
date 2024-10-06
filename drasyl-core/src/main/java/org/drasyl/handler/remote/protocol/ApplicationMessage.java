@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -101,7 +101,10 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final ProofOfWork proofOfWork,
                                         final ByteBuf payload) {
         return of(
-                HopCount.of(), false, networkId, Nonce.randomNonce(),
+                HopCount.of(),
+                false,
+                networkId,
+                Nonce.randomNonce(),
                 recipient, sender,
                 proofOfWork,
                 payload

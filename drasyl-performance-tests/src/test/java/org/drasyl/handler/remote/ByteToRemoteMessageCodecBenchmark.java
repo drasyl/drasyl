@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,8 +77,8 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
         recipient = new InetSocketAddress("127.0.0.1", 25527);
         final byte[] payload = RandomUtil.randomBytes(1024);
         message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
-        byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-        message.writeTo(byteBuf);
+        final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+        byteBuf = message.encodeMessage(alloc);
         instance = new ByteToRemoteMessageCodec();
     }
 

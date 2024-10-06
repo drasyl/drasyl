@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -78,8 +79,9 @@ public class FullReadMessageBenchmark extends AbstractBenchmark {
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void writeTo(final Blackhole blackhole) {
-        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-        message.writeTo(byteBuf);
+        final ByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+        alloc.directBuffer();
+        final ByteBuf byteBuf = message.encodeMessage(alloc);
         blackhole.consume(byteBuf);
     }
 }
