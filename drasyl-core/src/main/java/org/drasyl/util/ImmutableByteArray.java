@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ public final class ImmutableByteArray {
     private final byte[] array;
 
     private ImmutableByteArray(final byte[] array) {
-        this.array = copyArray(array);
+        this.array = Arrays.copyOf(array, array.length);
     }
 
     /**
@@ -46,15 +46,8 @@ public final class ImmutableByteArray {
         return new ImmutableByteArray(array);
     }
 
-    private static byte[] copyArray(final byte[] array) {
-        final byte[] copy = new byte[array.length];
-        System.arraycopy(array, 0, copy, 0, array.length);
-
-        return copy;
-    }
-
     public byte[] getArray() {
-        return copyArray(array);
+        return Arrays.copyOf(array, array.length);
     }
 
     public int size() {
