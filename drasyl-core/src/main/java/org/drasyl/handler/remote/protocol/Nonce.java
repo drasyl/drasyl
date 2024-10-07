@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.remote.protocol;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
@@ -28,8 +29,9 @@ import org.drasyl.crypto.sodium.DrasylSodiumWrapper;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.internal.NonNull;
+import org.drasyl.util.internal.UnstableApi;
 
-import java.util.Objects;
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
@@ -38,30 +40,31 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @SuppressWarnings("java:S2974")
 public class Nonce {
     public static final boolean PSEUDORANDOM_NONCE = SystemPropertyUtil.getBoolean("org.drasyl.nonce.pseudorandom", false);
     public static final int NONCE_LENGTH = DrasylSodiumWrapper.XCHACHA20POLY1305_IETF_NPUBBYTES;
-    private final ImmutableByteArray bytes;
+    private final byte[] bytes;
 
-    private Nonce(@NonNull final ImmutableByteArray bytes) {
+    private Nonce(@NonNull final byte[] bytes) {
         if (!isValidNonce(bytes)) {
-            throw new IllegalArgumentException("NONCE must be a " + NONCE_LENGTH + " bit byte array: " + HexUtil.bytesToHex(bytes.getArray()));
+            throw new IllegalArgumentException("NONCE must be a " + NONCE_LENGTH + " bit byte array: " + HexUtil.bytesToHex(bytes));
         }
         this.bytes = requireNonNull(bytes);
     }
 
     @Override
     public String toString() {
-        return HexUtil.bytesToHex(bytes.getArray());
+        return HexUtil.bytesToHex(bytes);
     }
 
     public byte[] toByteArray() {
-        return bytes.getArray();
+        return Arrays.copyOf(bytes, NONCE_LENGTH);
     }
 
     public ImmutableByteArray toImmutableByteArray() {
-        return bytes;
+        return ImmutableByteArray.of(bytes);
     }
 
     @Override
@@ -73,12 +76,12 @@ public class Nonce {
             return false;
         }
         final Nonce nonce1 = (Nonce) o;
-        return Objects.equals(bytes, nonce1.bytes);
+        return Arrays.equals(bytes, nonce1.bytes);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(bytes);
+        return Arrays.hashCode(bytes);
     }
 
     /**
@@ -94,7 +97,7 @@ public class Nonce {
         else {
             bytes = Crypto.randomBytes(NONCE_LENGTH);
         }
-        return Nonce.of(bytes);
+        return Nonce.ofDirect(bytes);
     }
 
     /**
@@ -103,14 +106,14 @@ public class Nonce {
      * @param bytes string to be validated
      * @return {@code true} if valid. Otherwise {@code false}
      */
-    public static boolean isValidNonce(final ImmutableByteArray bytes) {
-        return bytes != null && bytes.size() == NONCE_LENGTH;
+    public static boolean isValidNonce(final byte[] bytes) {
+        return bytes != null && bytes.length == NONCE_LENGTH;
     }
 
     /**
      * @throws NullPointerException if {@code bytes} is {@code null}
      */
-    public static Nonce of(@NonNull final ImmutableByteArray bytes) {
+    static Nonce ofDirect(@NonNull final byte[] bytes) {
         return new Nonce(bytes);
     }
 
@@ -118,7 +121,14 @@ public class Nonce {
      * @throws NullPointerException if {@code bytes} is {@code null}
      */
     public static Nonce of(@NonNull final byte[] bytes) {
-        return new Nonce(ImmutableByteArray.of(bytes));
+        return new Nonce(Arrays.copyOf(bytes, bytes.length));
+    }
+
+    /**
+     * @throws NullPointerException if {@code bytes} is {@code null}
+     */
+    public static Nonce of(@NonNull final ImmutableByteArray bytes) {
+        return ofDirect(bytes.getArray());
     }
 
     /**
@@ -126,5 +136,14 @@ public class Nonce {
      */
     public static Nonce of(@NonNull final String bytes) {
         return Nonce.of(HexUtil.parseHexBinary(bytes));
+    }
+
+    /**
+     * Writes this nonce to the buffer {@code out}.
+     *
+     * @param byteBuf writes this nonce to the given buffer
+     */
+    public void writeTo(final ByteBuf out) {
+        out.writeBytes(bytes);
     }
 }

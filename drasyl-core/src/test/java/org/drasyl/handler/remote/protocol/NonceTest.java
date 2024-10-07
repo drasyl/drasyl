@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
  */
 package org.drasyl.handler.remote.protocol;
 
-import org.drasyl.util.ImmutableByteArray;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -138,16 +137,16 @@ class NonceTest {
     class IsValidNonce {
         @Test
         void shouldReturnFalseForIdWithWrongLength() {
-            Assertions.assertFalse(Nonce.isValidNonce(ImmutableByteArray.of(new byte[]{
+            Assertions.assertFalse(Nonce.isValidNonce(new byte[]{
                     0,
                     0,
                     1
-            })));
+            }));
         }
 
         @Test
         void shouldReturnTrueForValidString() {
-            Assertions.assertTrue(Nonce.isValidNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toImmutableByteArray()));
+            Assertions.assertTrue(Nonce.isValidNonce(Nonce.of("ea0f284eef1567c505b126671f4293924b81b4b9d20a2be7").toByteArray()));
         }
     }
 
