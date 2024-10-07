@@ -895,6 +895,12 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.remote.protocol.UnarmedProtocolMessage",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.Nonce",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
