@@ -41,6 +41,8 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLI
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> implements ReferenceCounted, AutoCloseable {
+    public static final HopCount HOP_COUNT = HopCount.of();
+
     /**
      * Creates new application message.
      * <p>
@@ -101,11 +103,12 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final ProofOfWork proofOfWork,
                                         final ByteBuf payload) {
         return of(
-                HopCount.of(),
+                HOP_COUNT,
                 false,
                 networkId,
                 Nonce.randomNonce(),
-                recipient, sender,
+                recipient,
+                sender,
                 proofOfWork,
                 payload
         );
