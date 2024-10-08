@@ -117,7 +117,7 @@ public class WriteThroughputDrasylChannelBenchmark {
                             }
                         });
                         messagesWritten.increment();
-                        bytesWritten.add(PACKET_SIZE + 136);
+                        bytesWritten.add(PACKET_SIZE + 104);
                     }
                 }
                 drasylChannel.close().syncUninterruptibly();
