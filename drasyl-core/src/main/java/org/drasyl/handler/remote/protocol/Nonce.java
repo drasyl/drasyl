@@ -85,6 +85,15 @@ public class Nonce {
     }
 
     /**
+     * Writes this nonce to the buffer {@code out}.
+     *
+     * @param out writes this nonce to the given buffer
+     */
+    public void writeTo(final ByteBuf out) {
+        out.writeBytes(bytes);
+    }
+
+    /**
      * Static factory to retrieve a randomly generated {@link Nonce}.
      *
      * @return A randomly generated {@link Nonce}
@@ -136,14 +145,5 @@ public class Nonce {
      */
     public static Nonce of(@NonNull final String bytes) {
         return Nonce.of(HexUtil.parseHexBinary(bytes));
-    }
-
-    /**
-     * Writes this nonce to the buffer {@code out}.
-     *
-     * @param byteBuf writes this nonce to the given buffer
-     */
-    public void writeTo(final ByteBuf out) {
-        out.writeBytes(bytes);
     }
 }

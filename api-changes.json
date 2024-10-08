@@ -901,6 +901,29 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.handler.remote.protocol.Nonce",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.abstractMethodAdded",
+          "new": "method void org.drasyl.identity.DrasylAddress::writeTo(io.netty.buffer.ByteBuf)",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.visibilityReduced",
+          "old": "method void org.drasyl.identity.IdentityPublicKey::<init>()",
+          "new": "method void org.drasyl.identity.IdentityPublicKey::<init>(byte[])",
+          "oldVisibility": "public",
+          "newVisibility": "private",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "class org.drasyl.identity.IdentityPublicKey",
+          "new": "class org.drasyl.identity.IdentityPublicKey",
+          "annotation": "@com.google.auto.value.AutoValue",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
