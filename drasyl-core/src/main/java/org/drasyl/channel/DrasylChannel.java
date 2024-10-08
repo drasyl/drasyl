@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -91,6 +91,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     private volatile boolean readInProgress;
     private volatile boolean writeInProgress;
     private volatile Future<?> finishReadFuture;
+    private volatile long lastApplicationMessageSentTime = -1;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
@@ -297,6 +298,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
         writeInProgress = true;
         boolean doUdpFlush = false;
+        final PeersManager peersManager = parent().config().getPeersManager();
         try {
             while (true) {
                 final ByteBuf buf = (ByteBuf) in.current();
@@ -304,9 +306,11 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                     break;
                 }
 
-                // map remoteAddress to udp endpoint
-                final PeersManager peersManager = parent().config().getPeersManager();
-                peersManager.applicationMessageSent(remoteAddress);
+                // update timestamp only once per second
+                if (lastApplicationMessageSentTime <= parent().cachedTimeMillis() - 1_000) {
+                    peersManager.applicationMessageSent(remoteAddress);
+                    lastApplicationMessageSentTime = parent().cachedTimeMillis();
+                }
 
                 // Intra VM
                 final DrasylServerChannel peerServerChannel = parent().serverChannels.get(remoteAddress);
