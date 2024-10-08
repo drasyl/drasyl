@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.channel;
 
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylServerChannel.State;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -39,6 +40,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylServerChannelTest {
@@ -46,8 +48,9 @@ class DrasylServerChannelTest {
     class DoBind {
         @Test
         void shouldSetLocalAddressAndActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity localAddress,
-                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise activePromise) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, activePromise);
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ChannelPromise activePromise,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ScheduledFuture<?> cachedTimeTask) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, activePromise, cachedTimeTask);
 
             channel.doBind(localAddress);
 
@@ -56,8 +59,9 @@ class DrasylServerChannelTest {
         }
 
         @Test
-        void shouldRejectNonIdentity(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, null);
+        void shouldRejectNonIdentity(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylAddress localAddress,
+                                     @Mock(answer = RETURNS_DEEP_STUBS) final ScheduledFuture<?> cachedTimeTask) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), null, null, null, cachedTimeTask);
 
             assertThrows(IllegalArgumentException.class, () -> channel.doBind(localAddress));
         }
@@ -66,14 +70,16 @@ class DrasylServerChannelTest {
     @Nested
     class DoClose {
         @Test
-        void shouldRemoveLocalAddressAndCloseChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity) {
-            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), identity, null, null);
+        void shouldRemoveLocalAddressAndCloseChannel(@Mock(answer = RETURNS_DEEP_STUBS) final Identity identity,
+                                                     @Mock(answer = RETURNS_DEEP_STUBS) final ScheduledFuture<?> cachedTimeTask) {
+            final DrasylServerChannel channel = new DrasylServerChannel(State.OPEN, Map.of(), identity, null, null, cachedTimeTask);
 
             channel.doClose();
 
             assertNull(channel.localAddress0());
             assertFalse(channel.isOpen());
             assertFalse(channel.isActive());
+            verify(cachedTimeTask).cancel(false);
         }
     }
 }
