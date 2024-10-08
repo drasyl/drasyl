@@ -28,6 +28,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.StringUtil;
@@ -53,8 +54,8 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
 public class WriteThroughputDrasylChannelBenchmark {
-    private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
+    private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String IDENTITY = SystemPropertyUtil.get("identity", "benchmark.identity");
     private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
@@ -75,7 +76,7 @@ public class WriteThroughputDrasylChannelBenchmark {
 
         System.out.println("My address = " + identity.getAddress());
 
-        final NioEventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new NioEventLoopGroup();
         try {
             final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
             final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);

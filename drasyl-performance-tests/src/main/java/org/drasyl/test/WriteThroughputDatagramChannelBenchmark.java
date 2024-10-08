@@ -28,6 +28,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
@@ -46,8 +47,8 @@ import java.util.concurrent.atomic.LongAdder;
  * @see WriteThroughputDrasylDatagramChannelBenchmark
  */
 public class WriteThroughputDatagramChannelBenchmark {
-    private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
+    private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
     private static final LongAdder messagesWritten = new LongAdder();
@@ -56,7 +57,7 @@ public class WriteThroughputDatagramChannelBenchmark {
     private static boolean doSend = true;
 
     public static void main(final String[] args) throws InterruptedException {
-        final NioEventLoopGroup group = new NioEventLoopGroup();
+        final EventLoopGroup group = new NioEventLoopGroup();
         try {
             final Channel channel = new Bootstrap()
                     .group(group)
