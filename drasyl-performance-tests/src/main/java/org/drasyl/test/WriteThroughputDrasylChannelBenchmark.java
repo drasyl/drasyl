@@ -29,14 +29,14 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
+import io.netty.util.concurrent.Future;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -46,17 +46,13 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 
-/**
- * Writes for 60 seconds as fast as possible to the {@link DatagramChannel} used by drasyl and
- * prints the write throughput. Results are used as a baseline to compare with other channels.
- *
- * @see WriteThroughputDatagramChannelBenchmark
- */
-public class WriteThroughputDrasylDatagramChannelBenchmark {
+public class WriteThroughputDrasylChannelBenchmark {
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
     private static final String IDENTITY = SystemPropertyUtil.get("identity", "benchmark.identity");
@@ -68,7 +64,7 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
     private static final List<Double> throughputPerSecond = new ArrayList<>();
     private static boolean doSend = true;
 
-    public static void main(final String[] args) throws InterruptedException, IOException {
+    public static void main(final String[] args) throws InterruptedException, IOException, ExecutionException {
         // load/create identity
         final File identityFile = new File(IDENTITY);
         if (!identityFile.exists()) {
@@ -81,9 +77,21 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
 
         final NioEventLoopGroup group = new NioEventLoopGroup();
         try {
+            final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
+            final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);
+
             final Channel channel = new ServerBootstrap()
                     .group(group)
                     .channel(DrasylServerChannel.class)
+                    .option(PEERS_MANAGER, new PeersManager() {
+                        @Override
+                        public InetSocketAddress resolve(final DrasylAddress peerKey) {
+                            if (recipient.equals(peerKey)) {
+                                return targetAddress;
+                            }
+                            return super.resolve(peerKey);
+                        }
+                    })
                     .option(ARMING_ENABLED, false)
                     .handler(new DefaultDrasylServerChannelInitializer())
                     .childHandler(new ChannelInboundHandlerAdapter())
@@ -91,43 +99,18 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
                     .sync()
                     .channel();
 
-            final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
-            final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);
-
-            DatagramChannel udpChannel;
-            while (true) {
-                final UdpServer udpServer = ((DrasylServerChannel) channel).pipeline().get(UdpServer.class);
-                if (udpServer != null) {
-                    udpChannel = udpServer.udpChannel();
-                    if (udpChannel != null) {
-                        break;
-                    }
-                }
-
-                System.out.println("Wait for udpChannel...");
-
-                try {
-                    Thread.sleep(1000);
-                }
-                catch (final InterruptedException e) {
-                    Thread.currentThread().interrupt();
-                    return;
-                }
-            }
+            final Future<DrasylChannel> serve2 = ((DrasylServerChannel) channel).serve(recipient);
+            final DrasylChannel drasylChannel = serve2.get();
 
             // Start a thread to send packets as fast as possible
-            final DatagramChannel finalUdpChannel = udpChannel;
             new Thread(() -> {
                 final ByteBuf data = Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
 
                 while (doSend) {
-                    if (finalUdpChannel.isWritable()) {
-                        final ApplicationMessage appMsg = ApplicationMessage.of(1, recipient, identity.getIdentityPublicKey(), identity.getProofOfWork(), data.retainedDuplicate());
-                        final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, targetAddress);
-
-                        finalUdpChannel.writeAndFlush(inetMsg).addListener(new ChannelFutureListener() {
+                    if (drasylChannel.isWritable()) {
+                        drasylChannel.writeAndFlush(data.retainedDuplicate()).addListener(new ChannelFutureListener() {
                             @Override
-                            public void operationComplete(final ChannelFuture future) throws Exception {
+                            public void operationComplete(final ChannelFuture future) {
                                 if (!future.isSuccess()) {
                                     future.cause().printStackTrace();
                                 }
@@ -137,7 +120,7 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
                         bytesWritten.addAndGet(PACKET_SIZE + 136);
                     }
                 }
-                finalUdpChannel.close().syncUninterruptibly();
+                drasylChannel.close().syncUninterruptibly();
                 channel.close().syncUninterruptibly();
             }).start();
 
@@ -182,4 +165,3 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
         }
     }
 }
-
