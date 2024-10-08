@@ -251,7 +251,9 @@ public class ApplicationMessageTest {
                 }), out);
             }
             finally {
-                out.release();
+                if (out != null) {
+                    out.release();
+                }
                 payload.release();
             }
         }
