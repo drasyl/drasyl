@@ -37,7 +37,7 @@ import io.netty.util.internal.SystemPropertyUtil;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 /**
  * Writes for 60 seconds as fast as possible to an empty {@link NioDatagramChannel} and prints the
@@ -50,8 +50,8 @@ public class WriteThroughputDatagramChannelBenchmark {
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
     private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
-    private static final AtomicLong messagesWritten = new AtomicLong(0);
-    private static final AtomicLong bytesWritten = new AtomicLong(0);
+    private static final LongAdder messagesWritten = new LongAdder();
+    private static final LongAdder bytesWritten = new LongAdder();
     private static final List<Double> throughputPerSecond = new ArrayList<>();
     private static boolean doSend = true;
 
@@ -81,8 +81,8 @@ public class WriteThroughputDatagramChannelBenchmark {
                                 }
                             }
                         });
-                        messagesWritten.getAndIncrement();
-                        bytesWritten.addAndGet(PACKET_SIZE);
+                        messagesWritten.increment();
+                        bytesWritten.add(PACKET_SIZE);
                     }
                 }
                 channel.close().syncUninterruptibly();
@@ -91,7 +91,7 @@ public class WriteThroughputDatagramChannelBenchmark {
             // Start a thread to print the throughput every second
             new Thread(() -> {
                 for (int second = 1; second <= DURATION; second++) {
-                    final long startBytes = bytesWritten.get();
+                    final long startBytes = bytesWritten.sum();
                     try {
                         Thread.sleep(1000);
                     }
@@ -99,7 +99,7 @@ public class WriteThroughputDatagramChannelBenchmark {
                         Thread.currentThread().interrupt();
                         return;
                     }
-                    final long endBytes = bytesWritten.get();
+                    final long endBytes = bytesWritten.sum();
                     final long bytesPerSecond = endBytes - startBytes;
                     final double megabytesPerSecond = bytesPerSecond / 1048576.0;
                     throughputPerSecond.add(megabytesPerSecond);
@@ -117,7 +117,7 @@ public class WriteThroughputDatagramChannelBenchmark {
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
                 System.out.println(String.format("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), mean, standardDeviation));
-                System.out.println(String.format("%s : Messages sent      : %,7d", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), messagesWritten.get()));
+                System.out.println(String.format("%s : Messages sent      : %,7d", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), messagesWritten.sum()));
             }).start();
 
             // Keep the main thread alive

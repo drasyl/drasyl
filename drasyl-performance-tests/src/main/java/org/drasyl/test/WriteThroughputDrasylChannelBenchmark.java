@@ -47,7 +47,7 @@ import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.LongAdder;
 
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
@@ -59,8 +59,8 @@ public class WriteThroughputDrasylChannelBenchmark {
     private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
     private static final String RECIPIENT = SystemPropertyUtil.get("recipient", "c909a27d9ec0127c57142c3e1547ba9f82bc605277380b2a8fc0fabafe2be4c9");
-    private static final AtomicLong messagesWritten = new AtomicLong(0);
-    private static final AtomicLong bytesWritten = new AtomicLong(0);
+    private static final LongAdder messagesWritten = new LongAdder();
+    private static final LongAdder bytesWritten = new LongAdder();
     private static final List<Double> throughputPerSecond = new ArrayList<>();
     private static boolean doSend = true;
 
@@ -116,8 +116,8 @@ public class WriteThroughputDrasylChannelBenchmark {
                                 }
                             }
                         });
-                        messagesWritten.getAndIncrement();
-                        bytesWritten.addAndGet(PACKET_SIZE + 136);
+                        messagesWritten.increment();
+                        bytesWritten.add(PACKET_SIZE + 136);
                     }
                 }
                 drasylChannel.close().syncUninterruptibly();
@@ -127,7 +127,7 @@ public class WriteThroughputDrasylChannelBenchmark {
             // Start a thread to print the throughput every second
             new Thread(() -> {
                 for (int second = 1; second <= DURATION; second++) {
-                    final long startBytes = bytesWritten.get();
+                    final long startBytes = bytesWritten.sum();
                     try {
                         Thread.sleep(1000);
                     }
@@ -135,7 +135,7 @@ public class WriteThroughputDrasylChannelBenchmark {
                         Thread.currentThread().interrupt();
                         return;
                     }
-                    final long endBytes = bytesWritten.get();
+                    final long endBytes = bytesWritten.sum();
                     final long bytesPerSecond = endBytes - startBytes;
                     final double megabytesPerSecond = bytesPerSecond / 1048576.0;
                     throughputPerSecond.add(megabytesPerSecond);
@@ -153,7 +153,7 @@ public class WriteThroughputDrasylChannelBenchmark {
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
                 System.out.println(String.format("%s : Average throughput: %7.2f MB/s (±  %7.2f MB/s)", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), mean, standardDeviation));
-                System.out.println(String.format("%s : Messages sent      : %,7d", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), messagesWritten.get()));
+                System.out.println(String.format("%s : Messages sent      : %,7d", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), messagesWritten.sum()));
             }).start();
 
             // Keep the main thread alive
