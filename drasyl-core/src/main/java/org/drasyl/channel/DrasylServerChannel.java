@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -36,6 +36,7 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
@@ -56,6 +57,7 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
@@ -81,23 +83,27 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private DatagramChannel udpChannel;
     private volatile UdpServerToDrasylHandler udpDrasylHandler;
     private ChannelPromise activePromise;
+    private ScheduledFuture<?> cachedTimeTask;
+    private long cachedTimeMillis;
 
     @SuppressWarnings("java:S2384")
     DrasylServerChannel(final State state,
                         final Map<DrasylAddress, DrasylChannel> channels,
                         final Identity identity,
                         final UdpServerToDrasylHandler udpDrasylHandler,
-                        final ChannelPromise activePromise) {
+                        final ChannelPromise activePromise,
+                        final ScheduledFuture<?> cachedTimeTask) {
         this.state = requireNonNull(state);
         this.channels = requireNonNull(channels);
         this.identity = identity;
         this.udpDrasylHandler = udpDrasylHandler;
         this.activePromise = activePromise;
+        this.cachedTimeTask = cachedTimeTask;
     }
 
     @SuppressWarnings("unused")
     public DrasylServerChannel() {
-        this(State.OPEN, new ConcurrentHashMap<>(), null, null, null);
+        this(State.OPEN, new ConcurrentHashMap<>(), null, null, null, null);
     }
 
     @Override
@@ -146,6 +152,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     protected void doRegister() throws Exception {
         super.doRegister();
 
+        cachedTimeTask = eventLoop().scheduleAtFixedRate(() -> {
+            cachedTimeMillis = System.currentTimeMillis();
+        }, 0, 1000, MILLISECONDS);
+
         activePromise = newPromise();
 
         pipeline().addLast(new ChannelInitializer<>() {
@@ -178,6 +188,8 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
                 identity = null;
             }
             state = State.CLOSED;
+
+            cachedTimeTask.cancel(false);
         }
     }
 
@@ -258,6 +270,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
 
     public void flushMeIfUdpChannelBecomeWritable(final Channel channel) {
         udpChannelHandler().flushIfBecomeWritable(channel);
+    }
+
+    public long cachedTimeMillis() {
+        return cachedTimeMillis;
     }
 
     /**
