@@ -87,11 +87,11 @@ public abstract class PublicHeader {
 
         final byte[] nonceBuffer = new byte[Nonce.NONCE_LENGTH];
         byteBuf.readBytes(nonceBuffer);
-        nonce = Nonce.of(nonceBuffer);
+        nonce = Nonce.ofDirect(nonceBuffer);
 
         final byte[] recipientBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
         byteBuf.readBytes(recipientBuffer);
-        recipient = IdentityPublicKey.of(recipientBuffer);
+        recipient = IdentityPublicKey.ofDirect(recipientBuffer);
 
         if (recipient == IdentityPublicKey.ZERO_ID) {
             recipient = null;
@@ -99,7 +99,7 @@ public abstract class PublicHeader {
 
         final byte[] senderBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
         byteBuf.readBytes(senderBuffer);
-        sender = IdentityPublicKey.of(senderBuffer);
+        sender = IdentityPublicKey.ofDirect(senderBuffer);
 
         proofOfWork = ProofOfWork.of(byteBuf.readInt());
 

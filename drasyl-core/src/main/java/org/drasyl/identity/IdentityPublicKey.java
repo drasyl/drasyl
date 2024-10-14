@@ -125,7 +125,7 @@ public class IdentityPublicKey extends DrasylAddress implements PublicKey {
      * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
-    static IdentityPublicKey ofDirect(final byte[] bytes) {
+    public static IdentityPublicKey ofDirect(final byte[] bytes) {
         if (bytes.length != KEY_LENGTH_AS_BYTES) {
             throw new IllegalArgumentException("key has wrong size.");
         }
