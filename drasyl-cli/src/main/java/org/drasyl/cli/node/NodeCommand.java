@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,6 @@ import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
-import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.internal.NonNull;
@@ -142,9 +141,6 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                         }
                         else if (event instanceof NodeUnrecoverableErrorEvent) {
                             running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
-                        }
-                        else if (event instanceof NodeOnlineEvent) {
-                            resolve(IdentityPublicKey.of("20dbdb6f281dbdef528baabd56ae48e616756e90ab791c2ee246cc5916505e7a"));
                         }
                     }
                 }
