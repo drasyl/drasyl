@@ -124,7 +124,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.5.11</logback.version>
         <junit.version>5.11.2</junit.version>
-        <mockito.version>5.14.1</mockito.version>
+        <mockito.version>5.14.2</mockito.version>
         <jackson.version>2.18.0</jackson.version>
         <hamcrest.version>3.0</hamcrest.version>
         <awaitility.version>4.2.2</awaitility.version>
