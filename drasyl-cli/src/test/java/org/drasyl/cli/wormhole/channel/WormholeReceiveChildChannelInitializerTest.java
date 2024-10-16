@@ -52,14 +52,15 @@ class WormholeReceiveChildChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final Worm<Integer> exitCode,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
+            when(channel.identity()).thenReturn(ID_1);
             final IdentityPublicKey sender = ID_2.getIdentityPublicKey();
             when(ctx.channel()).thenReturn(channel);
             when(channel.remoteAddress()).thenReturn(sender);
 
-            final ChannelInboundHandler handler = new WormholeReceiveChildChannelInitializer(out, err, exitCode, ID_1, sender, "abc", 50);
+            final ChannelInboundHandler handler = new WormholeReceiveChildChannelInitializer(out, err, exitCode, sender, "abc");
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(6)).addLast(any());
+            verify(channel.pipeline(), times(5)).addLast(any());
         }
     }
 }

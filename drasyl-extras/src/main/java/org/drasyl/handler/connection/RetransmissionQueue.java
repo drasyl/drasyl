@@ -22,7 +22,6 @@
 package org.drasyl.handler.connection;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -56,8 +55,7 @@ public class RetransmissionQueue {
                     final Segment seg,
                     final TransmissionControlBlock tcb) {
         LOG.trace("{} Add SEG `{}` to RTNS.Q.", ctx.channel(), seg);
-        ReferenceCountUtil.touch(seg, "RetransmissionQueue enqueue " + seg.toString());
-        queue.add(seg.copy());
+        queue.add(seg.copy()); // FIXME: any chance to prevent expensive copy?
 
         // RFC 5482: The Transmission Control Protocol (TCP) specification [RFC0793] defines a
         // RFC 5482: local, per-connection "user timeout" parameter that specifies the maximum
@@ -105,7 +103,6 @@ public class RetransmissionQueue {
             }
             else if (greaterThan(tcb.sndUna(), seg.seq())) {
                 // partially ACKed
-                // TODO: remove ACKed part from segment?
                 somethingWasAcked = true;
                 break;
             }

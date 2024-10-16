@@ -30,6 +30,7 @@ import org.drasyl.util.logging.LoggerFactory;
 /**
  * Closes inactive channels (to free up memory).
  */
+@Deprecated
 public class IdleChannelCloser extends IdleStateHandler {
     private static final Logger LOG = LoggerFactory.getLogger(IdleChannelCloser.class);
 

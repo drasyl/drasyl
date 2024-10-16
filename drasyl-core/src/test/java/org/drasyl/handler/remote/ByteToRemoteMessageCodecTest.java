@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,10 @@
 package org.drasyl.handler.remote;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.ReferenceCounted;
@@ -69,8 +71,8 @@ class ByteToRemoteMessageCodecTest {
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
             try {
-                final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-                message.writeTo(byteBuf);
+                final ByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+                final ByteBuf byteBuf = message.encodeMessage(alloc);
                 channel.pipeline().fireChannelRead(new InetAddressedMessage<>(byteBuf, null, sender));
 
                 final InetAddressedMessage<Object> actual = channel.readInbound();
@@ -79,6 +81,7 @@ class ByteToRemoteMessageCodecTest {
                 actual.release();
             }
             finally {
+                channel.checkException();
                 channel.close();
             }
         }
@@ -89,8 +92,8 @@ class ByteToRemoteMessageCodecTest {
         @Test
         void shouldConvertEnvelopeToByteBuf(@Mock final InetSocketAddress recipient) {
             final ApplicationMessage message = ApplicationMessage.of(1337, IdentityPublicKey.of("02bfa672181ef9c0a359dc68cc3a4d34f47752c8886a0c5661dc253ff5949f1b"), IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127"), ProofOfWork.of(3556154), Unpooled.copiedBuffer("Hello World", UTF_8));
-            final ByteBuf byteBuf = Unpooled.buffer();
-            message.writeTo(byteBuf);
+            final ByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
+            final ByteBuf byteBuf = message.encodeMessage(alloc);
 
             final ChannelInboundHandler handler = new ByteToRemoteMessageCodec();
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -103,6 +106,8 @@ class ByteToRemoteMessageCodecTest {
                 actual.release();
             }
             finally {
+                byteBuf.release();
+                channel.checkException();
                 channel.close();
             }
         }

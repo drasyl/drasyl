@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
@@ -29,7 +30,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionClosingException extends ConnectionException {
-    public ConnectionClosingException() {
-        super("connection closing");
+    public ConnectionClosingException(final Channel channel) {
+        super(channel, "connection closing");
     }
 }

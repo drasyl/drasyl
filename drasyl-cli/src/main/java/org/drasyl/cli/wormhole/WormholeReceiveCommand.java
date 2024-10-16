@@ -23,19 +23,17 @@ package org.drasyl.cli.wormhole;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChannelInitializer;
 import org.drasyl.cli.wormhole.channel.WormholeReceiveChildChannelInitializer;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import picocli.CommandLine;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Parameters;
 
@@ -45,7 +43,6 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.Preconditions.requirePositive;
 
 @Command(
         name = "receive",
@@ -60,47 +57,42 @@ public class WormholeReceiveCommand extends ChannelOptions {
             converter = WormholeCodeConverter.class
     )
     private Pair<IdentityPublicKey, String> code;
-    @CommandLine.Option(
-            description = "Go-Back-N ARQ acknowledgment interval. Decreasing this value could increase the throughput.",
-            names = { "--ack-interval" },
-            defaultValue = "10"
-    )
-    private long ackInterval;
 
     @SuppressWarnings("java:S107")
     WormholeReceiveCommand(final PrintStream out,
                            final PrintStream err,
-                           final EventLoopGroup parentGroup,
-                           final EventLoopGroup childGroup,
-                           final EventLoopGroup udpServerGroup,
                            final Level logLevel,
                            final File identityFile,
                            final InetSocketAddress bindAddress,
                            final int onlineTimeoutMillis,
                            final int networkId,
                            final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                           final Pair<IdentityPublicKey, String> code,
-                           final long ackInterval) {
-        super(out, err, parentGroup, childGroup, udpServerGroup, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+                           final Pair<IdentityPublicKey, String> code) {
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
         this.code = requireNonNull(code);
-        this.ackInterval = requirePositive(ackInterval);
     }
 
     @SuppressWarnings("unused")
     public WormholeReceiveCommand() {
-        super(new DefaultEventLoopGroup(1));
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new WormholeReceiveChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, code.first(), !protocolArmDisabled);
+    protected EventLoopGroup getChildChannelLoopGroup() {
+        // we have only one peer
+        if (childChannelLoopGroup == null) {
+            childChannelLoopGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        }
+        return childChannelLoopGroup;
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
-        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, identity, code.first(), code.second(), ackInterval);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeReceiveChannelInitializer(onlineTimeoutMillis, err, exitCode, code.first());
+    }
+
+    @Override
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
+        return new WormholeReceiveChildChannelInitializer(out, err, exitCode, code.first(), code.second());
     }
 
     @Override

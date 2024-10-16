@@ -68,7 +68,7 @@ public class TelemetryHandler extends TopologyHandler {
                      final int submitIntervalSeconds,
                      final URI uri,
                      final boolean includeIp) {
-        super(superPeers, childrenPeers, peers);
+        super(superPeers, childrenPeers);
         this.httpClient = requireNonNull(httpClient);
         this.submitIntervalSeconds = requirePositive(submitIntervalSeconds);
         this.uri = requireNonNull(uri);
@@ -125,8 +125,7 @@ public class TelemetryHandler extends TopologyHandler {
         return new Topology(
                 topology.address(),
                 topology.superPeers().keySet().stream().collect(Collectors.toMap(k -> k, k -> ZERO_IP)),
-                topology.childrenPeers().keySet().stream().collect(Collectors.toMap(k -> k, k -> ZERO_IP)),
-                topology.peers().keySet().stream().collect(Collectors.toMap(k -> k, k -> ZERO_IP))
+                topology.childrenPeers().keySet().stream().collect(Collectors.toMap(k -> k, k -> ZERO_IP))
         );
     }
 
@@ -134,8 +133,7 @@ public class TelemetryHandler extends TopologyHandler {
         return "{" +
                 "\"address\":\"" + topology.address() + "\"," +
                 "\"superPeers\":{" + serializePeersMap(topology.superPeers()) + "}," +
-                "\"childrenPeers\":{" + serializePeersMap(topology.childrenPeers()) + "}," +
-                "\"peers\":{" + serializePeersMap(topology.peers()) + "}" +
+                "\"childrenPeers\":{" + serializePeersMap(topology.childrenPeers()) + "}" +
                 "}";
     }
 

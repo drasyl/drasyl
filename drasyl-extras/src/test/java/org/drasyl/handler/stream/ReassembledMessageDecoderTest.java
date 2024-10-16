@@ -44,5 +44,7 @@ class ReassembledMessageDecoderTest {
         assertEquals(byteBuf, channel.readInbound());
 
         byteBuf.release();
+
+        channel.checkException();
     }
 }

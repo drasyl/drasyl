@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.drasyl.util.internal.UnstableApi;
@@ -36,7 +37,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionDoesNotExistException extends ConnectionException {
-    public ConnectionDoesNotExistException() {
-        super("connection does not exist");
+    public ConnectionDoesNotExistException(final Channel channel) {
+        super(channel, "connection does not exist");
     }
 }

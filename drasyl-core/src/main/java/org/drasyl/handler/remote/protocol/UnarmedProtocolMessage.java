@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ import com.google.auto.value.AutoValue;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.ByteBufInputStream;
-import org.drasyl.util.internal.Nullable;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
@@ -33,6 +32,8 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.InputStreamHelper;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 
@@ -43,6 +44,7 @@ import java.io.IOException;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
+@UnstableApi
 public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     @Nullable
     public abstract DrasylAddress getRecipient();
@@ -103,13 +105,15 @@ public abstract class UnarmedProtocolMessage implements PartialReadMessage {
     }
 
     @Override
-    public void writeTo(final ByteBuf out) {
+    public ByteBuf encodeMessage(final ByteBufAllocator alloc) {
+        final ByteBuf out = alloc.buffer(getLength());
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
         final ByteBuf bytes = getBytes();
         bytes.markReaderIndex();
         out.writeBytes(bytes);
         bytes.resetReaderIndex();
+        return out;
     }
 
     @Override

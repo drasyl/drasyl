@@ -50,6 +50,7 @@ class GoBackNArqReceiverHandlerTest {
         assertEquals(1, data0.refCnt());
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
+            channel.checkException();
             assertInstanceOf(GoBackNArqAck.class, channel.readOutbound());
         });
     }

@@ -78,19 +78,25 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
         buf.writeByte(END_OF_OPTION_LIST.kind());
 
         // content
-        final int readerIndex = seg.content().readerIndex();
-        buf.writeBytes(seg.content());
+        if (LOG.isTraceEnabled()) {
+            final String segString = seg.toString();
+            buf.writeBytes(seg.content());
 
-        if (checksumEnabled) {
-            // calculate checksum
-            final int cks = calculateChecksum(buf, 4);
-            if (LOG.isDebugEnabled()) {
-                seg.content().markReaderIndex();
-                seg.content().readerIndex(readerIndex);
-                LOG.debug("{} SEG `{}` has calculated checksum {}.", ctx.channel(), seg, cks);
-                seg.content().resetReaderIndex();
+            if (checksumEnabled) {
+                // calculate checksum
+                final int cks = calculateChecksum(buf, 4);
+                LOG.trace("{} SEG `{}` has calculated checksum {}.", ctx.channel(), segString, cks);
+                buf.setShort(CKS_INDEX, (short) cks);
             }
-            buf.setShort(CKS_INDEX, (short) cks);
+        }
+        else {
+            buf.writeBytes(seg.content());
+
+            if (checksumEnabled) {
+                // calculate checksum
+                final int cks = calculateChecksum(buf, 4);
+                buf.setShort(CKS_INDEX, (short) cks);
+            }
         }
 
         out.add(buf);
@@ -100,7 +106,7 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf in,
                           final List<Object> out) {
-        if (in.readableBytes() >= Integer.BYTES + SEG_HDR_SIZE) {
+        if (in.readableBytes() >= SEG_HDR_SIZE) {
             in.markReaderIndex();
             if (in.readInt() != MAGIC_NUMBER) {
                 in.resetReaderIndex();
@@ -134,10 +140,10 @@ public class SegmentCodec extends MessageToMessageCodec<ByteBuf, Segment> {
                 // verify checksum
                 if (!verifyChecksum(in, readerIndex)) {
                     // wrong checksum, drop segment
-                    if (LOG.isDebugEnabled()) {
+                    if (LOG.isTraceEnabled()) {
                         in.setShort(CKS_INDEX, 0);
                         final int expectedChecksum = calculateChecksum(in, readerIndex);
-                        LOG.debug("{} Drop SEG `{}` because of wrong checksum. Checksum {} expected.", ctx.channel(), seg, expectedChecksum);
+                        LOG.trace("{} Drop SEG `{}` because of wrong checksum. Checksum {} expected.", ctx.channel(), seg, expectedChecksum);
                     }
                     return;
                 }

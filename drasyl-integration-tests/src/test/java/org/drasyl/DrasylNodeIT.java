@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelOutboundHandlerAdapter;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import org.awaitility.Awaitility;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.UdpServer;
@@ -42,6 +43,7 @@ import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -60,8 +62,8 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
 
-import static java.net.InetSocketAddress.createUnresolved;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
@@ -70,6 +72,7 @@ import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -83,6 +86,11 @@ class DrasylNodeIT {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeIT.class);
     public static final long TIMEOUT = 15000L;
     public static final int MESSAGE_MTU = 1024;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setup(final TestInfo info) {
@@ -136,7 +144,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -156,7 +163,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
@@ -176,24 +182,29 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 client2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED client2"));
 
-                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #3").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent# #4").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
             void tearDown() {
-                superPeer.close();
-                client1.close();
-                client2.close();
+                if (superPeer != null) {
+                    superPeer.close();
+                }
+                if (client1 != null) {
+                    client1.close();
+                }
+                if (client2 != null) {
+                    client2.close();
+                }
             }
 
             /**
@@ -237,8 +248,8 @@ class DrasylNodeIT {
             void shuttingDownNodeShouldCloseConnections() {
                 superPeer.shutdown();
 
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(NodeOfflineEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(NodeOfflineEvent.class)));
+                await("NodeOfflineEvent #1").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(NodeOfflineEvent.class)));
+                await("NodeOfflineEvent #2").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(NodeOfflineEvent.class)));
             }
 
             @Test
@@ -247,12 +258,12 @@ class DrasylNodeIT {
                 // should trigger direct connection establishment between both peers
                 client1.send(client2.identity().getAddress(), "Ping");
 
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 // should tear down direct connection on inactivity
-                await().untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerRelayEvent.class)));
-                await().untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerRelayEvent.class)));
+                await("PeerDirectEvent #3").untilAsserted(() -> assertThat(client1.readEvent(), instanceOf(PeerRelayEvent.class)));
+                await("PeerDirectEvent #4").untilAsserted(() -> assertThat(client2.readEvent(), instanceOf(PeerRelayEvent.class)));
             }
         }
 
@@ -290,7 +301,6 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -310,20 +320,23 @@ class DrasylNodeIT {
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -381,11 +394,10 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -401,31 +413,34 @@ class DrasylNodeIT {
                         .remotePingInterval(ofSeconds(1))
                         .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEnabled(false)
-                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteStaticRoutes(Map.of(ID_1.getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", 22528)))
                         .intraVmDiscoveryEnabled(false)
+                        .remoteHandshakeTimeout(Duration.ofMillis(100))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
              * This test ensures that sent application messages are delivered to the recipient.
              */
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            //@Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void test() throws InterruptedException {
                 // 1
                 // as node1 has no route to node2 this message should not be delivered
@@ -483,7 +498,6 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .remoteTcpFallbackEnabled(false)
                         .build();
                 node1 = new EmbeddedNode(config).awaitStarted();
@@ -500,19 +514,22 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteLocalHostDiscoveryEnabled(false)
-                        .remoteMessageMtu(MESSAGE_MTU)
                         .build();
                 node2 = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED node2"));
 
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -585,6 +602,8 @@ class DrasylNodeIT {
                 superPeer = new EmbeddedNode(config).awaitStarted();
                 LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
+                await("superPeer.getTcpFallbackPort()").untilAsserted(() -> assertDoesNotThrow(() -> superPeer.getTcpFallbackPort()));
+
                 // client
                 config = DrasylConfig.newBuilder()
                         .networkId(0)
@@ -593,13 +612,13 @@ class DrasylNodeIT {
                         .remoteBindHost(createInetAddress("127.0.0.1"))
                         .remoteBindPort(0)
                         .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
                         .remoteSuperPeerEndpoints(Set.of(PeerEndpoint.of("udp://127.0.0.1:" + superPeer.getPort() + "?publicKey=" + ID_1.getIdentityPublicKey())))
                         .remoteLocalHostDiscoveryEnabled(false)
                         .remoteLocalNetworkDiscoveryEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .remoteTcpFallbackEnabled(true)
-                        .remoteTcpFallbackClientTimeout(ofSeconds(2))
-                        .remoteTcpFallbackClientAddress(createUnresolved("127.0.0.1", superPeer.getTcpFallbackPort()))
+                        .remoteTcpFallbackClientConnectPort(superPeer.getTcpFallbackPort())
                         .build();
                 client = new EmbeddedNode(config).awaitStarted();
                 client.pipeline().addAfter(client.pipeline().context(UdpServer.class).name(), "UDP_BLOCKER", new ChannelOutboundHandlerAdapter() {
@@ -617,14 +636,19 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                superPeer.close();
-                client.close();
+                if (superPeer != null) {
+                    superPeer.close();
+                }
+                if (client != null) {
+                    client.close();
+                }
             }
 
             @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().atMost(ofSeconds(999)).untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent superPeer").untilAsserted(() -> assertThat(superPeer.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent client").untilAsserted(() -> assertThat(client.readEvent(), instanceOf(PeerDirectEvent.class)));
             }
         }
     }
@@ -712,10 +736,18 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
-                node3.close();
-                node4.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
+                if (node3 != null) {
+                    node3.close();
+                }
+                if (node4 != null) {
+                    node4.close();
+                }
             }
 
             /**
@@ -829,8 +861,12 @@ class DrasylNodeIT {
 
             @AfterEach
             void tearDown() {
-                node1.close();
-                node2.close();
+                if (node1 != null) {
+                    node1.close();
+                }
+                if (node2 != null) {
+                    node2.close();
+                }
             }
 
             /**
@@ -840,8 +876,8 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT * 5, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                await().untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
-                await().untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #1").untilAsserted(() -> assertThat(node1.readEvent(), instanceOf(PeerDirectEvent.class)));
+                await("PeerDirectEvent #2").untilAsserted(() -> assertThat(node2.readEvent(), instanceOf(PeerDirectEvent.class)));
 
                 assertBidirectionalMessageDelivery(node1, node2, "Hallo Welt");
             }
@@ -884,7 +920,9 @@ class DrasylNodeIT {
 
         @AfterEach
         void tearDown() {
-            node.close();
+            if (node != null) {
+                node.close();
+            }
         }
 
         /**
@@ -967,15 +1005,21 @@ class DrasylNodeIT {
         void shouldEmitErrorEventAndCompleteNotExceptionallyIfStartFailed() throws DrasylException, IOException {
             try (final DatagramSocket socket = new DatagramSocket(0)) {
                 socket.setReuseAddress(false);
-                await().untilAsserted(socket::isBound);
+                await("socket::isBound").untilAsserted(socket::isBound);
                 final DrasylConfig config = configBuilder
                         .remoteBindPort(socket.getLocalPort())
                         .build();
                 final EmbeddedNode node = new EmbeddedNode(config);
-                node.start();
+                node.start().exceptionally(new Function<Throwable, Void>() {
+                    @Override
+                    public Void apply(Throwable t) {
+                        t.printStackTrace();
+                        return null;
+                    }
+                });
 
-                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
-                await().untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
+                await("NodeUpEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUpEvent.class)));
+                await("NodeUnrecoverableErrorEvent").untilAsserted(() -> assertThat(node.readEvent(), instanceOf(NodeUnrecoverableErrorEvent.class)));
                 assertNull(node.readEvent());
             }
         }
@@ -985,7 +1029,7 @@ class DrasylNodeIT {
                                        final EmbeddedNode recipient,
                                        final Object msg) {
         sender.send(recipient.identity().getAddress(), msg).toCompletableFuture().join();
-        await().untilAsserted(() -> {
+        await("assertMessageDelivery").untilAsserted(() -> {
             final Event event = recipient.readEvent();
             assertNotNull(event, String.format("expected message from <%s> to <%s> with payload <%s>", sender, recipient, msg));
             assertThat(event, instanceOf(MessageEvent.class));

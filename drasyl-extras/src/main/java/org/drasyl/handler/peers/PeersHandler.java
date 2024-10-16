@@ -25,11 +25,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
 import org.drasyl.handler.discovery.PathEvent;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
@@ -74,14 +72,6 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
             final Peer peer = new Peer(Role.CHILDREN, inetAddress);
             peers.put(address, peer);
         }
-        else if (evt instanceof AddPathEvent) {
-            final DrasylAddress address = ((AddPathEvent) evt).getAddress();
-            final InetSocketAddress inetAddress = ((AddPathEvent) evt).getInetAddress();
-            final long rtt = ((AddPathEvent) evt).getRtt();
-
-            final Peer peer = new Peer(Role.DEFAULT, inetAddress, rtt);
-            peers.put(address, peer);
-        }
         else if (evt instanceof PathRttEvent) {
             final DrasylAddress address = ((PathRttEvent) evt).getAddress();
             final long rtt = ((PathRttEvent) evt).getRtt();
@@ -91,8 +81,8 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
                 peer.last(rtt);
             }
         }
-        else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemoveChildrenAndPathEvent || evt instanceof RemovePathEvent) {
-            //peers.remove(((PathEvent) evt).getAddress());
+        else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemoveChildrenAndPathEvent) {
+            peers.remove(((PathEvent) evt).getAddress());
         }
 
         ctx.fireUserEventTriggered(evt);

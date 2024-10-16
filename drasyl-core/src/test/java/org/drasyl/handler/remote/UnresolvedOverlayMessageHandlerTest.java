@@ -52,6 +52,7 @@ class UnresolvedOverlayMessageHandlerTest {
         assertThrows(Exception.class, () -> channel.writeOutbound(msg, promise));
         assertEquals(0, buf.refCnt());
 
+        channel.checkException();
         channel.close();
     }
 
@@ -65,6 +66,7 @@ class UnresolvedOverlayMessageHandlerTest {
 
         assertEquals(msg, channel.readOutbound());
 
+        channel.checkException();
         channel.close();
     }
 }

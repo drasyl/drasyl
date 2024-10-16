@@ -23,15 +23,15 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.handler.remote.protocol.UniteMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.ExpiringSet;
 import org.drasyl.util.Pair;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -48,42 +48,37 @@ import static java.util.Objects.requireNonNull;
  *
  * @see TraversingInternetDiscoveryChildrenHandler
  */
+@UnstableApi
 public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscoverySuperPeerHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TraversingInternetDiscoverySuperPeerHandler.class);
     private final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache;
 
     @SuppressWarnings("java:S107")
-    TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
-                                                final IdentityPublicKey myPublicKey,
-                                                final ProofOfWork myProofOfWork,
-                                                final LongSupplier currentTime,
-                                                final long pingIntervalMillis,
-                                                final long pingTimeoutMillis,
-                                                final long maxTimeOffsetMillis,
+    TraversingInternetDiscoverySuperPeerHandler(final LongSupplier currentTime,
                                                 final HopCount hopLimit,
                                                 final Map<DrasylAddress, ChildrenPeer> childrenPeers,
                                                 final Future<?> stalePeerCheckDisposable,
                                                 final Set<Pair<DrasylAddress, DrasylAddress>> uniteAttemptsCache) {
-        super(myNetworkId, myPublicKey, myProofOfWork, currentTime, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, childrenPeers, hopLimit, stalePeerCheckDisposable);
+        super(currentTime, childrenPeers, hopLimit, stalePeerCheckDisposable);
         this.uniteAttemptsCache = requireNonNull(uniteAttemptsCache);
     }
 
     @SuppressWarnings("java:S107")
-    public TraversingInternetDiscoverySuperPeerHandler(final int myNetworkId,
-                                                       final IdentityPublicKey myPublicKey,
-                                                       final ProofOfWork myProofOfWork,
-                                                       final long pingIntervalMillis,
-                                                       final long pingTimeoutMillis,
-                                                       final long maxTimeOffsetMillis,
-                                                       final HopCount hopLimit,
+    public TraversingInternetDiscoverySuperPeerHandler(final HopCount hopLimit,
                                                        final long uniteMinIntervalMillis) {
-        super(myNetworkId, myPublicKey, myProofOfWork, pingIntervalMillis, pingTimeoutMillis, maxTimeOffsetMillis, hopLimit);
+        super(hopLimit);
         if (uniteMinIntervalMillis > 0) {
             uniteAttemptsCache = new ExpiringSet<>(1_000, uniteMinIntervalMillis);
         }
         else {
             uniteAttemptsCache = null;
         }
+    }
+
+    @SuppressWarnings("java:S107")
+    public TraversingInternetDiscoverySuperPeerHandler(final byte hopLimit,
+                                                       final long uniteMinIntervalMillis) {
+        this(HopCount.of(hopLimit), uniteMinIntervalMillis);
     }
 
     @Override
@@ -98,7 +93,7 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
             initiateRendezvous(ctx, senderKey, recipientKey);
         }
         else {
-            LOG.error("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
+            LOG.trace("Do not send unite for {} and {} as we have already sent one recently.", senderKey, recipientKey);
         }
     }
 
@@ -126,26 +121,28 @@ public class TraversingInternetDiscoverySuperPeerHandler extends InternetDiscove
         final ChildrenPeer recipient = childrenPeers.get(recipientKey);
 
         if (sender != null && recipient != null) {
-            LOG.debug("The clients `{}` and `{}` wants to communicate with each other. Initiate rendezvous so that they try to establish a direct connecting.", () -> senderKey, () -> recipientKey);
+            LOG.trace("The clients `{}` and `{}` wants to communicate with each other. Initiate rendezvous so that they try to establish a direct connecting.", () -> senderKey, () -> recipientKey);
 
             final Set<InetSocketAddress> senderAddressCandidates = sender.inetAddressCandidates();
             final Set<InetSocketAddress> recipientAddressCandidates = recipient.inetAddressCandidates();
 
             // send recipient's information to sender
-            final UniteMessage senderUnite = UniteMessage.of(myNetworkId, senderKey, myPublicKey, myProofOfWork, recipientKey, recipientAddressCandidates);
-            LOG.debug("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> recipientKey);
-            ctx.write(new InetAddressedMessage<>(senderUnite, sender.publicInetAddress())).addListener(future -> {
+            final UniteMessage senderUnite = UniteMessage.of(config(ctx).getNetworkId(), senderKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), recipientKey, recipientAddressCandidates);
+            final InetSocketAddress senderInetAddress = config(ctx).getPeersManager().resolveInetAddress(senderKey, PATH_ID);
+            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> senderKey, () -> senderInetAddress);
+            ctx.write(new InetAddressedMessage<>(senderUnite, senderInetAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, sender::publicInetAddress, future::cause);
+                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> senderKey, () -> senderInetAddress, future::cause);
                 }
             });
 
             // send sender's information to recipient
-            final UniteMessage recipientUnite = UniteMessage.of(myNetworkId, recipientKey, myPublicKey, myProofOfWork, senderKey, senderAddressCandidates);
-            LOG.debug("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> senderKey);
-            ctx.write(new InetAddressedMessage<>(recipientUnite, recipient.publicInetAddress())).addListener(future -> {
+            final UniteMessage recipientUnite = UniteMessage.of(config(ctx).getNetworkId(), recipientKey, ((IdentityChannel) ctx.channel()).identity().getIdentityPublicKey(), ((IdentityChannel) ctx.channel()).identity().getProofOfWork(), senderKey, senderAddressCandidates);
+            final InetSocketAddress recipientInetAddress = config(ctx).getPeersManager().resolveInetAddress(recipientKey, PATH_ID);
+            LOG.trace("Send Unite for peer `{}` to `{}`.", () -> recipientKey, () -> recipientInetAddress);
+            ctx.write(new InetAddressedMessage<>(recipientUnite, recipientInetAddress)).addListener(future -> {
                 if (!future.isSuccess()) {
-                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, recipient::publicInetAddress, future::cause);
+                    LOG.warn("Unable to send Unite for peer `{}` to `{}`", () -> recipientKey, () -> recipientInetAddress, future::cause);
                 }
             });
 

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -51,6 +51,7 @@ import org.mockito.stubbing.Answer;
 import static java.time.Duration.ofMillis;
 import static java.util.Objects.requireNonNull;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.ACK;
 import static org.drasyl.handler.connection.Segment.FIN;
@@ -80,7 +81,6 @@ import static org.drasyl.handler.connection.State.LISTEN;
 import static org.drasyl.handler.connection.State.SYN_RECEIVED;
 import static org.drasyl.handler.connection.State.SYN_SENT;
 import static org.drasyl.handler.connection.State.TIME_WAIT;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.allOf;
@@ -160,7 +160,7 @@ class ConnectionHandlerTest {
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
-                assertEquals(SYN_SENT, handler.state);
+                assertEquals(SYN_SENT, handler.tcb.state());
 
                 assertEquals(PEER_A_PORT, handler.tcb.localPort());
                 assertEquals(PEER_B_PORT, handler.tcb.remotePort());
@@ -171,13 +171,14 @@ class ConnectionHandlerTest {
                 // peer SYNchronizes his SEG with us and ACKed our segment, we reply with ACK for his SYN
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, 101, (byte) (SYN | ACK), 64_000));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), seq(101), ack(301), win(5_000)));
-                assertEquals(ESTABLISHED, handler.state);
+                assertEquals(ESTABLISHED, handler.tcb.state());
 
                 assertEquals(101, handler.tcb.sndUna());
                 assertEquals(101, handler.tcb.sndNxt());
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
             }
 
@@ -193,14 +194,14 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should change state to LISTEN
-                assertEquals(LISTEN, handler.state);
+                assertEquals(LISTEN, handler.tcb.state());
                 assertEquals(PEER_B_PORT, handler.tcb.localPort());
                 assertEquals(0, handler.tcb.remotePort());
 
                 // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(SYN, ACK), seq(300), ack(101)));
-                assertEquals(SYN_RECEIVED, handler.state);
+                assertEquals(SYN_RECEIVED, handler.tcb.state());
 
                 assertEquals(PEER_B_PORT, handler.tcb.localPort());
                 assertEquals(PEER_A_PORT, handler.tcb.remotePort());
@@ -212,7 +213,7 @@ class ConnectionHandlerTest {
                 // we piggyback some data, that should also be processed by the server
                 final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 101, 301, (byte) (PSH | ACK), data));
-                assertEquals(ESTABLISHED, handler.state);
+                assertEquals(ESTABLISHED, handler.tcb.state());
 
                 assertEquals(301, handler.tcb.sndUna());
                 assertEquals(301, handler.tcb.sndNxt());
@@ -220,6 +221,7 @@ class ConnectionHandlerTest {
                 assertEquals(data, channel.readInbound());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
                 data.release();
             }
@@ -236,12 +238,12 @@ class ConnectionHandlerTest {
                 final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
                 // handlerAdded on active channel should change state to LISTEN
-                assertEquals(LISTEN, handler.state);
+                assertEquals(LISTEN, handler.tcb.state());
 
                 // peer wants to SYNchronize his SEG with us, we reply with a SYN/ACK
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(SYN, ACK), seq(300), ack(101)));
-                assertEquals(SYN_RECEIVED, handler.state);
+                assertEquals(SYN_RECEIVED, handler.tcb.state());
 
                 assertEquals(300, handler.tcb.sndUna());
                 assertEquals(301, handler.tcb.sndNxt());
@@ -250,8 +252,8 @@ class ConnectionHandlerTest {
                 // peer retansmits SYN
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(ACK), seq(301), ack(101)));
-                assertEquals(SYN_RECEIVED, handler.state);
-
+                assertEquals(SYN_RECEIVED, handler.tcb.state());
+                channel.checkException();
             }
         }
 
@@ -289,7 +291,7 @@ class ConnectionHandlerTest {
 
                 // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(SYN), seq(100), win(5_000), mss(IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE)));
-                assertEquals(SYN_SENT, handler.state);
+                assertEquals(SYN_SENT, handler.tcb.state());
 
                 assertEquals(PEER_A_PORT, handler.tcb.localPort());
                 assertEquals(PEER_B_PORT, handler.tcb.remotePort());
@@ -299,7 +301,7 @@ class ConnectionHandlerTest {
 
                 // peer SYNchronizes his SEG before our SYN has been received
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, SYN, 64_000));
-                assertEquals(SYN_RECEIVED, handler.state);
+                assertEquals(SYN_RECEIVED, handler.tcb.state());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(SYN, ACK), seq(100), ack(301), win(5_000)));
 
                 assertEquals(100, handler.tcb.sndUna());
@@ -308,13 +310,14 @@ class ConnectionHandlerTest {
 
                 // peer respond to our SYN with ACK (and another SYN)
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 301, 101, (byte) (SYN | ACK), 64_000));
-                assertEquals(ESTABLISHED, handler.state);
+                assertEquals(ESTABLISHED, handler.tcb.state());
 
                 assertEquals(101, handler.tcb.sndUna());
                 assertEquals(101, handler.tcb.sndNxt());
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
             }
         }
@@ -354,7 +357,7 @@ class ConnectionHandlerTest {
 
                     // handlerAdded on active channel should trigger SYNchronize of our SEG with peer
                     assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(SYN), seq(400)));
-                    assertEquals(SYN_SENT, handler.state);
+                    assertEquals(SYN_SENT, handler.tcb.state());
 
                     assertEquals(PEER_A_PORT, handler.tcb.localPort());
                     assertEquals(PEER_B_PORT, handler.tcb.remotePort());
@@ -365,13 +368,14 @@ class ConnectionHandlerTest {
                     // as we got an ACK for an unexpected seq, reset the peer
                     channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, 100, ACK));
                     assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(RST), seq(100)));
-                    assertEquals(SYN_SENT, handler.state);
+                    assertEquals(SYN_SENT, handler.tcb.state());
 
                     assertEquals(400, handler.tcb.sndUna());
                     assertEquals(401, handler.tcb.sndNxt());
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     assertTrue(channel.isOpen());
+                    channel.checkException();
                     channel.close();
                 }
 
@@ -382,6 +386,7 @@ class ConnectionHandlerTest {
                     final ConnectionConfig config = ConnectionConfig.DEFAULT;
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(
                             config,
+                            ESTABLISHED,
                             PEER_B_PORT,
                             PEER_A_PORT,
                             channel,
@@ -390,12 +395,12 @@ class ConnectionHandlerTest {
                             1220 * 64,
                             300L,
                             100L);
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, PEER_A_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, PEER_A_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // other wants to SYNchronize with us, ACK with our expected seq
                     channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 400, SYN, 64_000));
-                    assertEquals(ESTABLISHED, handler.state);
+                    assertEquals(ESTABLISHED, handler.tcb.state());
                     assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(ACK), seq(300), ack(100)));
 
                     assertEquals(PEER_B_PORT, handler.tcb.localPort());
@@ -407,8 +412,9 @@ class ConnectionHandlerTest {
                     // as we sent an ACK for an unexpected seq, peer will reset us
                     final Segment msg = new Segment(PEER_A_PORT, PEER_B_PORT, 100, RST);
                     assertThrows(ConnectionResetException.class, () -> channel.writeInbound(msg));
-                    assertEquals(CLOSED, handler.state);
                     assertNull(handler.tcb);
+
+                    channel.checkException();
                 }
             }
 
@@ -423,12 +429,17 @@ class ConnectionHandlerTest {
             // 3.          --> <SEQ=100><CTL=RST>                   --> (ABORT!!)
             @Nested
             class ActiveSideCausesHalfOpenConnectionDiscovery {
+                @Mock(answer = RETURNS_DEEP_STUBS)
+                TransmissionControlBlock tcb;
+
                 // TCP Peer A
                 @Test
                 void shouldConformWithBehaviorOfPeerA() {
+                    when(tcb.state()).thenReturn(LISTEN);
+
                     final ConnectionConfig config = ConnectionConfig.DEFAULT;
                     final EmbeddedChannel channel = new EmbeddedChannel();
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, LISTEN, null, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     final ByteBuf data = Unpooled.buffer(10).writeBytes(randomBytes(10));
@@ -436,6 +447,7 @@ class ConnectionHandlerTest {
                     channel.writeInbound(seg);
                     assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(RST), seq(100)));
 
+                    channel.checkException();
                     channel.close();
                 }
             }
@@ -467,8 +479,8 @@ class ConnectionHandlerTest {
                             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
-                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_B_PORT, 0, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, 0, config, LISTEN, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                    final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_B_PORT, 0, iss, iss, 0, iss, 0, 0, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, 0, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     // old duplicate ACK arrives at us
@@ -479,8 +491,9 @@ class ConnectionHandlerTest {
 
                     // returned SYN/ACK causes a RST, we should return to LISTEN
                     channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, z + 1, RST));
-                    assertEquals(LISTEN, handler.state);
+                    assertEquals(LISTEN, handler.tcb.state());
 
+                    channel.checkException();
                     channel.close();
                 }
             }
@@ -521,13 +534,13 @@ class ConnectionHandlerTest {
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
                 final ChannelFuture future = channel.pipeline().close();
-                assertEquals(FIN_WAIT_1, handler.state);
+                assertEquals(FIN_WAIT_1, tcb.state());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(FIN, ACK), seq(100), ack(300)));
                 assertFalse(future.isDone());
 
@@ -537,7 +550,7 @@ class ConnectionHandlerTest {
 
                 // my close got ACKed
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, 101, ACK));
-                assertEquals(FIN_WAIT_2, handler.state);
+                assertEquals(FIN_WAIT_2, tcb.state());
                 assertFalse(future.isDone());
 
                 assertEquals(101, handler.tcb.sndUna());
@@ -547,13 +560,14 @@ class ConnectionHandlerTest {
                 // peer now triggers close as well
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, 101, (byte) (FIN | ACK)));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), seq(101), ack(301)));
-                assertEquals(TIME_WAIT, handler.state);
+                assertEquals(TIME_WAIT, tcb.state());
                 assertFalse(future.isDone());
 
                 // wait 2 MSL
                 await().untilAsserted(() -> {
                     channel.runScheduledPendingTasks();
-                    assertEquals(CLOSED, handler.state);
+                    channel.checkException();
+                    assertNull(handler.tcb);
                     assertTrue(future.isDone());
                 });
             }
@@ -566,15 +580,15 @@ class ConnectionHandlerTest {
                         .mmsS(IP_MTU - DRASYL_HDR_SIZE)
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_B_PORT, PEER_A_PORT, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, PEER_A_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_B_PORT, PEER_A_PORT, 299L, 300L, 1220 * 64, 300L, 100L, 100L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                final ConnectionHandler handler = new ConnectionHandler(PEER_B_PORT, PEER_A_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
                 final ChannelHandlerContext ctx = channel.pipeline().context(handler);
 
                 // peer triggers close
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 100, 300, (byte) (FIN | ACK)));
 
-                assertEquals(CLOSE_WAIT, handler.state);
+                assertEquals(CLOSE_WAIT, tcb.state());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(ACK), seq(300), ack(101)));
 
                 assertEquals(300, handler.tcb.sndUna());
@@ -584,7 +598,7 @@ class ConnectionHandlerTest {
                 // local application has to close as well
                 handler.close(ctx, ctx.newPromise());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(FIN, ACK), seq(300), ack(101)));
-                assertEquals(LAST_ACK, handler.state);
+                assertEquals(LAST_ACK, tcb.state());
 
                 assertEquals(300, handler.tcb.sndUna());
                 assertEquals(301, handler.tcb.sndNxt());
@@ -593,8 +607,9 @@ class ConnectionHandlerTest {
                 // peer ACKed our close
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 101, 301, ACK));
 
-                assertEquals(CLOSED, handler.state);
                 assertNull(handler.tcb);
+
+                channel.checkException();
             }
         }
 
@@ -630,13 +645,13 @@ class ConnectionHandlerTest {
                         .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                         .msl(ofMillis(100))
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 // trigger close
                 final ChannelFuture future = channel.close();
-                assertEquals(FIN_WAIT_1, handler.state);
+                assertEquals(FIN_WAIT_1, handler.tcb.state());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(FIN, ACK), seq(100), ack(300)));
                 assertFalse(future.isDone());
 
@@ -646,7 +661,7 @@ class ConnectionHandlerTest {
 
                 // got parallel close
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300, 100, (byte) (FIN | ACK)));
-                assertEquals(CLOSING, handler.state);
+                assertEquals(CLOSING, handler.tcb.state());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), seq(101), ack(301)));
                 assertFalse(future.isDone());
 
@@ -655,15 +670,17 @@ class ConnectionHandlerTest {
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 301, 101, ACK));
-                assertEquals(TIME_WAIT, handler.state);
+                assertEquals(TIME_WAIT, handler.tcb.state());
 
                 await().untilAsserted(() -> {
                     channel.runScheduledPendingTasks();
-                    assertEquals(CLOSED, handler.state);
+                    assertNull(handler.tcb);
                 });
 
                 assertTrue(future.isDone());
                 assertNull(handler.tcb);
+
+                channel.checkException();
             }
         }
     }
@@ -713,7 +730,7 @@ class ConnectionHandlerTest {
                                 .activeOpen(false)
                                 .build();
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.userCallOpen(ctx);
 
@@ -722,7 +739,7 @@ class ConnectionHandlerTest {
                         assertNotNull(handler.tcb);
 
                         // RFC 9293: If passive, enter the LISTEN state
-                        assertEquals(LISTEN, handler.state);
+                        assertEquals(LISTEN, handler.tcb.state());
                     }
 
                     @Test
@@ -741,7 +758,7 @@ class ConnectionHandlerTest {
                                 .timestamps(true)
                                 .build();
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.userCallOpen(ctx);
@@ -767,7 +784,7 @@ class ConnectionHandlerTest {
                         assertEquals(iss + 1, handler.tcb.sndNxt());
 
                         // RFC 9293: enter SYN-SENT state,
-                        assertEquals(SYN_SENT, handler.state);
+                        assertEquals(SYN_SENT, handler.tcb.state());
                     }
                 }
 
@@ -787,9 +804,9 @@ class ConnectionHandlerTest {
                                 .clock(clock)
                                 .timestamps(true)
                                 .build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, ctx.channel(), 456L);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_A_PORT, PEER_B_PORT, ctx.channel(), 456L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.userCallOpen(ctx);
@@ -807,7 +824,7 @@ class ConnectionHandlerTest {
                         assertEquals(iss + 1, handler.tcb.sndNxt());
 
                         // RFC 9293: Enter SYN-SENT state.
-                        assertEquals(SYN_SENT, handler.state);
+                        assertEquals(SYN_SENT, tcb.state());
                     }
                 }
 
@@ -826,7 +843,9 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldThrowException(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         assertThrows(ConnectionAlreadyExistsException.class, () -> handler.userCallOpen(ctx));
@@ -852,19 +871,21 @@ class ConnectionHandlerTest {
                             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
                             .build();
                     final TransmissionControlBlock tcb = new TransmissionControlBlock(config, channel, 300L);
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                     channel.pipeline().addLast(handler);
 
                     assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
 
                     channel.close();
+
+                    channel.checkException();
                 }
 
                 @Nested
                 class OnClosedState {
                     @Test
                     void shouldFailPromise() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -891,9 +912,8 @@ class ConnectionHandlerTest {
                                 .clock(clock)
                                 .timestamps(true)
                                 .build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
-
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_A_PORT, PEER_B_PORT, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -912,7 +932,7 @@ class ConnectionHandlerTest {
                         assertEquals(iss + 1, handler.tcb.sndNxt());
 
                         // RFC 9293: Enter SYN-SENT state.
-                        assertEquals(SYN_SENT, handler.state);
+                        assertEquals(SYN_SENT, tcb.state());
 
                         // RFC 9293: Data associated with SEND may be sent with SYN segment or queued for
                         // RFC 9293: transmission after entering ESTABLISHED state.
@@ -929,9 +949,9 @@ class ConnectionHandlerTest {
                     })
                     void shouldQueueData(final State state, @Mock final SendBuffer sendBuffer) {
                         final ConnectionConfig config = ConnectionConfig.newBuilder().build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, 0, 0, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, false);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, 0, 0, 0, 0, config.rmem(), 0, 456L, 456L, sendBuffer, new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -961,14 +981,15 @@ class ConnectionHandlerTest {
                                 .clock(clock)
                                 .timestamps(true)
                                 .build();
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(ctx.channel()), 0, 0, true);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, state, PEER_A_PORT, PEER_B_PORT, 201, 201, config.rmem(), 0, 456L, 456L, new SendBuffer(ctx.channel()), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         final ByteBuf data = unpooledRandomBuffer(100);
 
                         handler.write(ctx, data, promise);
+                        handler.flush(ctx);
 
                         // RFC 9293: Segmentize the buffer and send it with a piggybacked acknowledgment
                         // RFC 9293: (acknowledgment value = RCV.NXT).
@@ -976,7 +997,7 @@ class ConnectionHandlerTest {
                         // RFC 7323: <TSval=Snd.TSclock,TSecr=TS.Recent> in each data segment.
                         verify(ctx).write(segmentCaptor.capture(), any());
                         final Segment seg = segmentCaptor.getValue();
-                        assertThat(seg, allOf(seq(201), ack(456), ctl(ACK), tsOpt(currentTime)));
+                        assertThat(seg, allOf(seq(201), ack(456), ctl(PSH, ACK), tsOpt(currentTime)));
                     }
                 }
 
@@ -991,7 +1012,9 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldFailPromise(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.write(ctx, data, promise);
@@ -1011,7 +1034,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldDoNothing() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -1032,15 +1055,12 @@ class ConnectionHandlerTest {
                                                                                    @Mock final ChannelPromise promise) {
                         when(promise.isSuccess()).thenReturn(true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
-                        when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
-                            @Override
-                            public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
-                                handler.state = ESTABLISHED;
-                                invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
-                                return promise;
-                            }
+                        when(establishedPromise.addListener(any())).then((Answer<ChannelFuture>) invocation -> {
+                            when(tcb.state()).thenReturn(ESTABLISHED);
+                            invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
+                            return promise;
                         });
 
                         handler.read(ctx);
@@ -1062,9 +1082,10 @@ class ConnectionHandlerTest {
                             "FIN_WAIT_2"
                     })
                     void shouldPassReceivedDataToUser(final State state) {
+                        when(tcb.state()).thenReturn(state);
                         when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -1079,9 +1100,10 @@ class ConnectionHandlerTest {
                 class OnCloseWaitState {
                     @Test
                     void shouldPassReceivedDataToUser() {
+                        when(tcb.state()).thenReturn(CLOSE_WAIT);
                         when(tcb.receiveBuffer().isReadable()).thenReturn(true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -1101,7 +1123,7 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldDoNothing(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.read(ctx);
@@ -1122,7 +1144,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldConnectPromiseToClosedPromise() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -1134,7 +1156,9 @@ class ConnectionHandlerTest {
                 class OnListenState {
                     @Test
                     void shouldCloseConnection() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        when(tcb.state()).thenReturn(LISTEN);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.close(ctx, promise);
 
@@ -1142,7 +1166,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -1153,7 +1177,9 @@ class ConnectionHandlerTest {
                 class OnSynSentState {
                     @Test
                     void shouldCloseConnection() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        when(tcb.state()).thenReturn(SYN_SENT);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.close(ctx, promise);
 
@@ -1164,7 +1190,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -1177,11 +1203,12 @@ class ConnectionHandlerTest {
                     void shouldCloseConnectionIfNoDataIsOutstanding() {
                         final SendBuffer sendBuffer = tcb.sendBuffer();
                         when(sendBuffer.isEmpty()).thenReturn(true);
+                        when(tcb.state()).thenReturn(SYN_RECEIVED);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(tcb.sndNxt()).thenReturn(123L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -1192,7 +1219,7 @@ class ConnectionHandlerTest {
                         assertThat(seg, allOf(seq(123), ctl(FIN, ACK)));
 
                         // RFC 9293: and enter FIN-WAIT-1 state;
-                        assertEquals(FIN_WAIT_1, handler.state);
+                        verify(tcb).state(FIN_WAIT_1);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -1200,6 +1227,7 @@ class ConnectionHandlerTest {
 
                     @Test
                     void shouldQueueCallForProcessingAfterEnteringEstablishedStateIfDataIsOutstanding() {
+                        when(tcb.state()).thenReturn(SYN_RECEIVED);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         final SendBuffer sendBuffer = tcb.sendBuffer();
@@ -1208,14 +1236,11 @@ class ConnectionHandlerTest {
                         when(promise.isSuccess()).thenReturn(true);
                         when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
-                        when(establishedPromise.addListener(any())).then(new Answer<ChannelFuture>() {
-                            @Override
-                            public ChannelFuture answer(final InvocationOnMock invocation) throws Throwable {
-                                handler.state = ESTABLISHED;
-                                invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
-                                return promise;
-                            }
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(establishedPromise.addListener(any())).then((Answer<ChannelFuture>) invocation -> {
+                            when(tcb.state()).thenReturn(ESTABLISHED);
+                            invocation.getArgument(0, ChannelFutureListener.class).operationComplete(promise);
+                            return promise;
                         });
 
                         handler.close(ctx, UserCallClose.this.promise);
@@ -1224,7 +1249,7 @@ class ConnectionHandlerTest {
                         verify(establishedPromise).addListener(any());
 
                         // this is done by the enqueued call
-                        assertEquals(FIN_WAIT_1, handler.state);
+                        verify(tcb).state(FIN_WAIT_1);
                     }
                 }
 
@@ -1232,6 +1257,7 @@ class ConnectionHandlerTest {
                 class OnEstablishedState {
                     @Test
                     void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
+                        when(tcb.state()).thenReturn(ESTABLISHED);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(tcb.sndNxt()).thenReturn(123L);
@@ -1240,7 +1266,7 @@ class ConnectionHandlerTest {
                         when(promise.isSuccess()).thenReturn(true);
                         when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.close(ctx, promise);
 
@@ -1248,7 +1274,7 @@ class ConnectionHandlerTest {
                         // (implictly tested by assertions below)
 
                         // RFC 9293: In any case, enter FIN-WAIT-1 state.
-                        assertEquals(FIN_WAIT_1, handler.state);
+                        verify(tcb).state(FIN_WAIT_1);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -1263,7 +1289,9 @@ class ConnectionHandlerTest {
                             "FIN_WAIT_2"
                     })
                     void shouldFailPromise(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.close(ctx, promise);
@@ -1280,6 +1308,7 @@ class ConnectionHandlerTest {
                 class OnCloseWaitState {
                     @Test
                     void shouldQueueCallForProcessingAfterEverythingHasBeenSegmentized() {
+                        when(tcb.state()).thenReturn(CLOSE_WAIT);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(tcb.sndNxt()).thenReturn(123L);
@@ -1288,7 +1317,7 @@ class ConnectionHandlerTest {
                         when(promise.isSuccess()).thenReturn(true);
                         when(promise.addListener(any())).then(new ChannelFutureAnswer(promise));
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.close(ctx, UserCallClose.this.promise);
 
@@ -1301,7 +1330,7 @@ class ConnectionHandlerTest {
                         assertThat(seg, allOf(seq(123L), ack(88L), ctl(FIN, ACK)));
 
                         // RFC 9293: enter LAST-ACK state.
-                        assertEquals(LAST_ACK, handler.state);
+                        verify(tcb).state(LAST_ACK);
 
                         // connect promise to closedPromise
                         verify(closedPromise).addListener(any());
@@ -1317,7 +1346,9 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldFailPromise(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.close(ctx, promise);
@@ -1344,7 +1375,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallAbort());
                     }
@@ -1354,7 +1385,9 @@ class ConnectionHandlerTest {
                 class OnListenState {
                     @Test
                     void shouldCloseConnection() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        when(tcb.state()).thenReturn(LISTEN);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -1362,7 +1395,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
                     }
                 }
 
@@ -1370,7 +1403,9 @@ class ConnectionHandlerTest {
                 class OnSynSentState {
                     @Test
                     void shouldCloseConnection() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        when(tcb.state()).thenReturn(SYN_SENT);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -1382,7 +1417,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
                     }
                 }
 
@@ -1397,11 +1432,12 @@ class ConnectionHandlerTest {
                             "CLOSE_WAIT"
                     })
                     void shouldCloseConnection(final State state) {
+                        when(tcb.state()).thenReturn(state);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(tcb.sndNxt()).thenReturn(123L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -1422,7 +1458,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
                     }
                 }
 
@@ -1435,7 +1471,9 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldCloseConnection(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.userCallAbort();
 
@@ -1443,7 +1481,7 @@ class ConnectionHandlerTest {
                         verify(tcb).delete();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
                     }
                 }
             }
@@ -1456,7 +1494,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallStatus());
                     }
@@ -1478,7 +1516,9 @@ class ConnectionHandlerTest {
                             "TIME_WAIT"
                     })
                     void shouldReturnStatus(final State state) {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        when(tcb.state()).thenReturn(state);
+
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         assertEquals(new ConnectionHandshakeStatus(state, tcb), handler.userCallStatus());
                     }
@@ -1499,7 +1539,7 @@ class ConnectionHandlerTest {
                 void shouldDiscardRst() {
                     when(seg.isRst()).thenReturn(true);
 
-                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -1518,7 +1558,7 @@ class ConnectionHandlerTest {
                     when(seg.isAck()).thenReturn(false);
                     when(seg.len()).thenReturn(100);
 
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -1543,7 +1583,7 @@ class ConnectionHandlerTest {
                     when(seg.isAck()).thenReturn(true);
                     when(seg.ack()).thenReturn(123L);
 
-                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, CLOSED, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                    final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                     handler.channelRead(ctx, seg);
                     handler.channelReadComplete(ctx);
@@ -1568,7 +1608,7 @@ class ConnectionHandlerTest {
                     void shouldDiscard() {
                         when(seg.isRst()).thenReturn(true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1587,7 +1627,7 @@ class ConnectionHandlerTest {
                         when(seg.ack()).thenReturn(123L);
                         when(seg.isAck()).thenReturn(true);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, LISTEN, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1625,8 +1665,8 @@ class ConnectionHandlerTest {
                         when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
                         when(seg.options().get(MAXIMUM_SEGMENT_SIZE)).thenReturn(1235);
 
-                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, 0, ctx.channel(), 0L);
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, LISTEN, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final TransmissionControlBlock tcb = new TransmissionControlBlock(config, LISTEN, PEER_A_PORT, 0, ctx.channel(), 0L);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.channelRead(ctx, seg);
@@ -1662,7 +1702,7 @@ class ConnectionHandlerTest {
                         assertEquals(39L, tcb.sndUna());
 
                         // RFC 9293: The connection state should be changed to SYN-RECEIVED.
-                        assertEquals(SYN_RECEIVED, handler.state);
+                        assertEquals(SYN_RECEIVED, tcb.state());
                     }
                 }
             }
@@ -1682,7 +1722,7 @@ class ConnectionHandlerTest {
                         when(seg.isRst()).thenReturn(true);
                         when(tcb.iss()).thenReturn(124L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1697,13 +1737,14 @@ class ConnectionHandlerTest {
 
                     @Test
                     void shouldResetWhenSomethingNeverSentGotAckedAndSegmentIsNoReset() {
+                        when(tcb.state()).thenReturn(SYN_SENT);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(seg.ack()).thenReturn(123L);
                         when(seg.isRst()).thenReturn(false);
                         when(tcb.iss()).thenReturn(124L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
                         when(ctx.handler()).thenReturn(handler);
 
                         handler.channelRead(ctx, seg);
@@ -1732,7 +1773,7 @@ class ConnectionHandlerTest {
                         when(seg.seq()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(456L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1750,12 +1791,13 @@ class ConnectionHandlerTest {
                     void shouldCloseConnectionIfAcknowledgementIsAcceptable() {
                         when(seg.isAck()).thenReturn(true);
                         when(seg.seq()).thenReturn(123L);
+                        when(seg.ack()).thenReturn(38L);
+                        when(tcb.state()).thenReturn(SYN_SENT);
                         when(tcb.rcvNxt()).thenReturn(123L);
                         when(tcb.sndUna()).thenReturn(37L);
-                        when(seg.ack()).thenReturn(38L);
                         when(tcb.sndNxt()).thenReturn(39L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1768,7 +1810,7 @@ class ConnectionHandlerTest {
                         verify(seg).release();
 
                         // RFC 9293: enter CLOSED state,
-                        assertEquals(CLOSED, handler.state);
+                        assertNull(handler.tcb);
 
                         // RFC 9293: delete TCB,
                         verify(tcb).delete();
@@ -1780,7 +1822,7 @@ class ConnectionHandlerTest {
                         when(seg.seq()).thenReturn(123L);
                         when(tcb.rcvNxt()).thenReturn(123L);
 
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1799,6 +1841,7 @@ class ConnectionHandlerTest {
 
                     @Test
                     void shouldEstablishConnectionWhenOurSynHasBeenAcked() {
+                        when(tcb.state()).thenReturn(SYN_SENT);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(config.timestamps()).thenReturn(true);
@@ -1819,7 +1862,7 @@ class ConnectionHandlerTest {
                         when(tcb.sndTsOk()).thenReturn(true);
                         when(tcb.config()).thenReturn(config);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1857,7 +1900,7 @@ class ConnectionHandlerTest {
 
                         // RFC 9293: If SND.UNA > ISS (our SYN has been ACKed), change the connection state
                         // RFC 9293: to ESTABLISHED,
-                        assertEquals(ESTABLISHED, handler.state);
+                        verify(tcb).state(ESTABLISHED);
 
                         // RFC 9293: TCP endpoints MUST implement [...] receiving the MSS Option (MUST-14).
                         verify(tcb).sendMss(1235);
@@ -1883,6 +1926,7 @@ class ConnectionHandlerTest {
 
                     @Test
                     void shouldChangeToSynReceivedWhenSynIsReceived() {
+                        when(tcb.state()).thenReturn(SYN_SENT);
                         when(tcb.localPort()).thenReturn(PEER_A_PORT);
                         when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                         when(config.timestamps()).thenReturn(true);
@@ -1904,7 +1948,7 @@ class ConnectionHandlerTest {
                         when(tcb.iss()).thenReturn(122L);
                         when(config.mmsR()).thenReturn(IP_MTU - DRASYL_HDR_SIZE);
 
-                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_SENT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                         handler.channelRead(ctx, seg);
                         handler.channelReadComplete(ctx);
@@ -1941,7 +1985,7 @@ class ConnectionHandlerTest {
                         verify(tcb).rto(ctx, 21);
 
                         // RFC 9293: Otherwise, enter SYN-RECEIVED,
-                        assertEquals(SYN_RECEIVED, handler.state);
+                        verify(tcb).state(SYN_RECEIVED);
 
                         // RFC 9293: form a SYN,ACK segment
                         // RFC 9293: <SEQ=ISS><ACK=RCV.NXT><CTL=SYN,ACK>
@@ -1981,6 +2025,7 @@ class ConnectionHandlerTest {
                                 "TIME_WAIT"
                         })
                         void shouldRejectSegmentAndSendAcknowledgementWithExpectedSeq(final State state) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(config.timestamps()).thenReturn(true);
@@ -1994,7 +2039,7 @@ class ConnectionHandlerTest {
                             when(config.clock().time()).thenReturn(414L);
                             when(tcb.tsRecent()).thenReturn(99L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2034,7 +2079,7 @@ class ConnectionHandlerTest {
                             when(seg.seq()).thenReturn(222L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2047,11 +2092,12 @@ class ConnectionHandlerTest {
 
                         @Test
                         void shouldPassIfSeqMatchesExpectedNumber() {
+                            when(tcb.state()).thenReturn(ESTABLISHED);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2060,12 +2106,13 @@ class ConnectionHandlerTest {
                             // RFC 9293:       next expected sequence number (RCV.NXT), then TCP endpoints MUST
                             // RFC 9293:       reset the connection in the manner prescribed below according to the
                             // RFC 9293:        connection state.
-                            assertEquals(CLOSED, handler.state);
+                            assertNull(handler.tcb);
                             verify(seg).release();
                         }
 
                         @Test
                         void shouldSendChallengeAckIfSeqIsWithinWindow() {
+                            when(tcb.state()).thenReturn(ESTABLISHED);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.sndNxt()).thenReturn(88L);
@@ -2073,7 +2120,7 @@ class ConnectionHandlerTest {
                             when(seg.seq()).thenReturn(124L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2094,12 +2141,13 @@ class ConnectionHandlerTest {
                     class OnSynReceivedState {
                         @Test
                         void shouldChangeBackToListenStateIfPassiveOpenIsUsed() {
+                            when(tcb.state()).thenReturn(SYN_RECEIVED);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(false);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2107,7 +2155,7 @@ class ConnectionHandlerTest {
                             // RFC 9293: If this connection was initiated with a passive OPEN (i.e.,
                             // RFC 9293: came from the LISTEN state), then return this connection to
                             // RFC 9293: LISTEN state
-                            assertEquals(LISTEN, handler.state);
+                            verify(tcb).state(LISTEN);
 
                             // RFC 9293: In either case, the retransmission queue should be flushed.
                             verify(tcb.retransmissionQueue()).release();
@@ -2117,12 +2165,13 @@ class ConnectionHandlerTest {
 
                         @Test
                         void shouldCloseConnectionIfActiveOpenIsUsed() {
+                            when(tcb.state()).thenReturn(SYN_RECEIVED);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(true);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2136,8 +2185,7 @@ class ConnectionHandlerTest {
                             verify(tcb.retransmissionQueue()).release();
 
                             // RFC 9293: And in the active OPEN case, enter the CLOSED state
-                            assertEquals(CLOSED, handler.state);
-
+                            assertNull(handler.tcb);
                             verify(tcb).delete();
 
                             verify(seg).release();
@@ -2154,11 +2202,12 @@ class ConnectionHandlerTest {
                                 "CLOSE_WAIT"
                         })
                         void shouldCloseConnection(final State state) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2175,7 +2224,7 @@ class ConnectionHandlerTest {
                             verify(ctx).fireExceptionCaught(any(ConnectionResetException.class));
 
                             // RFC 9293: Enter the CLOSED state, delete the TCB
-                            assertEquals(CLOSED, handler.state);
+                            assertNull(handler.tcb);
 
                             // RFC 9293: delete the TCB,
                             verify(tcb).delete();
@@ -2193,17 +2242,18 @@ class ConnectionHandlerTest {
                                 "TIME_WAIT"
                         })
                         void shouldCloseConnection(final State state) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the RST bit is set, then enter the CLOSED state,
-                            assertEquals(CLOSED, handler.state);
+                            assertNull(handler.tcb);
 
                             // RFC 9293: delete the TCB,
                             verify(tcb).delete();
@@ -2224,19 +2274,20 @@ class ConnectionHandlerTest {
                     class OnSynReceivedState {
                         @Test
                         void shouldChangeToListenState() {
+                            when(tcb.state()).thenReturn(SYN_RECEIVED);
                             when(tcb.rcvNxt()).thenReturn(123L);
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(config.activeOpen()).thenReturn(false);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
 
                             // RFC 9293: If the connection was initiated with a passive OPEN, then
                             // RFC 9293: return this connection to the LISTEN state and return.
-                            assertEquals(LISTEN, handler.state);
+                            verify(tcb).state(LISTEN);
 
                             verify(seg).release();
                         }
@@ -2255,6 +2306,7 @@ class ConnectionHandlerTest {
                                 "TIME_WAIT"
                         })
                         void shouldSendChallengeAck(final State state) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2262,7 +2314,7 @@ class ConnectionHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(tcb.sndNxt()).thenReturn(88L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2315,7 +2367,7 @@ class ConnectionHandlerTest {
                             when(seg.seq()).thenReturn(123L);
                             when(tcb.rcvWnd()).thenReturn(10L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2339,6 +2391,7 @@ class ConnectionHandlerTest {
                         class BlindDataInjectionAttackDetection {
                             @Test
                             void shouldDiscardSegAndSendAck() {
+                                when(tcb.state()).thenReturn(ESTABLISHED);
                                 when(tcb.localPort()).thenReturn(PEER_A_PORT);
                                 when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                                 when(tcb.rcvNxt()).thenReturn(123L);
@@ -2347,7 +2400,7 @@ class ConnectionHandlerTest {
                                 when(tcb.rcvWnd()).thenReturn(10L);
                                 when(tcb.sndNxt()).thenReturn(88L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2373,6 +2426,7 @@ class ConnectionHandlerTest {
                         class OnSynReceivedState {
                             @Test
                             void shouldEstablishConnectionWhenAckIsAcceptable() {
+                                when(tcb.state()).thenReturn(SYN_RECEIVED);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2380,13 +2434,13 @@ class ConnectionHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
 
                                 // RFC 9293: If SND.UNA < SEG.ACK =< SND.NXT, then enter ESTABLISHED state
-                                assertEquals(ESTABLISHED, handler.state);
+                                verify(tcb).state(ESTABLISHED);
 
                                 // RFC 9293: and continue processing with the variables below set to:
                                 // RFC 9293: SND.WND <- SEG.WND
@@ -2401,6 +2455,7 @@ class ConnectionHandlerTest {
 
                             @Test
                             void shouldResetIfAckIsNotAcceptable() {
+                                when(tcb.state()).thenReturn(SYN_RECEIVED);
                                 when(tcb.localPort()).thenReturn(PEER_A_PORT);
                                 when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                                 when(tcb.rcvNxt()).thenReturn(123L);
@@ -2410,7 +2465,7 @@ class ConnectionHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, SYN_RECEIVED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2431,6 +2486,7 @@ class ConnectionHandlerTest {
                         class OnEstablishedState {
                             @Test
                             void shouldAcknowledgeSeg() {
+                                when(tcb.state()).thenReturn(ESTABLISHED);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2442,14 +2498,14 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
                                 when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, ESTABLISHED, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2492,6 +2548,7 @@ class ConnectionHandlerTest {
                         class OnFinWait1State {
                             @Test
                             void shouldChangeToFinWait2State() {
+                                when(tcb.state()).thenReturn(FIN_WAIT_1);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2503,14 +2560,14 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
                                 when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2547,7 +2604,7 @@ class ConnectionHandlerTest {
 
                                 // RFC 9293: if the FIN segment is now acknowledged, then enter FIN-WAIT-2
                                 // RFC 9293: and continue processing in that state.
-                                assertEquals(FIN_WAIT_2, handler.state);
+                                verify(tcb).state(FIN_WAIT_2);
 
                                 verify(seg).release();
                             }
@@ -2557,6 +2614,7 @@ class ConnectionHandlerTest {
                         class OnFinWait2State {
                             @Test
                             void shouldChangeToListenState() {
+                                when(tcb.state()).thenReturn(FIN_WAIT_2);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2564,7 +2622,7 @@ class ConnectionHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(89L);
                                 when(tcb.rcvWnd()).thenReturn(10L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2596,6 +2654,7 @@ class ConnectionHandlerTest {
                         class OnCloseWaitState {
                             @Test
                             void shouldRemoveAcknowledgedSegments() {
+                                when(tcb.state()).thenReturn(CLOSE_WAIT);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2607,14 +2666,14 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
                                 when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSE_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2657,6 +2716,7 @@ class ConnectionHandlerTest {
                         class OnClosingState {
                             @Test
                             void shouldChangeToTimeWait() {
+                                when(tcb.state()).thenReturn(CLOSING);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2668,14 +2728,14 @@ class ConnectionHandlerTest {
                                 when(config.alpha()).thenReturn(1d / 8);
                                 when(config.beta()).thenReturn(1d / 4);
                                 when(config.k()).thenReturn(4);
-                                when(tcb.smss()).thenReturn(1000L);
+                                when(tcb.smss()).thenReturn(1000);
                                 when(tcb.sndTsOk()).thenReturn(true);
                                 when(tcb.flightSize()).thenReturn(64_000L);
                                 when(tcb.sRtt()).thenReturn(21f);
                                 when(tcb.rttVar()).thenReturn(2.4f);
                                 when(seg.options().get(TIMESTAMPS)).thenReturn(new TimestampsOption(4113L, 3604L));
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, CLOSING, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2712,7 +2772,7 @@ class ConnectionHandlerTest {
 
                                 // RFC 9293: if the ACK acknowledges our FIN, then enter the TIME-WAIT
                                 // RFC 9293: state;
-                                assertEquals(TIME_WAIT, handler.state);
+                                verify(tcb).state(TIME_WAIT);
 
                                 // RFC 9293: start the time-wait timer
                                 verify(timeWaitTimer).cancel(false);
@@ -2731,6 +2791,7 @@ class ConnectionHandlerTest {
                         class OnLastAckState {
                             @Test
                             void shouldCloseConnection() {
+                                when(tcb.state()).thenReturn(LAST_ACK);
                                 when(tcb.rcvNxt()).thenReturn(123L);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
@@ -2738,7 +2799,7 @@ class ConnectionHandlerTest {
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, LAST_ACK, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                                final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2750,7 +2811,7 @@ class ConnectionHandlerTest {
                                 verify(tcb).delete();
 
                                 // RFC 9293: enter the CLOSED state,
-                                assertEquals(CLOSED, handler.state);
+                                assertNull(handler.tcb);
 
                                 verify(seg).release();
                             }
@@ -2760,16 +2821,18 @@ class ConnectionHandlerTest {
                         class OnTimeWaitState {
                             @Test
                             void shouldAcknowledge() {
+                                when(tcb.state()).thenReturn(TIME_WAIT);
                                 when(tcb.localPort()).thenReturn(PEER_A_PORT);
                                 when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                                 when(tcb.rcvNxt()).thenReturn(123L);
+                                when(seg.isFin()).thenReturn(true);
                                 when(seg.seq()).thenReturn(123L);
                                 when(seg.ack()).thenReturn(88L);
                                 when(tcb.sndUna()).thenReturn(87L);
                                 when(tcb.sndNxt()).thenReturn(88L);
                                 when(tcb.rcvWnd()).thenReturn(10L);
 
-                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                                 handler.channelRead(ctx, seg);
                                 handler.channelReadComplete(ctx);
@@ -2807,6 +2870,7 @@ class ConnectionHandlerTest {
                                 "FIN_WAIT_2"
                         })
                         void shouldAcknowledge(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2818,7 +2882,7 @@ class ConnectionHandlerTest {
                             when(seg.content().readableBytes()).thenReturn(100);
                             when(seg.isPsh()).thenReturn(true);
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2853,6 +2917,7 @@ class ConnectionHandlerTest {
                                 "TIME_WAIT"
                         })
                         void shouldDiscardSegment(final State state) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2863,7 +2928,7 @@ class ConnectionHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(seg.content().readableBytes()).thenReturn(100);
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2893,6 +2958,7 @@ class ConnectionHandlerTest {
                                 "ESTABLISHED"
                         })
                         void shouldChangeToCloseWait(final State state, @Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(state);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2907,7 +2973,7 @@ class ConnectionHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2927,7 +2993,7 @@ class ConnectionHandlerTest {
                             verify(tcb.receiveBuffer()).fireRead(any(), any());
 
                             // RFC 9293: Enter the CLOSE-WAIT state.
-                            assertEquals(CLOSE_WAIT, handler.state);
+                            verify(tcb).state(CLOSE_WAIT);
 
                             verify(seg).release();
                         }
@@ -2937,6 +3003,7 @@ class ConnectionHandlerTest {
                     class OnFinWait1State {
                         @Test
                         void shouldChangeToTimeWaitIfFinHasBeenAcked(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(FIN_WAIT_1);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2951,7 +3018,7 @@ class ConnectionHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -2973,7 +3040,7 @@ class ConnectionHandlerTest {
                             // RFC 9293: If our FIN has been ACKed (perhaps in this segment),
 
                             // RFC 9293: then enter TIME-WAIT,
-                            assertEquals(TIME_WAIT, handler.state);
+                            verify(tcb).state(TIME_WAIT);
 
                             // RFC 9293: start the time-wait timer,
                             assertNotNull(handler.timeWaitTimer);
@@ -2985,6 +3052,7 @@ class ConnectionHandlerTest {
 
                         @Test
                         void shouldChangeToClosingIfFinHasNotBeenAcked(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(FIN_WAIT_1);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -2999,7 +3067,7 @@ class ConnectionHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, FIN_WAIT_1, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3019,7 +3087,7 @@ class ConnectionHandlerTest {
                             verify(tcb.receiveBuffer()).fireRead(any(), any());
 
                             // RFC 9293: otherwise, enter the CLOSING state.
-                            assertEquals(CLOSING, handler.state);
+                            verify(tcb).state(CLOSING);
                         }
                     }
 
@@ -3027,6 +3095,7 @@ class ConnectionHandlerTest {
                     class OnFinWait2State {
                         @Test
                         void shouldEnterTimeWaitState(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(FIN_WAIT_2);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -3041,7 +3110,7 @@ class ConnectionHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, FIN_WAIT_2, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3061,7 +3130,7 @@ class ConnectionHandlerTest {
                             verify(tcb.receiveBuffer()).fireRead(any(), any());
 
                             // RFC 9293: Enter the TIME-WAIT state.
-                            assertEquals(TIME_WAIT, handler.state);
+                            verify(tcb).state(TIME_WAIT);
 
                             // RFC 9293: start the time-wait timer,
                             assertNotNull(handler.timeWaitTimer);
@@ -3090,7 +3159,7 @@ class ConnectionHandlerTest {
                             when(tcb.rcvWnd()).thenReturn(10L);
                             when(tcb.maxSndWnd()).thenReturn(64000L);
 
-                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3110,7 +3179,7 @@ class ConnectionHandlerTest {
                             verify(tcb.receiveBuffer()).fireRead(any(), any());
 
                             // RFC 9293: remain in the state.
-                            assertEquals(state, handler.state);
+                            assertEquals(state, handler.tcb.state());
                         }
                     }
 
@@ -3118,6 +3187,7 @@ class ConnectionHandlerTest {
                     class OnTimeWaitState {
                         @Test
                         void shouldRemainInStateAndRestartTimeWaitTimer(@Mock(answer = RETURNS_DEEP_STUBS) final EventExecutor executor) {
+                            when(tcb.state()).thenReturn(TIME_WAIT);
                             when(tcb.localPort()).thenReturn(PEER_A_PORT);
                             when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                             when(tcb.rcvNxt()).thenReturn(123L);
@@ -3132,7 +3202,7 @@ class ConnectionHandlerTest {
                                 return null;
                             }).when(executor).execute(any());
 
-                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, TIME_WAIT, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                            final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                             handler.channelRead(ctx, seg);
                             handler.channelReadComplete(ctx);
@@ -3152,7 +3222,7 @@ class ConnectionHandlerTest {
                             verify(tcb.receiveBuffer()).fireRead(any(), any());
 
                             // RFC 9293: Remain in the TIME-WAIT state.
-                            assertEquals(TIME_WAIT, handler.state);
+                            assertEquals(TIME_WAIT, handler.tcb.state());
 
                             // RFC 9293: Restart the 2 MSL time-wait timeout.
                             verify(timeWaitTimer).cancel(false);
@@ -3185,26 +3255,39 @@ class ConnectionHandlerTest {
                         "CLOSED"
                 })
                 void shouldCloseConnection(final State state) {
-                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                    final TransmissionControlBlock myTcb;
+                    if (state == CLOSED) {
+                        myTcb = null;
+                    }
+                    else {
+                        when(tcb.state()).thenReturn(state);
+                        myTcb = tcb;
+                    }
+
+                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, myTcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                     handler.userTimeout(ctx);
 
                     // RFC 9293: For any state if the user timeout expires,
 
                     // RFC 9293: flush all queues,
-                    verify(tcb.sendBuffer()).fail(any(ConnectionAbortedDueToUserTimeoutException .class));
-                    verify(tcb.retransmissionQueue()).release();
-                    verify(tcb.receiveBuffer()).release();
+                    if (myTcb != null) {
+                        verify(myTcb.sendBuffer()).fail(any(ConnectionAbortedDueToUserTimeoutException.class));
+                        verify(myTcb.retransmissionQueue()).release();
+                        verify(myTcb.receiveBuffer()).release();
+                    }
 
                     // RFC 9293: signal the user "error: connection aborted due to user timeout" in
                     // RFC 9293: general and for any outstanding calls,
                     verify(ctx).fireExceptionCaught(any(ConnectionAbortedDueToUserTimeoutException.class));
 
                     // RFC 9293: delete the TCB,
-                    verify(tcb).delete();
+                    if (myTcb != null) {
+                        verify(myTcb).delete();
+                    }
 
                     // RFC 9293: enter the CLOSED state,
-                    assertEquals(CLOSED, handler.state);
+                    assertNull(handler.tcb);
 
                     assertNull(handler.userTimer);
                 }
@@ -3231,13 +3314,13 @@ class ConnectionHandlerTest {
                     when(tcb.remotePort()).thenReturn(PEER_B_PORT);
                     when(tcb.rto()).thenReturn(1234);
                     when(tcb.flightSize()).thenReturn(64_000L);
-                    when(tcb.smss()).thenReturn(1000L);
+                    when(tcb.smss()).thenReturn(1000);
                     when(tcb.retransmissionQueue().nextSegment()).thenReturn(seg);
-                    when(tcb.effSndMss()).thenReturn(1401L);
+                    when(tcb.effSndMss()).thenReturn(1401);
                     when(tcb.cwnd()).thenReturn(500L);
                     when(seg.content()).thenReturn(Unpooled.buffer());
 
-                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
 
                     final long rto = 1234L;
                     handler.retransmissionTimeout(ctx, tcb, rto);
@@ -3291,16 +3374,27 @@ class ConnectionHandlerTest {
                         "CLOSED"
                 })
                 void shouldCloseConnection(final State state) {
-                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, state, tcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
+                    final TransmissionControlBlock myTcb;
+                    if (state == CLOSED) {
+                        myTcb = null;
+                    }
+                    else {
+                        when(tcb.state()).thenReturn(state);
+                        myTcb = tcb;
+                    }
+
+                    final ConnectionHandler handler = new ConnectionHandler(0, 0, config, myTcb, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                     handler.timeWaitTimeout(ctx);
 
                     // RFC 9293: If the time-wait timeout expires on a connection,
                     // RFC 9293: delete the TCB,
-                    verify(tcb).delete();
+                    if (state != CLOSED) {
+                        verify(myTcb).delete();
+                    }
 
                     // RFC 9293: enter the CLOSED state,
-                    assertEquals(CLOSED, handler.state);
+                    assertNull(handler.tcb);
 
                     assertNull(handler.timeWaitTimer);
                 }
@@ -3325,8 +3419,8 @@ class ConnectionHandlerTest {
                         .msl(ofMillis(100))
                         .noDelay(true)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
-                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
@@ -3336,9 +3430,9 @@ class ConnectionHandlerTest {
                 assertEquals(3 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 channel.writeOutbound(byteBuf);
                 final Segment seg1 = channel.readOutbound();
-                assertThat(seg1, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 0 * (mms - SEG_HDR_SIZE))));
+                assertThat(seg1, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss)));
                 final Segment seg2 = channel.readOutbound();
-                assertThat(seg2, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 1 * (mms - SEG_HDR_SIZE))));
+                assertThat(seg2, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + (mms - SEG_HDR_SIZE))));
                 final Segment seg3 = channel.readOutbound();
                 assertThat(seg3, allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 2 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
@@ -3347,7 +3441,7 @@ class ConnectionHandlerTest {
                 // 4 in-flight messages are allowed now
                 // 1 message left the network (2 still in-flight), 2 new messages are allowed
                 assertTrue(tcb.doSlowStart());
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - SEG_HDR_SIZE), ACK, 64_000));
                 assertEquals(4 * (mms - SEG_HDR_SIZE), tcb.cwnd());
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 3 * (mms - SEG_HDR_SIZE))));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 4 * (mms - SEG_HDR_SIZE))));
@@ -3364,6 +3458,8 @@ class ConnectionHandlerTest {
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 6 * (mms - SEG_HDR_SIZE))));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 7 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
+
+                channel.checkException();
             }
         }
 
@@ -3386,10 +3482,10 @@ class ConnectionHandlerTest {
                         .noDelay(true)
                         .rmem(5_000)
                         .build();
-                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+                final TransmissionControlBlock tcb = new TransmissionControlBlock(config, ESTABLISHED, PEER_A_PORT, PEER_B_PORT, 100L, 100L, 1220 * 64, 100L, 300L, 300L, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
                 // set cwnd to ssthresh to enable congestion avoidance
                 tcb.cwnd(ctx, tcb.ssthresh());
-                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, ESTABLISHED, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
+                final ConnectionHandler handler = new ConnectionHandler(PEER_A_PORT, PEER_B_PORT, config, tcb, null, null, null, channel.newPromise(), false, false, channel.newPromise(), null);
                 channel.pipeline().addLast(handler);
 
                 final ByteBuf byteBuf = Unpooled.buffer(100_000).writerIndex(100_000);
@@ -3400,29 +3496,31 @@ class ConnectionHandlerTest {
                 int expectedCwnd = 5_000;
 
                 // ACK 1st SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 1 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 296;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + (mms - 20), ACK, 64_000));
+                expectedCwnd += 332;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 2nd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 280;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 2 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 312;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 3rd SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 266;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 3 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 294;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 4th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 254;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 4 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 280;
                 assertEquals(expectedCwnd, tcb.cwnd());
 
                 // ACK 5th SEG -> increase cwnd
-                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - SEG_HDR_SIZE), ACK, 64_000));
-                expectedCwnd += 243;
+                channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - 20), ACK, 64_000));
+                expectedCwnd += 267;
                 assertEquals(expectedCwnd, tcb.cwnd());
+
+                channel.checkException();
             }
         }
     }

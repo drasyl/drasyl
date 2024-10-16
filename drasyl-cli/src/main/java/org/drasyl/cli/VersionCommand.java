@@ -24,6 +24,7 @@ package org.drasyl.cli;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.kqueue.KQueue;
 import org.drasyl.util.Version;
+import picocli.CommandLine.Option;
 
 import java.io.PrintStream;
 
@@ -39,6 +40,11 @@ import static picocli.CommandLine.Command;
 )
 public class VersionCommand implements Runnable {
     protected final PrintStream out;
+    @Option(
+            names = { "--unavailability-cause" },
+            description = "Prints unavailability causes for epoll and kqueue."
+    )
+    protected boolean unavailabilityCause;
 
     VersionCommand(final PrintStream out) {
         this.out = requireNonNull(out);
@@ -60,5 +66,18 @@ public class VersionCommand implements Runnable {
         out.println("- os.name " + System.getProperty("os.name"));
         out.println("- os.version " + System.getProperty("os.version"));
         out.println("- os.arch " + System.getProperty("os.arch"));
+
+        if (unavailabilityCause) {
+            final Throwable epollUnavailabilityCause = Epoll.unavailabilityCause();
+            if (epollUnavailabilityCause != null) {
+                out.println("epoll unavailability cause:");
+                epollUnavailabilityCause.printStackTrace(out);
+            }
+            final Throwable kqueueUnavailabilityCause = KQueue.unavailabilityCause();
+            if (kqueueUnavailabilityCause != null) {
+                out.println("kqueue unavailability cause:");
+                kqueueUnavailabilityCause.printStackTrace(out);
+            }
+        }
     }
 }

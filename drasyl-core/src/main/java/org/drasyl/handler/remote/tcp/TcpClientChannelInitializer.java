@@ -21,22 +21,26 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.handler.remote.OtherNetworkFilter;
+import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
+import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
 
 @UnstableApi
 public class TcpClientChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final ChannelHandlerContext drasylCtx;
+    private final DrasylServerChannel parent;
 
-    public TcpClientChannelInitializer(final ChannelHandlerContext drasylCtx) {
-        this.drasylCtx = requireNonNull(drasylCtx);
+    public TcpClientChannelInitializer(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
@@ -45,11 +49,17 @@ public class TcpClientChannelInitializer extends ChannelInitializer<SocketChanne
 
         p.addLast(new ByteBufCodec());
         p.addLast(new ByteToRemoteMessageCodec());
+        p.addLast(new OtherNetworkFilter(parent.config().getNetworkId()));
         p.addLast(new InvalidProofOfWorkFilter());
-        lastStage(ch);
-    }
-
-    protected void lastStage(final SocketChannel ch) {
-        ch.pipeline().addLast(new TcpClientToDrasylHandler(drasylCtx));
+        if (parent.config().isArmingEnabled()) {
+            ch.pipeline().addLast(new ProtocolArmHandler(
+                    parent.identity(),
+                    Crypto.INSTANCE,
+                    parent.config().getArmingSessionMaxCount(),
+                    parent.config().getArmingSessionExpireAfter()
+            ));
+        }
+        ch.pipeline().addLast(new UnarmedMessageDecoder());
+        ch.pipeline().addLast(new TcpClientToDrasylHandler(parent));
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,12 +33,12 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.handler.connection.ConnectionConfig.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.ConnectionConfig.IP_MTU;
 import static org.drasyl.handler.connection.Segment.MAX_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.MIN_SEQ_NO;
 import static org.drasyl.handler.connection.Segment.SEG_HDR_SIZE;
 import static org.drasyl.handler.connection.Segment.add;
-import static org.drasyl.handler.connection.Segment.advanceSeq;
 import static org.drasyl.handler.connection.Segment.sub;
 import static org.drasyl.util.NumberUtil.max;
 import static org.drasyl.util.NumberUtil.min;
@@ -77,20 +77,6 @@ import static org.drasyl.util.Preconditions.requirePositive;
 public class TransmissionControlBlock {
     public static final int MIN_PORT = 1;
     public static final int MAX_PORT = 65_535;
-    // IPv4/IPv6: 20/40 bytes -> 40 bytes
-    // UDP: 8 bytes
-    // drasyl: 176 bytes
-    static final int DRASYL_HDR_SIZE = 40 + 8 + 176 - 65;
-    // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
-    // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
-    //
-    // 536 is the result of an assumed MTU of 576 - IPv4 header (20) - TCP header (20) = 536
-    // 1220 is the result of an assumed MTU of 1280 - IPv6 header (40) - TCP header (20) = 1220
-    //
-    // we instead, assume a MTU of 1460 for both IPv4 and IPv6. This is the smallest known MTU
-    // on the Internet (applied by Google Cloud). We then have to remove the drasyl header
-    // (DRASYL_HDR_SIZE) and our TCP header (SEG_HDR_SIZE)
-    public static final int DEFAULT_SEND_MSS = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     private static final Logger LOG = LoggerFactory.getLogger(TransmissionControlBlock.class);
     private final RetransmissionQueue retransmissionQueue;
     private final SendBuffer sendBuffer;
@@ -98,6 +84,7 @@ public class TransmissionControlBlock {
     private final ReceiveBuffer receiveBuffer;
     private final int rcvBuff;
     private final ConnectionConfig config;
+    private State state;
     private int localPort;
     private int remotePort;
     // RFC 9293: Send Sequence Variables
@@ -126,7 +113,7 @@ public class TransmissionControlBlock {
     // RFC 9293: SendMSS is the MSS value received from the remote host, or the default 536 for IPv4
     // RFC 9293: or 1220 for IPv6, if no MSS Option is received.
     // The size does not include the TCP/IP headers and options.
-    private long sendMss = DEFAULT_SEND_MSS;
+    private int sendMss = IP_MTU - DRASYL_HDR_SIZE - SEG_HDR_SIZE;
     // RFC 9293: Silly Window Syndrome Avoidance
     // RFC 9293: the maximum send window it has seen so far on the connection, and to use this value
     // RFC 9293: as an estimate of RCV.BUFF
@@ -169,13 +156,9 @@ public class TransmissionControlBlock {
     // RFC 5681:
     private int duplicateAcks;
 
-    // RFC 6582: Fast Recovery Algorithm Modification (NewReno)
-    // RFC 6582: When in fast recovery, this variable records the send sequence number that must be
-    // RFC 6582: acknowledged before the fast recovery procedure is declared to be over.
-    private long recover;
-
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
                              final int localPort,
                              final int remotePort,
                              final long sndUna,
@@ -193,7 +176,6 @@ public class TransmissionControlBlock {
                              final long cwnd,
                              final long ssthresh,
                              final long maxSndWnd,
-                             final long recover,
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk,
@@ -201,6 +183,7 @@ public class TransmissionControlBlock {
                              final float sRtt,
                              final int rto) {
         this.config = requireNonNull(config);
+        this.state = state;
         this.localPort = requireInRange(localPort, 0, MAX_PORT);
         this.remotePort = requireInRange(remotePort, 0, MAX_PORT);
         this.sndUna = requireInRange(sndUna, MIN_SEQ_NO, MAX_SEQ_NO);
@@ -218,13 +201,32 @@ public class TransmissionControlBlock {
         this.cwnd = requireNonNegative(cwnd);
         this.ssthresh = requireNonNegative(ssthresh);
         this.maxSndWnd = requireNonNegative(maxSndWnd);
-        this.recover = requireInRange(recover, MIN_SEQ_NO, MAX_SEQ_NO);
         this.tsRecent = requireNonNegative(tsRecent);
         this.lastAckSent = requireNonNegative(lastAckSent);
         this.sndTsOk = sndTsOk;
         this.rttVar = requireNonNegative(rttVar);
         this.sRtt = requireNonNegative(sRtt);
         this.rto = requirePositive(rto);
+    }
+
+    @SuppressWarnings("java:S107")
+    TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
+                             final int localPort,
+                             final int remotePort,
+                             final long sndUna,
+                             final long sndNxt,
+                             final int sndWnd,
+                             final long iss,
+                             final long rcvNxt,
+                             final long irs,
+                             final SendBuffer sendBuffer,
+                             final RetransmissionQueue retransmissionQueue,
+                             final ReceiveBuffer receiveBuffer,
+                             final long tsRecent,
+                             final long lastAckSent,
+                             final boolean sndTsOk) {
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
     }
 
     @SuppressWarnings("java:S107")
@@ -243,11 +245,12 @@ public class TransmissionControlBlock {
                              final long tsRecent,
                              final long lastAckSent,
                              final boolean sndTsOk) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, config.rmem(), config.rmem(), irs, sendBuffer, new OutgoingSegmentQueue(), retransmissionQueue, receiveBuffer, (config.mmsS() - SEG_HDR_SIZE) * 3L, config.rmem(), sndWnd, iss, tsRecent, lastAckSent, sndTsOk, 0, 0, (int) config.rto().toMillis());
+        this(config, null, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, rcvNxt, irs, sendBuffer, retransmissionQueue, receiveBuffer, tsRecent, lastAckSent, sndTsOk);
     }
 
     @SuppressWarnings("java:S107")
     TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
                              final int localPort,
                              final int remotePort,
                              final Channel channel,
@@ -256,7 +259,16 @@ public class TransmissionControlBlock {
                              final int sndWnd,
                              final long iss,
                              final long irs) {
-        this(config, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, state, localPort, remotePort, sndUna, sndNxt, sndWnd, iss, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
+    }
+
+    TransmissionControlBlock(final ConnectionConfig config,
+                             final State state,
+                             final int localPort,
+                             final int remotePort,
+                             final Channel channel,
+                             final long irs) {
+        this(config, state, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(), 0, 0, false);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -264,7 +276,7 @@ public class TransmissionControlBlock {
                              final int remotePort,
                              final Channel channel,
                              final long irs) {
-        this(config, localPort, remotePort, 0, 0, config.rmem(), 0, irs, irs, new SendBuffer(channel), new RetransmissionQueue(), new ReceiveBuffer(channel), 0, 0, false);
+        this(config, null, localPort, remotePort, channel, irs);
     }
 
     TransmissionControlBlock(final ConnectionConfig config,
@@ -273,11 +285,12 @@ public class TransmissionControlBlock {
         this(config, 0, 0, channel, irs);
     }
 
-    // RFC 1122, Section 4.2.2.6
-    // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
-    // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
-    static long effSndMss(final long sendMss, final long mmsS) {
-        return min(sendMss + SEG_HDR_SIZE, mmsS) - SEG_HDR_SIZE;
+    public State state() {
+        return state;
+    }
+
+    public void state(final State state) {
+        this.state = requireNonNull(state);
     }
 
     /**
@@ -345,7 +358,7 @@ public class TransmissionControlBlock {
      * @return the receive window
      */
     public long rcvWnd() {
-        return rcvBuff() - rcvUser();
+        return rcvWnd;
     }
 
     /**
@@ -367,18 +380,19 @@ public class TransmissionControlBlock {
             return false;
         }
         final TransmissionControlBlock that = (TransmissionControlBlock) o;
-        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && recover == that.recover && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
+        return rcvBuff == that.rcvBuff && localPort == that.localPort && remotePort == that.remotePort && sndUna == that.sndUna && sndNxt == that.sndNxt && sndWnd == that.sndWnd && sndWl1 == that.sndWl1 && sndWl2 == that.sndWl2 && iss == that.iss && rcvNxt == that.rcvNxt && rcvWnd == that.rcvWnd && irs == that.irs && sendMss == that.sendMss && maxSndWnd == that.maxSndWnd && tsRecent == that.tsRecent && lastAckSent == that.lastAckSent && sndTsOk == that.sndTsOk && Double.compare(rttVar, that.rttVar) == 0 && Double.compare(sRtt, that.sRtt) == 0 && rto == that.rto && cwnd == that.cwnd && ssthresh == that.ssthresh && lastAdvertisedWindow == that.lastAdvertisedWindow && duplicateAcks == that.duplicateAcks && Objects.equals(retransmissionQueue, that.retransmissionQueue) && Objects.equals(sendBuffer, that.sendBuffer) && Objects.equals(outgoingSegmentQueue, that.outgoingSegmentQueue) && Objects.equals(receiveBuffer, that.receiveBuffer) && Objects.equals(config, that.config) && Objects.equals(overrideTimer, that.overrideTimer);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks, recover);
+        return Objects.hash(retransmissionQueue, sendBuffer, outgoingSegmentQueue, receiveBuffer, rcvBuff, config, localPort, remotePort, sndUna, sndNxt, sndWnd, sndWl1, sndWl2, iss, rcvNxt, rcvWnd, irs, sendMss, maxSndWnd, overrideTimer, tsRecent, lastAckSent, sndTsOk, rttVar, sRtt, rto, cwnd, ssthresh, lastAdvertisedWindow, duplicateAcks);
     }
 
     @Override
     public String toString() {
         return "TransmissionControlBlock{" +
-                "L=" + localPort +
+                "STATE=" + state +
+                ", L=" + localPort +
                 ", R=" + remotePort +
                 ", SND.UNA=" + sndUna +
                 ", SND.NXT=" + sndNxt +
@@ -411,9 +425,9 @@ public class TransmissionControlBlock {
      * Advances SND.NXT and places the {@code seg} on the outgoing segment queue.
      */
     void send(final ChannelHandlerContext ctx, final Segment seg, final ChannelPromise promise) {
-        if (sndNxt == seg.seq() && seg.len() > 0) {
-            final long newSndNxt = add(seg.lastSeq(), 1);
-            if (LOG.isTraceEnabled()) {
+        if (sndNxt == seg.seq()) {
+            final long newSndNxt = seg.nxtSeq();
+            if (LOG.isTraceEnabled() && newSndNxt != sndNxt) {
                 LOG.trace("{} Send data [{},{}]. Advance SND.NXT from {} to {} (+{}).", ctx.channel(), seg.seq(), seg.lastSeq(), sndNxt, newSndNxt, Segment.sub(newSndNxt, sndNxt));
             }
             sndNxt = newSndNxt;
@@ -458,131 +472,131 @@ public class TransmissionControlBlock {
     /**
      * Writes data to the network that has been queued for transmission.
      */
-    long writeEnqueuedData(final ChannelHandlerContext ctx) {
-        return segmentizeAndSendData(ctx, false);
+    void trySendingPreviouslyUnsentData(final ChannelHandlerContext ctx) {
+        trySendingPreviouslyUnsentData(ctx, false);
     }
 
-    private long segmentizeAndSendData(final ChannelHandlerContext ctx,
-                                       final boolean overrideTimeoutOccurred) {
-        try {
-            long totalSentData = 0;
-            long readableBytes = sendBuffer.length();
+    private void trySendingPreviouslyUnsentData(final ChannelHandlerContext ctx,
+                                                final boolean overrideTimeoutOccurred) {
+        LOG.trace("{} Try to segmentize and send previously unsent data in `{}`.", ctx.channel(), sendBuffer);
+        long readableBytes = sendBuffer.length();
+        while (readableBytes > 0) {
+            LOG.trace("{} {} readable bytes left in SND.BUF.", ctx.channel(), readableBytes);
+            final long wnd = min(sndWnd(), cwnd());
+            final long usableWindow = max(0, wnd - flightSize());
+            if (!config().noDelay()) {
+                // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
+                // RFC 9293: sender (MUST-38).
+                // (Nagle algorithm)
 
-            while (readableBytes > 0) {
-                if (!config().noDelay()) {
-                    // RFC 9293: A TCP implementation MUST include a SWS avoidance algorithm in the
-                    // RFC 9293: sender (MUST-38).
-                    // (Nagle algorithm)
+                // RFC 9293: The sender's SWS avoidance algorithm is more difficult than the
+                // RFC 9293: receiver's because the sender does not know (directly) the
+                // RFC 9293: receiver's total buffer space (RCV.BUFF). An approach that has been
+                // RFC 9293: found to work well is for the sender to calculate Max(SND.WND),
+                // RFC 9293: which is the maximum send window it has seen so far on the
+                // RFC 9293: connection, and to use this value as an estimate of RCV.BUFF.
+                // RFC 9293: Unfortunately, this can only be an estimate; the receiver may at
+                // RFC 9293: any time reduce the size of RCV.BUFF. To avoid a resulting
+                // RFC 9293: deadlock, it is necessary to have a timeout to force transmission
+                // RFC 9293: of data, overriding the SWS avoidance algorithm. In practice, this
+                // RFC 9293: timeout should seldom occur.
 
-                    // RFC 9293: The sender's SWS avoidance algorithm is more difficult than the
-                    // RFC 9293: receiver's because the sender does not know (directly) the
-                    // RFC 9293: receiver's total buffer space (RCV.BUFF). An approach that has been
-                    // RFC 9293: found to work well is for the sender to calculate Max(SND.WND),
-                    // RFC 9293: which is the maximum send window it has seen so far on the
-                    // RFC 9293: connection, and to use this value as an estimate of RCV.BUFF.
-                    // RFC 9293: Unfortunately, this can only be an estimate; the receiver may at
-                    // RFC 9293: any time reduce the size of RCV.BUFF. To avoid a resulting
-                    // RFC 9293: deadlock, it is necessary to have a timeout to force transmission
-                    // RFC 9293: of data, overriding the SWS avoidance algorithm. In practice, this
-                    // RFC 9293: timeout should seldom occur.
+                // RFC 9293: The "usable window" is:
+                // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
+                // RFC 9293: i.e., the offered window less the amount of data sent but not
+                // RFC 9293: acknowledged.
+                final long u = usableWindow;
+                // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
+                // RFC 9293: not yet sent,
+                @SuppressWarnings("UnnecessaryLocalVariable") final long d = readableBytes;
+                // RFC 9293: then the following set of rules is recommended.
 
-                    // RFC 9293: The "usable window" is:
-                    // RFC 9293: U = SND.UNA + SND.WND - SND.NXT
-                    // RFC 9293: i.e., the offered window less the amount of data sent but not
-                    // RFC 9293: acknowledged.
-                    final long u = sub(add(sndUna, min(sndWnd(), cwnd())), sndNxt);
-                    // RFC 9293: If D is the amount of data queued in the sending TCP endpoint but
-                    // RFC 9293: not yet sent,
-                    final long d = readableBytes;
-                    // RFC 9293: then the following set of rules is recommended.
-
-                    // RFC 9293: Send data...
-                    final boolean sendData;
-                    if (min(d, u) >= effSndMss()) {
-                        // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
-                        // RFC 9293:     min(D,U) >= Eff.snd.MSS;
-                        sendData = true;
-                    }
-                    else if (sndNxt == sndUna && d <= u) {
-                        // RFC 9293: (2) or if the data is pushed and all queued data can be sent
-                        // RFC 9293:     now, i.e., if:
-                        // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
-                        // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
-                        sendData = true;
-                    }
-                    else if (sndNxt == sndUna && min(d, u) >= config.fs() * maxSndWnd()) {
-                        // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
-                        // RFC 9293:     sent, i.e., if:
-                        // RFC 9293:     [SND.NXT = SND.UNA and]
-                        // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
-                        sendData = true;
-                    }
-                    else if (overrideTimeoutOccurred) {
-                        // (4) or if the override timeout occurs.
-                        sendData = true;
-                    }
-                    else {
-                        createOverrideTimer(ctx);
-                        sendData = false;
-                    }
-
-                    if (sendData) {
-                        cancelOverrideTimer();
-                    }
-                    else {
-                        LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} bytes.", ctx.channel(), readableBytes);
-                        return totalSentData;
-                    }
+                // RFC 9293: Send data...
+                final boolean sendData;
+                if (min(d, u) >= effSndMss()) {
+                    // RFC 9293: (1) if a maximum-sized segment can be sent, i.e., if:
+                    // RFC 9293:     min(D,U) >= Eff.snd.MSS;
+                    LOG.trace("{} Sender's SWS avoidance: At least one maximum-sized segment of {} bytes can be sent.", ctx.channel(), effSndMss());
+                    sendData = true;
                 }
-
-                final long window = min(sndWnd(), cwnd());
-                final long usableWindow = max(0, window - flightSize());
-                final long remainingBytes;
-                if (readableBytes <= sendMss() && readableBytes <= usableWindow) {
-                    // we have less than a segment to send
-                    remainingBytes = readableBytes;
+                else if (sndNxt == sndUna && sendBuffer.doPush() && d <= usableWindow) {
+                    // RFC 9293: (2) or if the data is pushed and all queued data can be sent
+                    // RFC 9293:     now, i.e., if:
+                    // RFC 9293:     [SND.NXT = SND.UNA and] PUSHed and D <= U
+                    // RFC 9293:     (the bracketed condition is imposed by the Nagle algorithm);
+                    LOG.trace("{} Sender's SWS avoidance: Data is pushed and all queued data can be sent.", ctx.channel());
+                    sendData = true;
                 }
-                else if (sendMss() <= readableBytes && sendMss() <= usableWindow) {
-                    // we have at least one full segment to send
-                    remainingBytes = sendMss();
+                else if (sndNxt == sndUna && min(d, usableWindow) >= config.fs() * maxSndWnd()) {
+                    // RFC 9293: (3) or if at least a fraction Fs of the maximum window can be
+                    // RFC 9293:     sent, i.e., if:
+                    // RFC 9293:     [SND.NXT = SND.UNA and]
+                    // RFC 9293:         min(D,U) >= Fs * Max(SND.WND);
+                    LOG.trace("{} Sender's SWS avoidance: At least a fraction of the maximum window can be sent.", ctx.channel());
+                    sendData = true;
+                }
+                else if (overrideTimeoutOccurred) {
+                    // (4) or if the override timeout occurs.
+                    LOG.trace("{} Sender's SWS avoidance: Override timeout occurred.", ctx.channel(), readableBytes);
+                    sendData = true;
                 }
                 else {
-                    // we're path or receiver capped
-                    remainingBytes = usableWindow;
-
-                    if (sndWnd() > cwnd()) {
-                        // path capped
-                        LOG.trace("{} Path capped.", ctx.channel());
-                    }
-                    else {
-                        // receiver capped
-                        LOG.trace("{} Receiver capped.", ctx.channel());
-                    }
+                    LOG.trace("{} Sender's SWS avoidance: No send condition met. Delay {} byte until send condition is met or override timeout occured. Usable window is {} bytes (SND.WND={}/CWND={}).", ctx.channel(), readableBytes, usableWindow, sndWnd(), cwnd());
+                    createOverrideTimer(ctx);
+                    sendData = false;
                 }
 
-                if (remainingBytes > 0) {
-                    LOG.trace("{} {} bytes in-flight. SND.WND/CWND of {} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), min(sndWnd(), cwnd()), usableWindow, readableBytes, remainingBytes);
-                    final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
-
-                    final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
-                    totalSentData += sentData;
-                    readableBytes -= sentData;
+                if (sendData) {
+                    cancelOverrideTimer();
                 }
                 else {
-                    return totalSentData;
+                    return;
                 }
             }
 
-            return totalSentData;
-        }
-        finally {
-            outgoingSegmentQueue.flush(ctx, this);
+            final long remainingBytes;
+            if (readableBytes <= effSndMss() && readableBytes <= usableWindow) {
+                // we have less than a segment to send
+                remainingBytes = readableBytes;
+            }
+            else if (effSndMss() <= readableBytes && effSndMss() <= usableWindow) {
+                // we have at least one full segment to send
+                remainingBytes = effSndMss();
+            }
+            else {
+                // we're path or receiver capped
+                remainingBytes = usableWindow;
+
+                if (sndWnd() > cwnd()) {
+                    // path capped
+                    LOG.trace("{} Capped by CWND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), cwnd(), remainingBytes, flightSize());
+                }
+                else {
+                    // receiver capped
+                    LOG.trace("{} Capped by SND.WND={} which allows us to write {} new bytes to network. {} bytes in-flight", ctx.channel(), sndWnd(), remainingBytes, flightSize());
+                }
+            }
+
+            if (remainingBytes > 0) {
+                LOG.trace("{} {} bytes in-flight. SND.WND={}/CWND={} bytes allows us to write {} new bytes to network. {} bytes wait to be written. Write {} bytes.", ctx.channel(), flightSize(), sndWnd(), cwnd(), usableWindow, readableBytes, remainingBytes);
+                final ConnectionHandler handler = (ConnectionHandler) ctx.handler();
+
+                final long sentData = handler.segmentizeAndSendData(ctx, (int) remainingBytes);
+                readableBytes -= sentData;
+            }
+            else {
+                return;
+            }
         }
     }
 
     void pushAndSegmentizeData(final ChannelHandlerContext ctx) {
+        LOG.trace("{} PUSH received.", ctx.channel());
         sendBuffer.push();
-        segmentizeAndSendData(ctx, false);
+        trySendingPreviouslyUnsentData(ctx, false);
+        if (!outgoingSegmentQueue.isEmpty()) {
+            flush(ctx);
+        }
     }
 
     ConnectionConfig config() {
@@ -591,11 +605,18 @@ public class TransmissionControlBlock {
 
     private void createOverrideTimer(final ChannelHandlerContext ctx) {
         if (overrideTimer == null) {
+            LOG.trace("{} Sender's SWS avoidance: Override timer created: Timeout {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
             overrideTimer = ctx.executor().schedule(() -> {
                 overrideTimer = null;
-                LOG.trace("{} Sender's SWS avoidance: Override timeout occurred after {}ms.", ctx.channel(), config.overrideTimeout().toMillis());
-                segmentizeAndSendData(ctx, true);
+                LOG.trace("{} Sender's SWS avoidance: Override timer timeout after {}ms! Try sending enqueued data.", ctx.channel(), config.overrideTimeout().toMillis());
+                trySendingPreviouslyUnsentData(ctx, true);
+                if (!outgoingSegmentQueue.isEmpty()) {
+                    flush(ctx);
+                }
             }, config.overrideTimeout().toMillis(), MILLISECONDS);
+        }
+        else {
+            LOG.trace("{} Sender's SWS avoidance: Override timer already running.", ctx.channel());
         }
     }
 
@@ -646,9 +667,8 @@ public class TransmissionControlBlock {
         return ssthresh;
     }
 
-    public void advanceRcvNxt(final ChannelHandlerContext ctx, final int advancement) {
-        final long newRcvNxt = advanceSeq(rcvNxt, advancement);
-        if (LOG.isTraceEnabled()) {
+    public void rcvNxt(final ChannelHandlerContext ctx, final long newRcvNxt) {
+        if (LOG.isTraceEnabled() && newRcvNxt != rcvNxt) {
             LOG.trace("{} Advance RCV.NXT from {} to {} (+{}).", ctx.channel(), rcvNxt, newRcvNxt, Segment.sub(newRcvNxt, rcvNxt));
         }
         rcvNxt = newRcvNxt;
@@ -683,8 +703,13 @@ public class TransmissionControlBlock {
     /**
      * The maximum size of a segment that TCP really sends, the "effective send MSS,"
      */
-    public long effSndMss() {
-        return effSndMss(sendMss, config.mmsS());
+    public int effSndMss() {
+        // RFC 1122, Section 4.2.2.6
+        // https://www.rfc-editor.org/rfc/rfc1122#section-4.2.2.6
+        // Eff.snd.MSS = min(SendMSS+20, MMS_S) - TCPhdrsize - IPoptionsize
+        // (20 is the IPv4 header size, must be drasyl header size)
+        // (IPoptionsize does not exist here)
+        return min(sendMss, config.mmsS() - SEG_HDR_SIZE);
     }
 
     /**
@@ -693,7 +718,7 @@ public class TransmissionControlBlock {
      * RFC 5681: discovery [RFC1191, RFC4821] algorithm, RMSS (see next item), or other factors. The
      * RFC 5681: size does not include the TCP/IP headers and options.
      */
-    public long smss() {
+    public int smss() {
         return sendMss;
     }
 
@@ -855,16 +880,8 @@ public class TransmissionControlBlock {
         this.sndWl2 = sndWl2;
     }
 
-    public void recover(final long recover) {
-        this.recover = recover;
-    }
-
     public int duplicateAcks() {
         return duplicateAcks;
-    }
-
-    public long recover() {
-        return recover;
     }
 
     public void lastAdvertisedWindow(long lastAdvertisedWindow) {

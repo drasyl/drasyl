@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -184,15 +185,15 @@ public class ArmedProtocolMessageTest {
     }
 
     @Nested
-    class WriteTo {
+    class EncodeMessage {
         @Test
         void shouldNotModifyMessageByteBuf() throws IOException, CryptoException {
             final ApplicationMessage applicationMessage = ApplicationMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
             final ArmedProtocolMessage armedMessage = applicationMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
             final int readableBytes = armedMessage.getBytes().readableBytes();
-            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-            armedMessage.writeTo(byteBuf);
+            final ByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+            final ByteBuf byteBuf = armedMessage.encodeMessage(alloc);
 
             assertEquals(readableBytes, armedMessage.getBytes().readableBytes());
 
@@ -205,11 +206,10 @@ public class ArmedProtocolMessageTest {
             final ApplicationMessage applicationMessage = ApplicationMessage.of(HopCount.of(), false, 0, randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.buffer());
             final PartialReadMessage armedMessage = applicationMessage.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey()));
 
-            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-            armedMessage.writeTo(byteBuf);
+            final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
 
-            final ByteBuf byteBuf2 = PooledByteBufAllocator.DEFAULT.buffer();
-            armedMessage.writeTo(byteBuf2);
+            final ByteBuf byteBuf = armedMessage.encodeMessage(alloc);
+            final ByteBuf byteBuf2 = armedMessage.encodeMessage(alloc);
 
             assertEquals(byteBuf, byteBuf2);
 

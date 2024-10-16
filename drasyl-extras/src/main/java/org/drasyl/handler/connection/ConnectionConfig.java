@@ -24,16 +24,19 @@ package org.drasyl.handler.connection;
 import com.google.auto.value.AutoValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.handler.remote.protocol.PrivateHeader;
+import org.drasyl.handler.remote.protocol.PublicHeader;
+import org.drasyl.handler.remote.protocol.RemoteMessage;
 
 import java.time.Duration;
 import java.util.function.BiFunction;
 import java.util.function.Function;
 import java.util.function.IntSupplier;
 import java.util.function.LongSupplier;
+import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.handler.connection.TransmissionControlBlock.DRASYL_HDR_SIZE;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MAX_PORT;
 import static org.drasyl.handler.connection.TransmissionControlBlock.MIN_PORT;
 import static org.drasyl.util.RandomUtil.randomInt;
@@ -41,7 +44,12 @@ import static org.drasyl.util.RandomUtil.randomInt;
 @AutoValue
 public abstract class ConnectionConfig {
     // Google Cloud applied MTU is 1460
-    static final int IP_MTU = 1500;
+    public static final int IP_MTU = 1460;
+    // here, drasyl replaces IP
+    // IPv4: 20 bytes
+    // UDP: 8 bytes
+    // drasyl: 120 bytes
+    public static final int DRASYL_HDR_SIZE = 20 + 8 + RemoteMessage.MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.ARMED_LENGTH;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)
@@ -60,20 +68,25 @@ public abstract class ConnectionConfig {
                     0,
                     config.sndBufSupplier().apply(channel),
                     config.rtnsQSupplier().apply(channel),
-                    config.rcfBufSupplier().apply(channel),
+                    config.rcfBufSupplier().get(),
                     0,
                     0,
                     false
             ))
             .activeOpen(true)
             .rmem(65_535 * 10)
-            // FIXME: change back to 2 minutes?
+            // RFC 9293 suggests a 2-minute MSL, leading to a 4-minute wait for "late" segments to
+            // prevent accidentally using a recently released port associated with a previous
+            // connection. However, our implementation restricts to one connection per peer. A
+            // 4-minute MSL would delay channel close completion by 4 minutes and also prevent any
+            // new connection for this time period.
+            // Thus, we set MSL to 2 seconds for efficiency.
             .msl(ofSeconds(2))
-            .noDelay(false)
+            .noDelay(true)
             .overrideTimeout(ofMillis(100))
             .fs(1d / 2)
             .userTimeout(ofSeconds(60))
-            .timestamps(true)
+            .timestamps(false)
             .rto(ofSeconds(1))
             .lBound(ofSeconds(1))
             .uBound(ofSeconds(60))
@@ -99,11 +112,8 @@ public abstract class ConnectionConfig {
                     return 1.0 / 100; // 10ms granularity
                 }
             })
-            .sack(false)
             .mmsS(IP_MTU - DRASYL_HDR_SIZE)
             .mmsR(IP_MTU - DRASYL_HDR_SIZE)
-            .newReno(true)
-            .limitedTransmit(true)
             .build();
 
     public static Builder newBuilder() {
@@ -118,7 +128,7 @@ public abstract class ConnectionConfig {
 
     public abstract Function<Channel, RetransmissionQueue> rtnsQSupplier();
 
-    public abstract Function<Channel, ReceiveBuffer> rcfBufSupplier();
+    public abstract Supplier<ReceiveBuffer> rcfBufSupplier();
 
     public abstract BiFunction<ConnectionConfig, Channel, TransmissionControlBlock> tcbSupplier();
 
@@ -146,10 +156,6 @@ public abstract class ConnectionConfig {
 
     public abstract Duration uBound();
 
-    public boolean sack() {
-        return false;
-    }
-
     public abstract Duration overrideTimeout();
 
     public abstract Duration rto();
@@ -157,10 +163,6 @@ public abstract class ConnectionConfig {
     public abstract int mmsS();
 
     public abstract int mmsR();
-
-    public abstract boolean newReno();
-
-    public abstract boolean limitedTransmit();
 
     public abstract double fs();
 
@@ -196,7 +198,7 @@ public abstract class ConnectionConfig {
         /**
          * Used to create the {@link ReceiveBuffer}.
          */
-        public abstract Builder rcfBufSupplier(final Function<Channel, ReceiveBuffer> rcfBufSupplier);
+        public abstract Builder rcfBufSupplier(final Supplier<ReceiveBuffer> rcfBufSupplier);
 
         /**
          * Used to create the {@link TransmissionControlBlock}.
@@ -366,22 +368,6 @@ public abstract class ConnectionConfig {
         public abstract Builder clock(final Clock clock);
 
         /**
-         * Enables the Selective Acknowledgment options that improves the performance when multiple
-         * packets are lost from one window of data.
-         * <p>
-         * Currently not fully implemented. Can not be enabled.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc2018">RFC 2018</a>
-         */
-        public Builder sack(final boolean sack) {
-            if (sack) {
-                throw new UnsupportedOperationException();
-            }
-
-            return this;
-        }
-
-        /**
          * The maximum segment size for a drasyl-layer message that a connection may send. This
          * value is the IP layer MTU (drasyl assumes a MTU of 1460) minus the drasyl header size. So
          * this value specifies the segment size sent to the wire (including header).
@@ -400,22 +386,6 @@ public abstract class ConnectionConfig {
          * Section 3.7.1.</a>
          */
         public abstract Builder mmsR(final int mmsR);
-
-        /**
-         * NewReno is an improvement of the fast recovery algorithm. Enabled by default.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc6582">RFC 6582</a>
-         */
-        public abstract Builder newReno(final boolean newReno);
-
-        /**
-         * Enables limited transmit which allows more effectively recovery lost segments when a
-         * connection's congestion window is small, or when a large number of segments are lost in a
-         * single transmission window. Enabled by default.
-         *
-         * @see <a href="https://www.rfc-editor.org/rfc/rfc3042">RFC 3042</a>
-         */
-        public abstract Builder limitedTransmit(final boolean limitedTransmit);
 
         abstract ConnectionConfig autoBuild();
 

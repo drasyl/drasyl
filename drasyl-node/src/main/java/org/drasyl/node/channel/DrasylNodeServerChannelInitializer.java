@@ -24,47 +24,35 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
-import org.drasyl.handler.path.EdgeRelayClientHandler;
-import org.drasyl.handler.path.EdgeRelayServerHandler;
 import org.drasyl.handler.peers.PeersHandler;
 import org.drasyl.handler.peers.PeersList;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.handler.remote.LocalHostDiscovery;
 import org.drasyl.handler.remote.LocalNetworkDiscovery;
-import org.drasyl.handler.remote.OtherNetworkFilter;
 import org.drasyl.handler.remote.RateLimiter;
 import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpMulticastServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
-import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
-import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.handler.remote.portmapper.PortMapper;
-import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.tcp.TcpClient;
 import org.drasyl.handler.remote.tcp.TcpServer;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
-import org.drasyl.node.PeerEndpoint;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.Node;
@@ -73,25 +61,17 @@ import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.node.handler.PeersManagerHandler;
-import org.drasyl.node.handler.plugin.PluginsHandler;
-import org.drasyl.util.Murmur3;
-import org.drasyl.util.UnsignedInteger;
+import org.drasyl.node.handler.plugin.PluginsServerHandler;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
-import static org.drasyl.util.RandomUtil.randomLong;
-import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
  * Initialize the {@link DrasylServerChannel} used by {@link DrasylNode}.
@@ -101,7 +81,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     public static final short MIN_DERIVED_PORT = 22528;
     public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup(), UdpMulticastServerChannelInitializer::new);
-    private static final UnarmedMessageDecoder UNARMED_MESSAGE_DECODER = new UnarmedMessageDecoder();
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
     private static final boolean TELEMETRY_IP_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.ip.enabled", false);
     private static final int TELEMETRY_INTERVAL_SECONDS = SystemPropertyUtil.getInt("org.drasyl.telemetry.interval", 60);
@@ -119,42 +98,18 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     }
 
     private final DrasylConfig config;
-    private final Identity identity;
     private final DrasylNode node;
-    private final EventLoopGroup udpServerGroup;
 
     public DrasylNodeServerChannelInitializer(final DrasylConfig config,
-                                              final Identity identity,
-                                              final DrasylNode node,
-                                              final EventLoopGroup udpServerGroup) {
+                                              final DrasylNode node) {
         this.config = requireNonNull(config);
-        this.identity = requireNonNull(identity);
         this.node = requireNonNull(node);
-        this.udpServerGroup = requireNonNull(udpServerGroup);
-    }
-
-    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
-        if (remoteBindPort == -1) {
-            /*
-             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
-             own identity. this is done because we also expose this port via
-             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
-             in the local network try to expose the same local port.
-             a completely random port would have the disadvantage that every time the node is
-             started it would use a new port and this would make discovery more difficult
-            */
-            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
-            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
-        }
-        else {
-            return remoteBindPort;
-        }
     }
 
     @SuppressWarnings("java:S1188")
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        ch.pipeline().addLast(new NodeLifecycleHeadHandler(identity));
+        ch.pipeline().addLast(new NodeLifecycleHeadHandler());
 
         if (config.isRemoteEnabled()) {
             ipStage(ch);
@@ -166,8 +121,8 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         ch.attr(PEERS_LIST_SUPPLIER_KEY).set(peersHandler::getPeers);
         ch.pipeline().addLast(peersHandler);
 
-        ch.pipeline().addLast(new PeersManagerHandler(identity));
-        ch.pipeline().addLast(new PluginsHandler(config, identity));
+        ch.pipeline().addLast(new PeersManagerHandler());
+        ch.pipeline().addLast(new PluginsServerHandler(config, node.identity()));
 
         if (TELEMETRY_ENABLED) {
             ch.pipeline().addLast(new TelemetryHandler(TELEMETRY_INTERVAL_SECONDS, TELEMETRY_URI, TELEMETRY_IP_ENABLED));
@@ -181,39 +136,29 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private void ipStage(final DrasylServerChannel ch) {
         // udp server
-        final Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
         if (config.isRemoteExposeEnabled()) {
             // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-            channelInitializerSupplier = ctx -> new UdpServerChannelInitializer(ctx) {
+            ch.pipeline().addLast(new UdpServer(ctx -> new UdpServerChannelInitializer(ch) {
                 @Override
                 protected void initChannel(final DatagramChannel ch) {
-                    ch.pipeline().addLast(new PortMapper());
-
                     super.initChannel(ch);
+
+                    ch.pipeline().addBefore(ch.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new PortMapper());
                 }
-            };
+            }));
         }
         else {
             // use default datagram channel
-            channelInitializerSupplier = UdpServerChannelInitializer::new;
+            ch.pipeline().addLast(new UdpServer());
         }
-        ch.pipeline().addLast(new UdpServer(udpServerGroup, config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress()), channelInitializerSupplier));
 
         // tcp fallback
         if (config.isRemoteTcpFallbackEnabled()) {
             if (!config.isRemoteSuperPeerEnabled()) {
-                ch.pipeline().addLast(new TcpServer(
-                        new NioEventLoopGroup(1), config.getRemoteTcpFallbackServerBindHost(),
-                        config.getRemoteTcpFallbackServerBindPort(),
-                        config.getRemotePingTimeout()
-                ));
+                ch.pipeline().addLast(new TcpServer());
             }
             else {
-                ch.pipeline().addLast(new TcpClient(
-                        new NioEventLoopGroup(1), config.getRemoteSuperPeerEndpoints().stream().map(PeerEndpoint::toInetSocketAddress).collect(Collectors.toSet()),
-                        config.getRemoteTcpFallbackClientTimeout(),
-                        config.getRemoteTcpFallbackClientAddress()
-                ));
+                ch.pipeline().addLast(new TcpClient());
             }
         }
 
@@ -228,21 +173,6 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      * loops, foreign network filter, proof of work checker, etc...).
      */
     private void gatekeeperStage(final DrasylServerChannel ch) {
-        // filter out inbound messages with other network id
-        ch.pipeline().addLast(new OtherNetworkFilter(config.getNetworkId()));
-
-        // arm outbound and disarm inbound messages
-        if (config.isRemoteMessageArmProtocolEnabled()) {
-            ch.pipeline().addLast(new ProtocolArmHandler(
-                    identity,
-                    Crypto.INSTANCE,
-                    config.getRemoteMessageArmProtocolSessionMaxCount(),
-                    config.getRemoteMessageArmProtocolSessionExpireAfter()));
-        }
-
-        // fully read unarmed messages (local network discovery)
-        ch.pipeline().addLast(UNARMED_MESSAGE_DECODER);
-
         ch.pipeline().addLast(new RateLimiter());
     }
 
@@ -251,59 +181,25 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
         if (config.isRemoteEnabled()) {
             ch.pipeline().addLast(new UnconfirmedAddressResolveHandler());
-
-            // relay
-            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506"))) {
-                final IdentityPublicKey peerA = IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca");
-                final IdentityPublicKey peerB = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
-                ch.pipeline().addLast(new EdgeRelayServerHandler(peerA, peerB));
-            }
-
             // discover nodes on the internet
             if (config.isRemoteSuperPeerEnabled()) {
-                final Map<IdentityPublicKey, InetSocketAddress> superPeerAddresses = config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress));
-                ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler(
-                        config.getNetworkId(),
-                        identity.getIdentityPublicKey(),
-                        identity.getIdentitySecretKey(),
-                        identity.getProofOfWork(),
-                        randomLong(config.getRemotePingMaxInitialDelay().toMillis()),
-                        config.getRemotePingInterval().toMillis(),
-                        config.getRemotePingTimeout().toMillis(),
-                        config.getRemotePingTimeout().multipliedBy(2).toMillis(),
-                        superPeerAddresses,
-                        config.getRemotePingCommunicationTimeout().toMillis(),
-                        config.getRemotePingMaxPeers()));
+                ch.pipeline().addLast(new TraversingInternetDiscoveryChildrenHandler());
             }
             else {
                 ch.pipeline().addLast(new TraversingInternetDiscoverySuperPeerHandler(
-                        config.getNetworkId(),
-                        identity.getIdentityPublicKey(),
-                        identity.getProofOfWork(),
-                        config.getRemotePingInterval().toMillis(),
-                        config.getRemotePingTimeout().toMillis(),
-                        config.getRemotePingTimeout().multipliedBy(2).toMillis(),
-                        HopCount.of(config.getRemoteMessageHopLimit()),
+                        config.getRemoteMessageHopLimit(),
                         config.getRemoteUniteMinInterval().toMillis()
                 ));
             }
 
             // discover nodes on the local network
             if (config.isRemoteLocalNetworkDiscoveryEnabled()) {
-                ch.pipeline().addLast(new LocalNetworkDiscovery(
-                        config.getNetworkId(),
-                        config.getRemotePingInterval().toMillis(),
-                        config.getRemotePingTimeout().toMillis(),
-                        identity.getIdentityPublicKey(),
-                        identity.getProofOfWork(),
-                        MULTICAST_ADDRESS
-                ));
+                ch.pipeline().addLast(new LocalNetworkDiscovery(MULTICAST_ADDRESS));
             }
 
             if (config.isRemoteLocalHostDiscoveryEnabled()) {
                 // discover nodes running on the same local computer
                 ch.pipeline().addLast(new LocalHostDiscovery(
-                        config.getNetworkId(),
                         config.isRemoteLocalHostDiscoveryWatchEnabled(),
                         config.getRemoteLocalHostDiscoveryLeaseTime(),
                         config.getRemoteLocalHostDiscoveryPath()
@@ -314,28 +210,11 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
             if (!config.getRemoteStaticRoutes().isEmpty()) {
                 ch.pipeline().addLast(new StaticRoutesHandler(config.getRemoteStaticRoutes()));
             }
-
-            // sender
-            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca"))) {
-                final IdentityPublicKey peer = IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995");
-                final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
-                ch.pipeline().addLast(new EdgeRelayClientHandler(peer, relay));
-            }
-
-            // recipient
-            if (identity.getIdentityPublicKey().equals(IdentityPublicKey.of("658bcda742f216f25f33a083c81a9667ffa2e0598df943f0763dbf59251f5995"))) {
-                final IdentityPublicKey peer = IdentityPublicKey.of("43cbd8366defa2601655842d69a0ba3ec67c4064c8e73d2f727c7accd4d568ca");
-                final IdentityPublicKey relay = IdentityPublicKey.of("4464153f9ff7efe657dcaba52589d9d5f060ebf8e1a6953a7488969e158f7506");
-                ch.pipeline().addLast(new EdgeRelayClientHandler(peer, relay));
-            }
-
-            // convert ByteBuf <-> ApplicationMessage
-            ch.pipeline().addLast(new ApplicationMessageToPayloadCodec(config.getNetworkId(), identity.getIdentityPublicKey(), identity.getProofOfWork()));
         }
 
         // discover nodes running within the same jvm
         if (config.isIntraVmDiscoveryEnabled()) {
-            ch.pipeline().addLast(new IntraVmDiscovery(config.getNetworkId()));
+            ch.pipeline().addLast(new IntraVmDiscovery());
         }
     }
 
@@ -415,14 +294,14 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private static class NodeLifecycleHeadHandler extends ChannelInboundHandlerAdapter {
         private static final Logger LOG = LoggerFactory.getLogger(NodeLifecycleHeadHandler.class);
-        private final Identity identity;
-
-        public NodeLifecycleHeadHandler(final Identity identity) {
-            this.identity = requireNonNull(identity);
-        }
+        Identity identity;
 
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
+            if (identity == null) {
+                identity = ((DrasylServerChannel) ctx.channel()).identity();
+            }
+
             LOG.info("Start drasyl node with address `{}`...", ctx.channel().localAddress());
             ctx.fireUserEventTriggered(NodeUpEvent.of(Node.of(identity)));
             ctx.fireChannelActive();

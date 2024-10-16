@@ -31,18 +31,24 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
-import org.drasyl.handler.connection.ConnectionHandshakeCodec;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
+import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
+import org.drasyl.handler.connection.ConnectionClosing;
+import org.drasyl.handler.connection.ConnectionConfig;
+import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
-import org.drasyl.handler.connection.ConnectionHandshakeException;
-import org.drasyl.handler.connection.ConnectionHandshakeHandler;
+import org.drasyl.handler.connection.ConnectionResetException;
+import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.time.Duration;
+import java.net.InetSocketAddress;
+
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
 /**
  * This node waits for connection handshake from other peers.
@@ -73,14 +79,19 @@ public class ConnectionServer {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(DrasylServerChannel.class)
-                .handler(new TraversingDrasylServerChannelInitializer(identity, udpServerGroup, 22527))
+                .option(UDP_BIND, new InetSocketAddress(22527))
+                .handler(new DefaultDrasylServerChannelInitializer())
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new ConnectionHandshakeCodec());
-                        p.addLast(new ConnectionHandshakeHandler(Duration.ofSeconds(10), false));
+                        final ConnectionConfig config = ConnectionConfig.newBuilder()
+                                .activeOpen(false)
+                                .build();
+
+                        p.addLast(new SegmentCodec());
+                        p.addLast(new ConnectionHandler(1234, 0, config));
                         p.addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void channelInactive(final ChannelHandlerContext ctx) {
@@ -98,6 +109,12 @@ public class ConnectionServer {
 
                                     // add your connection-related handler here
                                 }
+                                else if (evt instanceof ConnectionClosing && ((ConnectionClosing) evt).initatedByRemotePeer()) {
+                                    // confirm close request
+                                    System.out.println("Peer wants to close the connection. Confirm close request.");
+
+                                    ctx.pipeline().close().addListener(FIRE_EXCEPTION_ON_FAILURE);
+                                }
                                 else {
                                     ctx.fireUserEventTriggered(evt);
                                 }
@@ -106,9 +123,14 @@ public class ConnectionServer {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,
                                                         final Throwable cause) {
-                                if (cause instanceof ConnectionHandshakeException) {
+                                if (cause instanceof ConnectionAbortedDueToUserTimeoutException) {
                                     // handshake failed
+                                    System.out.println("Handshake failed.");
                                     cause.printStackTrace();
+                                }
+                                else if (cause instanceof ConnectionResetException) {
+                                    // connection reset
+                                    System.out.println("Peer has reset the connection. This can happen if the client has not been shut down properly, resulting in a half-open connection. Client should initiate a new connection now.");
                                 }
                                 else {
                                     ctx.fireExceptionCaught(cause);
@@ -119,7 +141,7 @@ public class ConnectionServer {
                 });
 
         try {
-            final Channel ch = b.bind(identity.getAddress()).syncUninterruptibly().channel();
+            final Channel ch = b.bind(identity).syncUninterruptibly().channel();
             Runtime.getRuntime().addShutdownHook(new Thread(ch::close));
             ch.closeFuture().awaitUninterruptibly();
         }

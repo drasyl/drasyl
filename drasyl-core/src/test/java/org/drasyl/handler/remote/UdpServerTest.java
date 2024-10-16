@@ -22,18 +22,17 @@
 package org.drasyl.handler.remote;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.PendingWriteQueue;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
-import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -45,22 +44,21 @@ import java.net.InetSocketAddress;
 import java.util.function.Function;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class UdpServerTest {
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_SELF)
     private Bootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private Channel channel;
+    private DatagramChannel udpChannel;
     private InetSocketAddress bindAddress;
-    private Function<ChannelHandlerContext, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
-    private PendingWriteQueue pendingWrites;
+    private Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylServerChannelConfig config;
 
     @BeforeEach
     void setUp() {
@@ -72,42 +70,23 @@ class UdpServerTest {
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture) {
-            when(channelFuture.isSuccess()).thenReturn(true);
+            when(bootstrap.bind(any(InetSocketAddress.class))).thenReturn(channelFuture);
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(22527));
-            when(bootstrap.group(any()).channel(any()).handler(any()).bind(bindAddress).addListener(any())).then(invocation -> {
+            when(bootstrap.bind(bindAddress).addListener(any())).then(invocation -> {
                 final ChannelFutureListener listener = invocation.getArgument(0, ChannelFutureListener.class);
                 listener.operationComplete(channelFuture);
                 return null;
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, null);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final UdpServer handler = new UdpServer(channelInitializerSupplier, null);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
+            channel.pipeline().addLast(handler);
             try {
-                verify(bootstrap.group(any()).channel(any()).handler(any()), times(2)).bind(bindAddress);
+                verify(bootstrap).bind(bindAddress);
             }
             finally {
-                channel.close();
-                serverGroup.shutdownGracefully();
-            }
-        }
-    }
-
-    @Nested
-    class StopServer {
-        @Test
-        void shouldStopServerOnChannelInactive() {
-            when(channel.localAddress()).thenReturn(new InetSocketAddress(22527));
-
-            final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, channel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            try {
-                channel.pipeline().fireChannelInactive();
-
-                verify(UdpServerTest.this.channel).close();
-            }
-            finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }
@@ -117,20 +96,23 @@ class UdpServerTest {
     @Nested
     class MessagePassing {
         @Test
-        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg) {
-            when(channel.isWritable()).thenReturn(true);
+        void shouldPassOutgoingMessagesToUdp(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage msg,
+                                             @Mock(answer = RETURNS_DEEP_STUBS) final UdpServerToDrasylHandler udpServerToDrasylHandler) {
+            when(udpChannel.pipeline().get(any(Class.class))).thenReturn(udpServerToDrasylHandler);
 
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(bootstrap, serverGroup, bindAddress, channelInitializerSupplier, pendingWrites, channel);
-            final EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
+            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
+            channel.pipeline().addLast(handler);
             try {
                 channel.writeAndFlush(new InetAddressedMessage<>(msg, recipient));
 
-                verify(UdpServerTest.this.channel).write(any());
+                verify(udpChannel).write(any(), any());
             }
             finally {
+                channel.checkException();
                 channel.close();
                 serverGroup.shutdownGracefully();
             }

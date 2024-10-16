@@ -50,6 +50,7 @@ class ConnectionHandshakePendWritesHandlerTest {
         channel.pipeline().fireUserEventTriggered(event);
         assertEquals("Hello", channel.readOutbound());
         assertTrue(written.isSuccess());
+        channel.checkException();
     }
 
     @Test
@@ -60,6 +61,7 @@ class ConnectionHandshakePendWritesHandlerTest {
         channel.close();
         assertNull(channel.readOutbound());
         assertThat(written.cause(), instanceOf(ClosedChannelException.class));
+        channel.checkException();
     }
 
     @Test
@@ -71,5 +73,6 @@ class ConnectionHandshakePendWritesHandlerTest {
         channel.pipeline().remove(handler);
 
         assertThat(written.cause(), instanceOf(Exception.class));
+        channel.checkException();
     }
 }

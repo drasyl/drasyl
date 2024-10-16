@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,14 +21,18 @@
  */
 package org.drasyl.identity;
 
-import com.google.auto.value.AutoValue;
+import io.netty.buffer.ByteBuf;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.ImmutableByteArray;
 import org.drasyl.util.InternPool;
 import org.drasyl.util.Worm;
+import org.drasyl.util.internal.NonNull;
 
+import java.util.Arrays;
+
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
 
 /**
@@ -36,16 +40,20 @@ import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
  * <p>
  * This is an immutable object.
  */
-@AutoValue
 @SuppressWarnings({ "java:S118", "java:S1213" })
-public abstract class IdentityPublicKey extends DrasylAddress implements PublicKey {
+public class IdentityPublicKey extends DrasylAddress implements PublicKey {
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
     private final transient Worm<KeyAgreementPublicKey> convertedKey = Worm.of();
     public static final IdentityPublicKey ZERO_ID = IdentityPublicKey.of(new byte[KEY_LENGTH_AS_BYTES]);
+    private final byte[] bytes;
     private boolean hashCodeSet;
     private int hashCode;
+
+    private IdentityPublicKey(@NonNull final byte[] bytes) {
+        this.bytes = requireNonNull(bytes);
+    }
 
     /**
      * @return this public key as key agreement key (curve25519)
@@ -69,6 +77,11 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     }
 
     @Override
+    public ImmutableByteArray getBytes() {
+        return ImmutableByteArray.of(bytes);
+    }
+
+    @Override
     public byte[] toByteArray() {
         return getBytes().getArray();
     }
@@ -88,7 +101,7 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (o == this) {
             return true;
         }
@@ -99,15 +112,9 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
         return false;
     }
 
-    /**
-     * @throws NullPointerException     if {@code bytes} is {@code null}
-     * @throws IllegalArgumentException if {@code bytes} has wrong key size
-     */
-    public static IdentityPublicKey of(final ImmutableByteArray bytes) {
-        if (bytes.size() != KEY_LENGTH_AS_BYTES) {
-            throw new IllegalArgumentException("key has wrong size.");
-        }
-        return new AutoValue_IdentityPublicKey(bytes).intern();
+    @Override
+    public void writeTo(final ByteBuf out) {
+        out.writeBytes(bytes);
     }
 
     /**
@@ -115,11 +122,37 @@ public abstract class IdentityPublicKey extends DrasylAddress implements PublicK
      *
      * @param bytes public key
      * @return {@link IdentityPublicKey}
-     * @throws NullPointerException if {@code key} is {@code null}
+     * @throws NullPointerException     if {@code key} is {@code null}
+     * @throws IllegalArgumentException if {@code bytes} has wrong key size
+     */
+    public static IdentityPublicKey ofDirect(final byte[] bytes) {
+        if (bytes.length != KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("key has wrong size.");
+        }
+        return new IdentityPublicKey(bytes).intern();
+    }
+
+    /**
+     * Converts a byte[] into a {@link IdentityPublicKey}.
+     *
+     * @param bytes public key
+     * @return {@link IdentityPublicKey}
+     * @throws NullPointerException     if {@code key} is {@code null}
      * @throws IllegalArgumentException if {@code bytes} has wrong key size
      */
     public static IdentityPublicKey of(final byte[] bytes) {
-        return of(ImmutableByteArray.of(bytes));
+        if (bytes.length != KEY_LENGTH_AS_BYTES) {
+            throw new IllegalArgumentException("key has wrong size.");
+        }
+        return new IdentityPublicKey(Arrays.copyOf(bytes, KEY_LENGTH_AS_BYTES)).intern();
+    }
+
+    /**
+     * @throws NullPointerException     if {@code bytes} is {@code null}
+     * @throws IllegalArgumentException if {@code bytes} has wrong key size
+     */
+    public static IdentityPublicKey of(final ImmutableByteArray bytes) {
+        return ofDirect(bytes.getArray());
     }
 
     /**

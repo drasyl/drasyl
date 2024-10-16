@@ -23,17 +23,18 @@ package org.drasyl.cli.wormhole;
 
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
+import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -74,6 +75,11 @@ class WormholeCommandIT {
     private ByteArrayOutputStream receiverOut;
     private Thread senderThread;
     private Thread receiverThread;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setUp(final TestInfo info) throws DrasylException {
@@ -121,14 +127,9 @@ class WormholeCommandIT {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
-        final EventLoopGroup senderGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
-                senderGroup,
-                senderGroup,
-                udpServerGroup,
                 null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -136,9 +137,7 @@ class WormholeCommandIT {
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
                 "",
-                new Payload("Hello World", null),
-                10,
-                10
+                new Payload("Hello World", null)
         ).call());
         senderThread.start();
 
@@ -160,22 +159,18 @@ class WormholeCommandIT {
         receiverThread = new Thread(() -> new WormholeReceiveCommand(
                 new PrintStream(receiverOut, true),
                 System.err,
-                receiverGroup,
-                receiverGroup,
-                udpServerGroup,
                 null,
                 receiverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
-                code,
-                10
+                code
         ).call());
         receiverThread.start();
 
         // receive text
-        await().atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
+        await("receive text").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Hello World")));
 
         senderThread.join();
         receiverThread.join();
@@ -194,14 +189,9 @@ class WormholeCommandIT {
         // create server
         final Path senderPath = path.resolve("sender.identity");
         IdentityManager.writeIdentityFile(senderPath, ID_2);
-        final EventLoopGroup senderGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         senderThread = new Thread(() -> new WormholeSendCommand(
                 new PrintStream(senderOut, true),
                 System.err,
-                senderGroup,
-                senderGroup,
-                udpServerGroup,
                 null,
                 senderPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -209,9 +199,7 @@ class WormholeCommandIT {
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
                 "",
-                new Payload(null, file),
-                10,
-                40
+                new Payload(null, file)
         ).call());
         senderThread.start();
 
@@ -234,22 +222,18 @@ class WormholeCommandIT {
             receiverThread = new Thread(() -> new WormholeReceiveCommand(
                     new PrintStream(receiverOut, true),
                     System.err,
-                    receiverGroup,
-                    receiverGroup,
-                    udpServerGroup,
                     null,
                     receiverPath.toFile(),
                     new InetSocketAddress("127.0.0.1", 0),
                     10_000,
                     0,
                     Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
-                    code,
-                    10
+                    code
             ).call());
             receiverThread.start();
 
             // receive text
-            await().atMost(ofSeconds(25)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
+            await("receive text").atMost(ofSeconds(25)).untilAsserted(() -> assertThat(receiverOut.toString(), containsString("Received file written to")));
 
             senderThread.join(5_000);
             receiverThread.join(5_000);

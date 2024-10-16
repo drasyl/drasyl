@@ -48,6 +48,11 @@ public class SuperPeerTimeoutHandler extends ChannelInboundHandlerAdapter {
     }
 
     @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        createTimeoutTask(ctx);
+    }
+
+    @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         createTimeoutTask(ctx);
     }

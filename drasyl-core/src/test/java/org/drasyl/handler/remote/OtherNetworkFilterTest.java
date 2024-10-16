@@ -39,6 +39,7 @@ import java.net.InetSocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -62,6 +63,7 @@ class OtherNetworkFilterTest {
             channel.pipeline().fireChannelRead(new InetAddressedMessage<>(msg, null, address));
 
             assertNull(channel.readInbound());
+            assertThrows(OtherNetworkFilter.OtherNetworkException.class, channel::checkException);
         }
         finally {
             channel.close();
@@ -82,6 +84,7 @@ class OtherNetworkFilterTest {
             actual.release();
         }
         finally {
+            channel.checkException();
             channel.close();
         }
     }

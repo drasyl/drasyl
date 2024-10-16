@@ -21,16 +21,18 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * This exception is thrown when a USER TIMEOUT occured. A USER TIMEOUT occurs when the remote peer
- * failed to acknowledge the arrival of a segment within a certain time period. As a consequence of
- * this exception, the connection is aborted.
+ * This exception is thrown when a OPEN call on an already opened connection is called. This can
+ * only happen, when {@link ConnectionHandler#userCallOpen(ChannelHandlerContext)} is called
+ * incorrectly.
  */
 @UnstableApi
 public class ConnectionAlreadyExistsException extends ConnectionException {
-    public ConnectionAlreadyExistsException() {
-        super("connection already exists");
+    public ConnectionAlreadyExistsException(final Channel channel) {
+        super(channel, "connection already exists");
     }
 }

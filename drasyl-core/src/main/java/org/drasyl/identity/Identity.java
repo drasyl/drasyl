@@ -25,8 +25,10 @@ import com.google.auto.value.AutoValue;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
+import java.net.SocketAddress;
 
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
@@ -34,9 +36,10 @@ import java.io.IOException;
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @AutoValue
 @SuppressWarnings("java:S118")
-public abstract class Identity {
+public abstract class Identity extends SocketAddress {
     public static final byte POW_DIFFICULTY = (byte) SystemPropertyUtil.getInt("org.drasyl.identity.pow-difficulty", 24);
 
     public abstract ProofOfWork getProofOfWork();

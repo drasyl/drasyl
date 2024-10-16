@@ -16,9 +16,9 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      - uses: actions/checkout@v4.1.1
+      - uses: actions/checkout@v4.1.2
       - name: Set up JDK
-        uses: actions/setup-java@v4.0.0
+        uses: actions/setup-java@v4.4.0
         with:
           java-version: 11
           distribution: 'adopt'
@@ -30,12 +30,12 @@ jobs:
       - name: Build hash
         run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
       - name: Publish artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Java
           path: drasyl-*.zip
       - name: Publish artifact hash
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: Java-Hash
           path: drasyl-*.zip.sha256
@@ -48,6 +48,7 @@ jobs:
           - linux-amd64
           - linux-arm64
           - macos-amd64
+          - macos-arm64
           - windows-amd64
 
         include:
@@ -58,6 +59,9 @@ jobs:
             os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
+            os: macOS-13
+
+          - job_name: macos-arm64
             os: macOS-latest
 
           - job_name: windows-amd64
@@ -69,23 +73,23 @@ jobs:
     steps:
       # git checkout
       - name: Checkout the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
 
       # install build dependencies (windows only)
       - name: Configure Developer Command Prompt for Microsoft Visual C++ on Windows
-        uses: ilammy/msvc-dev-cmd@v1.12.1
+        uses: ilammy/msvc-dev-cmd@v1.13.0
         if: startsWith(matrix.os, 'windows-')
 
       - name: Configure MSBuild on Windows
-        uses: microsoft/setup-msbuild@v1
+        uses: microsoft/setup-msbuild@v2
         if: startsWith(matrix.os, 'windows-')
 
       # set up GraalVM
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 22.3.2
           java-version: 17
+          distribution: 'graalvm'
           components: native-image
           cache: 'maven'
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,6 +98,7 @@ jobs:
       - name: Build Native Image
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+          GRAALVM_QUICK_BUILD: "true"
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles native,fast --projects drasyl-cli --also-make package
 
       # package native image
@@ -118,7 +123,7 @@ jobs:
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.job_name == 'linux-arm64'
 
-      - name: Build Package on Mac x86
+      - name: Build Package on Mac
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/
@@ -140,14 +145,14 @@ jobs:
 
       # publish artifact
       - name: Publish artifact
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.job_name }}
           path: drasyl-*-${{ matrix.job_name }}.zip
 
       # publish artifact hash
       - name: Publish artifact hash
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: cli-${{ matrix.job_name }}-Hash
           path: drasyl-*-${{ matrix.job_name }}.zip.sha256
@@ -158,7 +163,7 @@ jobs:
 
     steps:
       - name: Checkout the repository
-        uses: actions/checkout@v4.1.1
+        uses: actions/checkout@v4.1.2
       - name: Build Docker Image
         run: docker build --tag drasyl/drasyl .
       - name: Test Docker Image

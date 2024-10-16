@@ -45,6 +45,8 @@ import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.FutureUtil;
+import org.drasyl.util.Murmur3;
+import org.drasyl.util.UnsignedInteger;
 import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.internal.Nullable;
 import org.drasyl.util.logging.Logger;
@@ -53,19 +55,36 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_EXPIRE_AFTER;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
+import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_INTERVAL;
+import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_TIMEOUT;
+import static org.drasyl.channel.DrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.MAX_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.PATH_IDLE_TIME;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
+import static org.drasyl.channel.DrasylServerChannelConfig.TCP_SERVER_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
+import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -94,8 +113,9 @@ import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported
 @SuppressWarnings({ "java:S107", "java:S118" })
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    protected Identity identity;
-    protected ServerBootstrap bootstrap;
+    private static final short MIN_DERIVED_PORT = 22528;
+    protected final Identity identity;
+    protected final ServerBootstrap bootstrap;
     private final List<SocketAddress> sntpServers;
     private ChannelFuture channelFuture;
 
@@ -155,7 +175,25 @@ public abstract class DrasylNode {
         final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
         final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
         final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
-        bootstrap = new ServerBootstrap().group(parentGroup, childGroup).localAddress(identity.getAddress()).channel(DrasylServerChannel.class).handler(new DrasylNodeServerChannelInitializer(config, identity, this, udpServerGroup)).childHandler(new DrasylNodeChannelInitializer(config, this));
+        bootstrap = new ServerBootstrap()
+                .group(parentGroup, childGroup)
+                .localAddress(identity)
+                .channel(DrasylServerChannel.class)
+                .option(NETWORK_ID, config.getNetworkId())
+                .option(ARMING_ENABLED, config.isRemoteMessageArmProtocolEnabled())
+                .option(ARMING_SESSION_MAX_COUNT, config.getRemoteMessageArmProtocolSessionMaxCount())
+                .option(ARMING_SESSION_EXPIRE_AFTER, config.getRemoteMessageArmProtocolSessionExpireAfter())
+                .option(HELLO_INTERVAL, config.getRemotePingInterval())
+                .option(HELLO_TIMEOUT, config.getRemotePingTimeout())
+                .option(MAX_PEERS, config.getRemotePingMaxPeers())
+                .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
+                .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
+                .option(UDP_EVENT_LOOP, udpServerGroup::next)
+                .option(TCP_CLIENT_CONNECT_PORT, config.getRemoteTcpFallbackClientConnectPort())
+                .option(TCP_SERVER_BIND, new InetSocketAddress(config.getRemoteTcpFallbackServerBindHost(), config.getRemoteTcpFallbackServerBindPort()))
+                .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
+                .option(INTRA_VM_DISCOVERY_ENABLED, config.isIntraVmDiscoveryEnabled())
+                .handler(new DrasylNodeServerChannelInitializer(config, this)).childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();
 
         LOG.debug("drasyl node with config `{}` and address `{}` created", config, identity);
@@ -424,24 +462,23 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S1905", "java:S2142" })
     public synchronized CompletionStage<Void> start() {
         if (channelFuture == null) {
+            try {
+                final Long offset;
+                // check system time
+                if (sntpServers.isEmpty()) {
+                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
+                }
+                else {
+                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
+                }
 
-//            try {
-//                final Long offset;
-//                // check system time
-//                if (sntpServers.isEmpty()) {
-//                    offset = SntpClient.getOffset().completeOnTimeout(null, 3, SECONDS).get();
-//                }
-//                else {
-//                    offset = SntpClient.getOffset(sntpServers).completeOnTimeout(null, 3, SECONDS).get();
-//                }
-//
-//                if (offset != null && offset > 60_000) {
-//                    LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
-//                }
-//            }
-//            catch (final Exception e) {
-//                LOG.warn("Can not determine time offset:", e);
-//            }
+                if (offset != null && offset > 60_000) {
+                    LOG.warn("The local time has more than 60s offset. drasyl will probably not be able to function correctly.");
+                }
+            }
+            catch (final Exception e) {
+                LOG.warn("Can not determine time offset:", e);
+            }
 
             channelFuture = bootstrap.bind();
             return FutureUtil.toFuture(channelFuture);
@@ -490,5 +527,23 @@ public abstract class DrasylNode {
             }
         }
         return null;
+    }
+
+    private static int udpServerPort(final int remoteBindPort, final DrasylAddress address) {
+        if (remoteBindPort == -1) {
+            /*
+             derive a port in the range between MIN_DERIVED_PORT and {MAX_PORT_NUMBER from its
+             own identity. this is done because we also expose this port via
+             UPnP-IGD/NAT-PMP/PCP and some NAT devices behave unexpectedly when multiple nodes
+             in the local network try to expose the same local port.
+             a completely random port would have the disadvantage that every time the node is
+             started it would use a new port and this would make discovery more difficult
+            */
+            final long identityHash = UnsignedInteger.of(Murmur3.murmur3_x86_32BytesLE(address.toByteArray())).getValue();
+            return (int) (MIN_DERIVED_PORT + identityHash % (MAX_PORT_NUMBER - MIN_DERIVED_PORT));
+        }
+        else {
+            return remoteBindPort;
+        }
     }
 }

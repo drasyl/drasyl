@@ -31,6 +31,7 @@ import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.Nonce;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -41,20 +42,18 @@ import java.util.List;
  * Skeleton handler that arms (encrypt) outbound and disarms (decrypt) inbound messages. Messages
  * that could not be (dis-)armed are dropped.
  */
+@UnstableApi
 public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader, ByteBuf> {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractArmHandler.class);
     protected final Crypto crypto;
-    protected final Identity identity;
     protected final IdentityPublicKey peerIdentity;
     protected final Session session;
 
     protected AbstractArmHandler(final Crypto crypto,
-                                 final Identity identity,
                                  final IdentityPublicKey peerIdentity,
                                  final Session session) {
         this.crypto = crypto;
         this.session = session;
-        this.identity = identity;
         this.peerIdentity = peerIdentity;
     }
 
@@ -63,7 +62,7 @@ public abstract class AbstractArmHandler extends MessageToMessageCodec<ArmHeader
                                  final int maxAgreements,
                                  final Identity identity,
                                  final IdentityPublicKey peerIdentity) throws CryptoException {
-        this(crypto, identity, peerIdentity, new Session(Agreement.of(
+        this(crypto, peerIdentity, new Session(Agreement.of(
                 AgreementId.of(identity.getKeyAgreementPublicKey(), peerIdentity.getLongTimeKeyAgreementKey()),
                 crypto.generateSessionKeyPair(identity.getKeyAgreementKeyPair(), peerIdentity.getLongTimeKeyAgreementKey()),
                 -1), maxAgreements, expireAfter));
