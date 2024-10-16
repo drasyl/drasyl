@@ -27,7 +27,6 @@ package org.drasyl.handler.arq.stopandwait;
  * @see StopAndWaitArqData
  * @see StopAndWaitArqAck
  */
-@Deprecated
 public interface StopAndWaitArqMessage {
     /**
      * @return message's sequence number

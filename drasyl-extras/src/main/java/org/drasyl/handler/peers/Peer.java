@@ -21,9 +21,6 @@
  */
 package org.drasyl.handler.peers;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.util.EvictingQueue;
 
 import java.net.InetSocketAddress;
@@ -46,15 +43,14 @@ public class Peer {
     private long best;
     private long worst;
 
-    @JsonCreator
-    public Peer(@JsonProperty("role") final Role role,
-                @JsonProperty("inetAddress") final InetSocketAddress inetAddress,
-                @JsonProperty("sent") final long sent,
-                @JsonProperty("last") final long last,
-                @JsonProperty("average") final long average,
-                @JsonProperty("best") final long best,
-                @JsonProperty("worst") final long worst,
-                @JsonProperty("stDev") final double stDev) {
+    public Peer(final Role role,
+                final InetSocketAddress inetAddress,
+                final long sent,
+                final long last,
+                final long average,
+                final long best,
+                final long worst,
+                final double stDev) {
         this.role = requireNonNull(role);
         this.inetAddress = requireNonNull(inetAddress);
         this.average = average;
@@ -86,26 +82,10 @@ public class Peer {
         this(role, inetAddress, -1);
     }
 
-    @Override
-    public String toString() {
-        return "Peer{" +
-                "role=" + role() +
-                ", inetAddress=" + inetAddress() +
-                ", average=" + average() +
-                ", stDev=" + stDev() +
-                ", sent=" + sent +
-                ", last=" + last() +
-                ", best=" + best() +
-                ", worst=" + worst() +
-                '}';
-    }
-
-    @JsonGetter
     public Role role() {
         return role;
     }
 
-    @JsonGetter
     public InetSocketAddress inetAddress() {
         return inetAddress;
     }
@@ -113,7 +93,6 @@ public class Peer {
     /**
      * @return number of pings sent
      */
-    @JsonGetter
     public long sent() {
         return sent;
     }
@@ -121,7 +100,6 @@ public class Peer {
     /**
      * @return RTT of last ping
      */
-    @JsonGetter
     public long last() {
         return last;
     }
@@ -141,7 +119,6 @@ public class Peer {
     /**
      * @return average RTT
      */
-    @JsonGetter
     @SuppressWarnings({ "OptionalGetWithoutIsPresent", "ReplaceNullCheck" })
     public double average() {
         if (average != null) {
@@ -155,7 +132,6 @@ public class Peer {
     /**
      * @return best RTT
      */
-    @JsonGetter
     public long best() {
         return best;
     }
@@ -163,7 +139,6 @@ public class Peer {
     /**
      * @return worst RTT
      */
-    @JsonGetter
     public long worst() {
         return worst;
     }
@@ -171,7 +146,6 @@ public class Peer {
     /**
      * @return RTT standard deviation
      */
-    @JsonGetter
     @SuppressWarnings("ReplaceNullCheck")
     public double stDev() {
         if (stDev != null) {
@@ -180,9 +154,5 @@ public class Peer {
         else {
             return sampleStandardDeviation(records.stream().mapToDouble(d -> d).toArray());
         }
-    }
-
-    public Peer copy() {
-        return new Peer(role(), inetAddress(), sent(), last(), (long) average(), best(), worst(), stDev());
     }
 }

@@ -70,7 +70,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
  *  </pre>
  * </blockquote>
  */
-@Deprecated
 public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(GoBackNArqSenderHandler.class);
     private final int windowSize;
@@ -289,7 +288,7 @@ public class GoBackNArqSenderHandler extends ChannelDuplexHandler {
         }
         else {
             final GoBackNArqData data = new GoBackNArqData(seqNo, msg.content().retain());
-            LOG.trace("[{}] Write `{}` ({}) as `{}` ({}) to channel.", ctx.channel().id()::asShortText, msg::content, () -> System.identityHashCode(msg.content()), () -> data, () -> System.identityHashCode(data));
+            LOG.trace("[{}] Write {}", ctx.channel().id()::asShortText, () -> data);
             ctx.write(data);
         }
     }
