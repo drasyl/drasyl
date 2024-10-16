@@ -102,11 +102,12 @@
             <artifactId>awaitility</artifactId>
         </dependency>
 
-    <dependency>
-        <groupId>org.luaj</groupId>
-        <artifactId>luaj-jse</artifactId>
-        <version>3.0.1</version>
-    </dependency>
+        <!-- lua-based sdo programming -->
+        <dependency>
+            <groupId>org.luaj</groupId>
+            <artifactId>luaj-jse</artifactId>
+            <version>3.0.1</version>
+        </dependency>
     </dependencies>
 
     <build>
