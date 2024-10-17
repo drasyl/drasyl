@@ -7,16 +7,25 @@ import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.TwoArgFunction;
 
 public class ControllerLib extends TwoArgFunction {
-    public static LuaNetworkTable NETWORK;
+    public static NetworkTable NETWORK;
 
     @Override
     public LuaValue call(final LuaValue modname, final LuaValue env) {
-        LuaValue library = tableOf();
-        env.set("register_network", new RegisterNetwork());
+        final LuaValue library = tableOf();
+        env.set("create_network", new CreateNetwork());
+        env.set("register_network", new RegisterNetworkFunction());
+        env.set("inspect", new InspectFunction());
         return library;
     }
 
-    static class RegisterNetwork extends OneArgFunction {
+    static class CreateNetwork extends OneArgFunction {
+        @Override
+        public LuaValue call(final LuaValue paramsArg) {
+            return new NetworkTable(paramsArg);
+        }
+    }
+
+    static class RegisterNetworkFunction extends OneArgFunction {
         @Override
         public LuaValue call(final LuaValue networkArg) {
             final LuaTable networkTable = networkArg.checktable();
@@ -25,9 +34,16 @@ public class ControllerLib extends TwoArgFunction {
                 throw new LuaError("Only one network can be registered.");
             }
 
-            NETWORK = (LuaNetworkTable) networkTable;
+            NETWORK = (NetworkTable) networkTable;
 
             return NIL;
+        }
+    }
+
+    static class InspectFunction extends OneArgFunction {
+        @Override
+        public LuaValue call(final LuaValue arg) {
+            return LuaValue.valueOf(arg.toString());
         }
     }
 }

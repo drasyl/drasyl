@@ -27,8 +27,6 @@ import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdonControllerChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdonControllerChildChannelInitializer;
 import org.drasyl.cli.sdon.config.NetworkConfig;
-import org.drasyl.identity.Identity;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -54,10 +52,6 @@ public class SdonControllerCommand extends ChannelOptions {
     private File configFile;
     private NetworkConfig config;
 
-    protected SdonControllerCommand() {
-        super(EventLoopGroupUtil.getBestEventLoopGroup(1), EventLoopGroupUtil.getBestEventLoopGroup());
-    }
-
     @Override
     public Integer call() {
         try {
@@ -70,14 +64,12 @@ public class SdonControllerCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
-        return new SdonControllerChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, err, exitCode, !protocolArmDisabled, config);
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
+        return new SdonControllerChannelInitializer(onlineTimeoutMillis, out, err, exitCode, config);
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         return new SdonControllerChildChannelInitializer(out, err, exitCode, config);
     }
 

@@ -28,7 +28,6 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.message.NodeHello;
 import org.drasyl.handler.peers.PeersHandler;
-import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.RandomUtil;
 import org.drasyl.util.logging.Logger;
@@ -69,10 +68,9 @@ public class SdonPoliciesHandler extends ChannelInboundHandlerAdapter {
 //            LOG.error("scheduleAtFixedRate {}", nodeHandler.state);
             if (nodeHandler.state == JOINED) {
                 try {
-                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).channels.get(controller);
+                    final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(controller);
                     if (channel != null) {
-                        final PeersList peersList = peersHandler.getPeers().copy();
-                        final NodeHello nodeHello = new NodeHello(policies, peersList, STORE);
+                        final NodeHello nodeHello = new NodeHello(policies, STORE);
                         LOG.error("Send feedback to controller: `{}`", nodeHello);
                         channel.writeAndFlush(nodeHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }

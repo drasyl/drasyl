@@ -60,6 +60,9 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
         final ChannelPipeline p = ctx.pipeline();
+
+        p.addLast(new JacksonCodec<>(SdonMessage.class));
+        p.addLast(new SdonMessageChildHandler());
     }
 
     @Override

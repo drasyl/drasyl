@@ -22,23 +22,16 @@
 package org.drasyl.cli.sdon.channel;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdon.config.NetworkConfig;
 import org.drasyl.cli.sdon.handler.SdonControllerHandler;
-import org.drasyl.handler.noop.NoopDiscardHandler;
-import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.PrintStream;
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -51,18 +44,12 @@ public class SdonControllerChannelInitializer extends AbstractChannelInitializer
     private final NetworkConfig config;
 
     @SuppressWarnings("java:S107")
-    public SdonControllerChannelInitializer(final Identity identity,
-                                            final EventLoopGroup udpServerGroup,
-                                            final InetSocketAddress bindAddress,
-                                            final int networkId,
-                                            final long onlineTimeoutMillis,
-                                            final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+    public SdonControllerChannelInitializer(final long onlineTimeoutMillis,
                                             final PrintStream out,
                                             final PrintStream err,
                                             final Worm<Integer> exitCode,
-                                            final boolean protocolArmEnabled,
                                             final NetworkConfig config) {
-        super(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, protocolArmEnabled);
+        super(onlineTimeoutMillis);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
@@ -71,20 +58,10 @@ public class SdonControllerChannelInitializer extends AbstractChannelInitializer
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-        p.addLast(new NoopDiscardHandler());
-
         super.initChannel(ch);
 
-//        final PeersHandler peersHandler = new PeersHandler();
-//        ch.pipeline().addLast(peersHandler);
-//        ch.eventLoop().scheduleAtFixedRate(() -> out.println(peersHandler.getPeers()), 5000, 5000, MILLISECONDS);
-
-        p.addLast(new SdonFileNotifierHandler());
-
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new SdonControllerHandler(config));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
-
-        p.addBefore(p.context(TraversingInternetDiscoveryChildrenHandler.class).name(), null, new SdonFileNotifiedHandler());
     }
 }

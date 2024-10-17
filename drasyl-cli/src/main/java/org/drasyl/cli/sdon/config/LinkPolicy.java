@@ -21,11 +21,11 @@
  */
 package org.drasyl.cli.sdon.config;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.internal.StringUtil;
-import org.drasyl.cli.sdon.handler.policy.LinkPolicyHandler;
-import org.drasyl.handler.remote.ApplicationMessageToPayloadCodec;
 import org.drasyl.identity.DrasylAddress;
 
 import java.util.Objects;
@@ -82,7 +82,8 @@ public class LinkPolicy extends Policy {
     public void addPolicy(final ChannelPipeline pipeline) {
         final String handlerName = StringUtil.simpleClassName(this) + "-" + peer.toString();
 
-        pipeline.addAfter(pipeline.context(ApplicationMessageToPayloadCodec.class).name(), handlerName, new LinkPolicyHandler(this));
+        // FIXME
+        //pipeline.addAfter(pipeline.context(ApplicationMessageToPayloadCodec.class).name(), handlerName, new LinkPolicyHandler(this));
     }
 
     @Override

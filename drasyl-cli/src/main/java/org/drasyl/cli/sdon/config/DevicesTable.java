@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,24 +19,9 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdon;
+package org.drasyl.cli.sdon.config;
 
-import picocli.CommandLine.HelpCommand;
+import org.luaj.vm2.LuaTable;
 
-import static picocli.CommandLine.Command;
-
-@Command(
-        name = "sdon",
-        header = {
-                "Software-defined overlay networks.",
-        },
-        synopsisHeading = "%nUsage: ",
-        commandListHeading = "%nCommands:%n",
-        subcommands = {
-                HelpCommand.class,
-                SdonControllerCommand.class,
-                SdonNodeCommand.class
-        }
-)
-public class SdonCommand {
+public class DevicesTable extends LuaTable {
 }

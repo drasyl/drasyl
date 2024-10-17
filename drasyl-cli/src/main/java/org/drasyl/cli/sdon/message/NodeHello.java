@@ -21,9 +21,10 @@
  */
 package org.drasyl.cli.sdon.message;
 
-import com.fasterxml.jackson.annotation.*;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonGetter;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.cli.sdon.config.Policy;
-import org.drasyl.handler.peers.PeersList;
 
 import java.util.Map;
 import java.util.Set;
@@ -32,26 +33,18 @@ import static java.util.Objects.requireNonNull;
 
 public class NodeHello implements SdonMessage {
     private final Set<Policy> policies;
-    private final PeersList peersList;
     private final Map<String, Object> store;
 
     @JsonCreator
     public NodeHello(@JsonProperty("policies") final Set<Policy> policies,
-                     @JsonProperty("peersList") final PeersList peersList,
                      @JsonProperty("store") final Map<String, Object> store) {
         this.policies = requireNonNull(policies);
-        this.peersList = requireNonNull(peersList);
         this.store = requireNonNull(store);
     }
 
     @JsonGetter("policies")
     public Set<Policy> policies() {
         return policies;
-    }
-
-    @JsonGetter("peersList")
-    public PeersList peersList() {
-        return peersList;
     }
 
     @JsonGetter("store")
@@ -63,7 +56,6 @@ public class NodeHello implements SdonMessage {
     public String toString() {
         return "NodeHello{" +
                 "policies='" + policies + '\'' +
-                ", peersList='" + peersList + '\'' +
                 ", store='" + store + '\'' +
                 '}';
     }

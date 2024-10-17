@@ -74,6 +74,10 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
 
+    public boolean isDirectPathPresent(final DrasylAddress drasylAddress) {
+        return false; // FIXME:
+    }
+
     enum State {OPEN, ACTIVE, CLOSED}
 
     private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);
@@ -247,10 +251,6 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             pipeline().fireChannelReadComplete();
         }
         return channel;
-    }
-
-    public boolean isDirectPathPresent(final SocketAddress remoteAddress) {
-        return !paths.get(remoteAddress).isEmpty();
     }
 
     public Promise<DrasylChannel> serve(final DrasylAddress peer) {
