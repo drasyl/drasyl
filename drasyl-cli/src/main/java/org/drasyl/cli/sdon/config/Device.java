@@ -21,6 +21,7 @@
  */
 package org.drasyl.cli.sdon.config;
 
+import org.drasyl.cli.util.LuaHelper;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -29,15 +30,16 @@ import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
-import java.util.HashSet;
-import java.util.Set;
+import java.util.Arrays;
+import java.util.stream.Collectors;
 
 public class Device extends LuaTable {
     private static final Logger LOG = LoggerFactory.getLogger(Device.class);
 
-    public Device(final DrasylAddress address) {
+    public Device(final DrasylAddress address, final String[] tags) {
         set("address", LuaValue.valueOf(address.toString()));
         set("online", FALSE);
+        set("tags", LuaHelper.createTable(Arrays.asList(tags).stream().map(LuaValue::valueOf).collect(Collectors.toList())));
 //        set("policies", tableOf());
 //        set("peers", tableOf());
 //        set("store", tableOf());
@@ -48,6 +50,7 @@ public class Device extends LuaTable {
         final LuaTable publicTable = tableOf();
         publicTable.set("address", get("address"));
         publicTable.set("online", get("online"));
+        publicTable.set("tags", get("tags"));
         return "Device" + LuaStrings.toString(publicTable);
     }
 
@@ -104,10 +107,6 @@ public class Device extends LuaTable {
 
     public boolean isOffline() {
         return get("online") == FALSE;
-    }
-
-    public Set<Policy> policies() {
-        return new HashSet<>();
     }
 
     public DrasylAddress address() {

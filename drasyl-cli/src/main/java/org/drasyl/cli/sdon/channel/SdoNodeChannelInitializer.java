@@ -26,7 +26,6 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.sdon.handler.SdonNodeHandler;
-import org.drasyl.cli.sdon.handler.SdonPoliciesHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
@@ -40,18 +39,21 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final IdentityPublicKey controller;
+    private final String[] tags;
 
     @SuppressWarnings("java:S107")
     public SdoNodeChannelInitializer(final long onlineTimeoutMillis,
                                      final PrintStream out,
                                      final PrintStream err,
                                      final Worm<Integer> exitCode,
-                                     final IdentityPublicKey controller) {
+                                     final IdentityPublicKey controller,
+                                     final String[] tags) {
         super(onlineTimeoutMillis);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);
         this.controller = requireNonNull(controller);
+        this.tags = requireNonNull(tags);
     }
 
     @Override
@@ -60,9 +62,7 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
 
         super.initChannel(ch);
 
-        final SdonNodeHandler nodeHandler = new SdonNodeHandler(controller);
-        p.addLast(nodeHandler);
-        p.addLast(new SdonPoliciesHandler(controller, nodeHandler));
+        p.addLast(new SdonNodeHandler(controller, tags));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

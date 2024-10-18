@@ -25,32 +25,38 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
-import io.netty.util.internal.StringUtil;
-import org.drasyl.identity.DrasylAddress;
+import org.luaj.vm2.LuaString;
 
+import java.net.InetAddress;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
 public class LinkPolicy extends Policy {
-    private final DrasylAddress peer;
+    private final String peer;
+    private final InetAddress peerIpAddress;
 
     @JsonCreator
-    public LinkPolicy(@JsonProperty("peer") final DrasylAddress peer,
-                      @JsonProperty("currentState") final PolicyState currentState,
-                      @JsonProperty("desiredState") final PolicyState desiredState) {
-        super(currentState, desiredState);
+    public LinkPolicy(@JsonProperty("peer") final String peer,
+                      @JsonProperty("peerIpAddress") final InetAddress peerIpAddress) {
+        super(PolicyState.PRESENT, PolicyState.PRESENT);
         this.peer = requireNonNull(peer);
+        this.peerIpAddress = requireNonNull(peerIpAddress);
     }
 
-    public LinkPolicy(final DrasylAddress peer) {
-        super();
-        this.peer = requireNonNull(peer);
+    public LinkPolicy(final LuaString peer,
+                      final InetAddress peerIpAddress) {
+        this(peer.tojstring(), peerIpAddress);
     }
 
     @JsonGetter("peer")
-    public DrasylAddress peer() {
+    public String peer() {
         return peer;
+    }
+
+    @JsonGetter("peerIpAddress")
+    public InetAddress peerIpAddress() {
+        return peerIpAddress;
     }
 
     @Override
@@ -62,33 +68,30 @@ public class LinkPolicy extends Policy {
             return false;
         }
         LinkPolicy that = (LinkPolicy) o;
-        return Objects.equals(peer, that.peer);
+        return Objects.equals(peer, that.peer) && Objects.equals(peerIpAddress, that.peerIpAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(peer);
+        return Objects.hash(peer, peerIpAddress);
     }
 
     @Override
     public String toString() {
         return "LinkPolicy{" +
                 "peer=" + peer +
+                ", peerIpAddress=" + peerIpAddress +
                 ", currentState=" + currentState +
                 ", desiredState=" + desiredState +
                 '}';
     }
 
     public void addPolicy(final ChannelPipeline pipeline) {
-        final String handlerName = StringUtil.simpleClassName(this) + "-" + peer.toString();
-
-        // FIXME
-        //pipeline.addAfter(pipeline.context(ApplicationMessageToPayloadCodec.class).name(), handlerName, new LinkPolicyHandler(this));
+        // NOOP
     }
 
     @Override
     public void removePolicy(final ChannelPipeline pipeline) {
-        final String handlerName = StringUtil.simpleClassName(this) + "-" + peer.toString();
-        pipeline.remove(handlerName);
+        // NOOP
     }
 }

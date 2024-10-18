@@ -30,6 +30,8 @@ import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdon.config.Device;
 import org.drasyl.cli.sdon.config.NetworkConfig;
 import org.drasyl.cli.sdon.config.NetworkTable;
+import org.drasyl.cli.sdon.config.NodeTable;
+import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.event.SdonMessageReceived;
 import org.drasyl.cli.sdon.message.ControllerHello;
 import org.drasyl.cli.sdon.message.NodeHello;
@@ -37,8 +39,13 @@ import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.luaj.vm2.LuaString;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Map.Entry;
+import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
@@ -79,50 +86,53 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
 
             ctx.executor().scheduleAtFixedRate(() -> {
                 try {
-                    // matchmaking
                     final NetworkTable network = config.network();
+
+                    // call callback
                     network.callCallback();
 
+                    // do matchmaking
+                    final Map<Device, LuaString> assignments = new HashMap<>();
+                    final Map<LuaString, NodeTable> nodes = network.getNodes();
+                    for (final Entry<LuaString, NodeTable> entry : nodes.entrySet()) {
+                        final LuaString name = entry.getKey();
+                        final NodeTable node = entry.getValue();
+
+                        Device bestMatch = null;
+                        int minDistance = Integer.MAX_VALUE;
+                        for (final Device device : network.getDevices()) {
+                            if (!assignments.containsKey(device)) {
+                                final int distance = node.getDistance(device);
+                                if (distance < minDistance) {
+                                    minDistance = distance;
+                                    bestMatch = device;
+                                }
+                            }
+                        }
+
+                        if (bestMatch != null) {
+                            assignments.put(bestMatch, name);
+                        }
+                    }
+
+                    // disseminate policies
                     for (final Device device : network.getDevices()) {
                         if (device.isOnline()) {
-                            final ControllerHello controllerHello = new ControllerHello(device.policies());
+                            final LuaString name = assignments.get(device);
+                            final NodeTable node = nodes.get(name);
+                            final Set<Policy> policies = node.createPolicies(device);
+
+                            final ControllerHello controllerHello = new ControllerHello(policies);
                             LOG.debug("Send {} to {}.", controllerHello, device.address());
                             final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(device.address());
                             channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
                     }
-
-//                    network.networkListener.call(network);
-//
-//                    // check if nodes need new config
-//                    final Map<DrasylAddress, DrasylChannel> channels = ((DrasylServerChannel) ctx.channel()).getChannels();
-//                    for (final NodeTable node : network.nodes.values()) {
-//                        final DrasylChannel channel = channels.get(node.name());
-//                        if (node.state().isOnline()) {
-//                            final Set<Policy> policies = node.policies();
-//                            //LOG.error("Policies {} {}", node.name(), policies.hashCode());
-//
-//                            if (!Objects.equals(network.nodePolicies.get(node.name()), policies)) {
-//                                network.nodePolicies.put(node.name(), policies);
-//                                //LOG.error("Policies for node `{}` have changed.", node.name());
-//                                final ControllerHello controllerHello = new ControllerHello(policies);
-//                                LOG.debug("Send {} to {}.", controllerHello, node.name());
-//                                channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//                            }
-//                            else {
-//                                LOG.debug("Policies for node `{}` have NOT changed: {}", node.name(), policies);
-//                            }
-//                        }
-//                        else {
-//                            network.nodePolicies.remove(node.name());
-//                        }
-//                    }
                 }
                 catch (final Exception e) {
-                    e.printStackTrace();
                     ctx.fireExceptionCaught(e);
                 }
-            }, 1000, 5000, MILLISECONDS);
+            }, 1_000, 5_000, MILLISECONDS);
         }
     }
 
@@ -135,9 +145,11 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
             LOG.trace("Received from `{}`: {}`", sender, msg);
 
             if (msg instanceof NodeHello) {
+                final NodeHello nodeHello = (NodeHello) msg;
+
                 // add devices
                 final NetworkTable network = config.network();
-                final Device device = network.getOrCreateDevice(sender);
+                final Device device = network.getOrCreateDevice(sender, nodeHello.tags());
 
                 final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(sender);
                 if (device.isOffline()) {
@@ -149,7 +161,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                     device.setOnline();
                     LOG.info("`{}` now online.", sender);
 
-                    final ControllerHello controllerHello = new ControllerHello(device.policies());
+                    final ControllerHello controllerHello = new ControllerHello();
                     LOG.debug("Send {} to {}.", controllerHello, sender);
                     channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                 }

@@ -27,15 +27,12 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
-import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
-import org.luaj.vm2.lib.ZeroArgFunction;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -86,173 +83,42 @@ public class NodeTable extends LuaTable {
         return LuaHashCodes.hash(this);
     }
 
-    public Device state() {
-        return (Device) get("state");
-    }
-
     public DrasylAddress name() {
         return IdentityPublicKey.of(get("name").tojstring());
     }
 
-    public DrasylAddress defaultRoute() {
-        final LuaValue defaultRoute = get("default_route");
-        if (defaultRoute == NIL) {
-            return null;
-        }
-        else {
-            return IdentityPublicKey.of(defaultRoute.checkstring().tojstring());
-        }
+    public int getDistance(final Device device) {
+        // FIXME: implement
+        return device.isOnline() ? 1 : Integer.MAX_VALUE;
     }
 
-    public boolean isTunEnabled() {
-        return get("tun_enabled") == LuaBoolean.TRUE;
-    }
-
-    public String tunName() {
-        return get("tun_name").checkstring().tojstring();
-    }
-
-    public String tunSubnet() {
-        return get("tun_subnet").checkstring().tojstring();
-    }
-
-    public int tunMtu() {
-        return get("tun_mtu").checkint();
-    }
-
-    public InetAddress tunAddress() {
-        if (get("tun_address") != NIL) {
-            try {
-                return InetAddress.getByName(get("tun_address").checkstring().tojstring());
-            } catch (final UnknownHostException e) {
-                throw new RuntimeException(e);
-            }
-        }
-        else {
-            return null;
-        }
-    }
-
-    public Map<InetAddress, DrasylAddress> tunRoutes() {
+    public Set<Policy> createPolicies(final Device device) {
         try {
-            final Map<InetAddress, DrasylAddress> routes = new HashMap<>();
-            final LuaTable luaTable = get("tun_routes").checktable();
-            for (final LuaValue key : luaTable.keys()) {
-                final LuaValue value = luaTable.get(key);
-                routes.put(InetAddress.getByName(key.checkstring().tojstring()), IdentityPublicKey.of(value.checkstring().tojstring()));
+            final Set<Policy> policies = new HashSet<>();
+
+            // IpPolicy
+            final String ipString = get("ip").tojstring();
+            final String[] parts = ipString.split("/", 2);
+            final InetAddress ipAddress = InetAddress.getByName(parts[0]);
+            final short ipNetmask = Short.valueOf(parts[1]);
+            final Policy ipPolicy = new IpPolicy(ipAddress, ipNetmask);
+            policies.add(ipPolicy);
+
+            // LinkPolicies
+            final Set<LinkTable> links = network.nodeLinks.get(get("name"));
+            final Map<LuaString, NodeTable> nodes = network.getNodes();
+            for (final LinkTable link : links) {
+                final LuaString peerName = link.other(get("name").checkstring());
+                final NodeTable peer = nodes.get(peerName);
+                final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);
+                final Policy linkPolicy = new LinkPolicy(peerName, peerIpAddress);
+                policies.add(linkPolicy);
             }
-            return routes;
-        } catch (final UnknownHostException e) {
-            throw new RuntimeException(e);
+
+            return policies;
         }
-    }
-
-    public Set<Policy> policies() {
-        final Set<Policy> policies = new HashSet<>();
-
-//        // proactive latency measurements
-//        //LOG.error("HEIKO network.proactiveLatencyMeasurementsRatio = {}", network.proactiveLatencyMeasurementsRatio);
-//        if (network.proactiveLatencyMeasurementsRatio != null && network.proactiveLatencyMeasurementsRatio.tofloat() > 0 && network.proactiveLatencyMeasurementsInterval.toint() > 0) {
-//            final float ratio = network.proactiveLatencyMeasurementsRatio.tofloat();
-//            final int interval = network.proactiveLatencyMeasurementsInterval.toint();
-//
-//            final long currentTimeMillis = System.currentTimeMillis();
-//            final long roundedTimeMillis = currentTimeMillis - (currentTimeMillis % interval);
-//
-//            final List<DrasylAddress> nodeCandidates = new ArrayList<>();
-//            if (network.proactiveLatencyMeasurementsCandidates != null) {
-//                final LuaValue[] keys = network.proactiveLatencyMeasurementsCandidates.keys();
-//                for (final LuaValue key : keys) {
-//                    final LuaValue value = network.proactiveLatencyMeasurementsCandidates.get(key);
-//                    //System.out.println("value = " + value.tojstring());
-//                    final IdentityPublicKey peer = IdentityPublicKey.of(value.tojstring());
-//                    nodeCandidates.add(peer);
-//                }
-//            }
-//            else {
-//                // get online nodes
-//                network.nodes.forEach((address, node) -> {
-//                    if (!name().equals(address) && node.state().isOnline()) {
-//                        nodeCandidates.add(address);
-//                    }
-//                });
-//            }
-//
-//            final Set<DrasylAddress> randomSubset;
-//            if (!electedPeers.containsKey(name())) {
-//                // select ratio %/100 nodes
-//                final Random random = new Random(name().hashCode() + roundedTimeMillis);
-//                final int n = (int) (nodeCandidates.size() * ratio);
-//                //LOG.error("HEIKO ratio = {}; n = {}; nodeCandidates.size() = {}", ratio, n, nodeCandidates.size());
-//                randomSubset = new HashSet<>();
-//                while (randomSubset.size() < n) {
-//                    if (chosenPeers.size() >= nodeCandidates.size()) {
-//                        chosenPeers.clear();
-//                    }
-//                    final List<DrasylAddress> currentCandidates = new ArrayList<>(SetUtil.difference(new HashSet<>(nodeCandidates), chosenPeers));
-//
-//                    final int randomIndex = random.nextInt(currentCandidates.size());
-//                    randomSubset.add(currentCandidates.get(randomIndex));
-//                    chosenPeers.add(currentCandidates.get(randomIndex));
-//                }
-//
-//                electedPeers.put(name(), randomSubset);
-//            }
-//            else {
-//                randomSubset = electedPeers.get(name());
-//            }
-//
-//            //LOG.error("node {} elected {}", name(), randomSubset);
-//
-//            policies.add(new ProactiveLatencyMeasurementsPolicy(randomSubset));
-//        }
-//
-//        // default route
-//        final DrasylAddress defaultRoute = defaultRoute();
-//        if (defaultRoute != null) {
-//            policies.add(new DefaultRoutePolicy(defaultRoute));
-//        }
-//
-//        final Set<LinkTable> links = network.nodeLinks.get(name());
-//        if (isTunEnabled()) {
-//            // tun
-//            final Map<InetAddress, DrasylAddress> routes = tunRoutes();
-////            LOG.error("{} tunRoutes() = {}", name(), tunRoutes());
-//            for (final LinkTable link : links) {
-//                final DrasylAddress otherName = link.other(name());
-//                final NodeTable other = network.getNode(otherName);
-//                if (other.tunAddress() != null) {
-//                    routes.putIfAbsent(other.tunAddress(), otherName);
-//                }
-//            }
-////            if (RELAYS.contains(name()) || name().equals(CLIENT)) {
-////                LOG.error("{} links = {}", name(), links);
-////                LOG.error("{} routes = {}", name(), routes);
-////            }
-//
-//            policies.add(new TunPolicy(tunName(), tunSubnet(), tunMtu(), tunAddress(), routes, defaultRoute()));
-//        }
-//
-//        // link policies
-//        for (final LinkTable link : links) {
-//            policies.add(new LinkPolicy(link.other(name())));
-//        }
-
-        //policies.add(new ComputationResultMessageParserPolicy());
-
-        return policies;
-    }
-
-    class LinksValue extends ZeroArgFunction {
-        @Override
-        public LuaValue call() {
-            final LuaTable linksTable = tableOf();
-//            int index = 1;
-//            final SetMultimap<DrasylAddress, LinkTable> nodeLinks = NodeTable.this.network.nodeLinks;
-//            for (final LinkTable link : nodeLinks.get(NodeTable.this.name())) {
-//                linksTable.set(index++, link);
-//            }
-            return linksTable;
+        catch (final UnknownHostException e) {
+            throw new RuntimeException(e);
         }
     }
 }

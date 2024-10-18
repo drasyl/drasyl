@@ -27,7 +27,7 @@ import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdon.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdon.handler.SdonMessageChildHandler;
-import org.drasyl.cli.sdon.handler.policy.TunPolicyHandler.DrasylToTunHandler;
+import org.drasyl.cli.sdon.handler.policy.IpPolicyHandler.DrasylToTunHandler;
 import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;

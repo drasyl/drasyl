@@ -24,39 +24,28 @@ package org.drasyl.cli.sdon.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.cli.sdon.config.Policy;
 
-import java.util.Map;
-import java.util.Set;
+import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
 public class NodeHello implements SdonMessage {
-    private final Set<Policy> policies;
-    private final Map<String, Object> store;
+    private final String[] tags;
 
     @JsonCreator
-    public NodeHello(@JsonProperty("policies") final Set<Policy> policies,
-                     @JsonProperty("store") final Map<String, Object> store) {
-        this.policies = requireNonNull(policies);
-        this.store = requireNonNull(store);
+    public NodeHello(@JsonProperty("tags") final String[] tags) {
+        this.tags = requireNonNull(tags);
     }
 
-    @JsonGetter("policies")
-    public Set<Policy> policies() {
-        return policies;
-    }
-
-    @JsonGetter("store")
-    public Map<String, Object> store() {
-        return store;
+    @JsonGetter("tags")
+    public String[] tags() {
+        return tags;
     }
 
     @Override
     public String toString() {
         return "NodeHello{" +
-                "policies='" + policies + '\'' +
-                ", store='" + store + '\'' +
+                "tags=" + Arrays.toString(tags) +
                 '}';
     }
 }

@@ -49,9 +49,14 @@ public class SdonNodeCommand extends ChannelOptions {
     )
     private IdentityPublicKey controller;
 
+    @Option(
+            names = { "--tag" }
+    )
+    private String[] tags;
+
     @Override
     protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
-        return new SdoNodeChannelInitializer(onlineTimeoutMillis, out, err, exitCode, controller);
+        return new SdoNodeChannelInitializer(onlineTimeoutMillis, out, err, exitCode, controller, tags);
     }
 
     @Override

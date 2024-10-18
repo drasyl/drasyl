@@ -35,11 +35,8 @@ import static org.drasyl.cli.sdon.config.Policy.PolicyState.PRESENT;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
-        @Type(value = ComputationResultMessageParserPolicy.class),
-        @Type(value = DefaultRoutePolicy.class),
-        @Type(value = LinkPolicy.class),
-        @Type(value = ProactiveLatencyMeasurementsPolicy.class),
-        @Type(value = TunPolicy.class),
+        @Type(IpPolicy.class),
+        @Type(LinkPolicy.class),
 })
 public abstract class Policy {
     private static final Logger LOG = LoggerFactory.getLogger(Policy.class);

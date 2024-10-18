@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,38 +19,26 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.sdon.message;
+package org.drasyl.cli.util;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonGetter;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.cli.sdon.config.Policy;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 
-import java.util.Set;
+import java.util.Collection;
 
-import static java.util.Objects.requireNonNull;
+import static org.luaj.vm2.LuaValue.tableOf;
 
-public class ControllerHello implements SdonMessage {
-    private final Set<Policy> policies;
-
-    @JsonCreator
-    public ControllerHello(@JsonProperty("policies") final Set<Policy> policies) {
-        this.policies = requireNonNull(policies);
+public class LuaHelper {
+    private LuaHelper() {
+        // util class
     }
 
-    public ControllerHello() {
-        this(Set.of());
-    }
-
-    @JsonGetter
-    public Set<Policy> policies() {
-        return policies;
-    }
-
-    @Override
-    public String toString() {
-        return "ControllerHello{" +
-                "policies='" + policies + '\'' +
-                '}';
+    public static LuaTable createTable(final Collection<? extends LuaValue> collection) {
+        final LuaTable table = tableOf();
+        int index = 1;
+        for (final LuaValue item : collection) {
+            table.set(index++, item);
+        }
+        return table;
     }
 }

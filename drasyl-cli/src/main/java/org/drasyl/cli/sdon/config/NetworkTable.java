@@ -22,6 +22,7 @@
 package org.drasyl.cli.sdon.config;
 
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.cli.util.LuaHelper;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.HashSetMultimap;
@@ -56,7 +57,7 @@ public class NetworkTable extends LuaTable {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkTable.class);
     private final Map<LuaString, NodeTable> nodes = new HashMap<>();
     private final Set<LinkTable> links = new HashSet<>();
-    private final SetMultimap<LuaString, LinkTable> nodeLinks = new HashSetMultimap<>();
+    final SetMultimap<LuaString, LinkTable> nodeLinks = new HashSetMultimap<>();
     private final Map<DrasylAddress, Device> devices = new HashMap<>();
     private int nextIpIndex;
     private LuaFunction callback;
@@ -133,7 +134,7 @@ public class NetworkTable extends LuaTable {
     @Override
     public String toString() {
         final LuaTable publicTable = tableOf();
-        publicTable.set("nodes", getNodes());
+        publicTable.set("nodes", getNodesTable());
         publicTable.set("links", getLinks());
         return "Network" + LuaStrings.toString(publicTable);
     }
@@ -142,13 +143,12 @@ public class NetworkTable extends LuaTable {
      * Nodes
      */
 
-    private LuaTable getNodes() {
-        final LuaTable nodesTable = tableOf();
-        int index = 1;
-        for (final NodeTable node : nodes.values()) {
-            nodesTable.set(index++, node);
-        }
-        return nodesTable;
+    public Map<LuaString, NodeTable> getNodes() {
+        return nodes;
+    }
+
+    private LuaTable getNodesTable() {
+        return LuaHelper.createTable(nodes.values());
     }
 
     private LuaValue getNode(final LuaString nameString) {
@@ -333,16 +333,11 @@ public class NetworkTable extends LuaTable {
     }
 
     private LuaTable getDevicesTable() {
-        final LuaTable devicesTable = tableOf();
-        int index = 1;
-        for (final Device device : devices.values()) {
-            devicesTable.set(index++, device);
-        }
-        return devicesTable;
+        return LuaHelper.createTable(devices.values());
     }
 
-    public Device getOrCreateDevice(final DrasylAddress address) {
-        return devices.computeIfAbsent(address, k -> new Device(k));
+    public Device getOrCreateDevice(final DrasylAddress address, final String[] tags) {
+        return devices.computeIfAbsent(address, k -> new Device(k, tags));
     }
 
     /*
@@ -354,7 +349,7 @@ public class NetworkTable extends LuaTable {
         public LuaTable call(final LuaValue networkArg) {
             final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
 
-            return networkTable.getNodes();
+            return networkTable.getNodesTable();
         }
     }
 
