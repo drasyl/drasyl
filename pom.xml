@@ -122,9 +122,9 @@
         <java.version>11</java.version>
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.5.10</logback.version>
-        <junit.version>5.11.2</junit.version>
-        <mockito.version>5.14.1</mockito.version>
+        <logback.version>1.5.11</logback.version>
+        <junit.version>5.11.3</junit.version>
+        <mockito.version>5.14.2</mockito.version>
         <jackson.version>2.18.0</jackson.version>
         <hamcrest.version>3.0</hamcrest.version>
         <awaitility.version>4.2.2</awaitility.version>
@@ -378,7 +378,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-site-plugin</artifactId>
-                    <version>3.20.0</version>
+                    <version>3.21.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -388,7 +388,7 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.8.6.4</version>
+                    <version>4.8.6.5</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
@@ -627,7 +627,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.6.4</version>
+                <version>4.8.6.5</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
