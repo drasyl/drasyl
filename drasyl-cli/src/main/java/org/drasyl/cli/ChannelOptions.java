@@ -30,6 +30,7 @@ import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -173,6 +174,7 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                             .option(IP_TOS, 0xB8)
                             .group(udpChannelLoop)
                             .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                            .handler(new UdpServerChannelInitializer(parent))
                     )
                     .handler(serverChannelInitializer)
                     .childHandler(childChannelInitializer);

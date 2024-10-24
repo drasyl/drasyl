@@ -29,12 +29,16 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.peers.PeersList;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
+import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.sntp.SntpClient;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -198,6 +202,17 @@ public abstract class DrasylNode {
                         .option(IP_TOS, 0xB8)
                         .group(udpServerGroup.next())
                         .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                        .handler(new UdpServerChannelInitializer(parent) {
+                            @Override
+                            protected void initChannel(final DatagramChannel ch) {
+                                super.initChannel(ch);
+
+                                if (config.isRemoteExposeEnabled()) {
+                                    // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
+                                    ch.pipeline().addBefore(ch.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new PortMapper());
+                                }
+                            }
+                        })
                 )
                 .option(TCP_CLIENT_CONNECT_PORT, config.getRemoteTcpFallbackClientConnectPort())
                 .option(TCP_SERVER_BIND, new InetSocketAddress(config.getRemoteTcpFallbackServerBindHost(), config.getRemoteTcpFallbackServerBindPort()))
