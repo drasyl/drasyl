@@ -22,10 +22,19 @@
 package org.drasyl.cli.sdon;
 
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.socket.DatagramChannel;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdoNodeChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdoNodeChildChannelInitializer;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -40,7 +49,6 @@ import picocli.CommandLine.Option;
 )
 public class SdonNodeCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(SdonNodeCommand.class);
-
     @Option(
             names = { "-c", "--controller" },
             description = "Controller to connect to.",
@@ -48,7 +56,6 @@ public class SdonNodeCommand extends ChannelOptions {
             required = true
     )
     private IdentityPublicKey controller;
-
     @Option(
             names = { "--tag" }
     )
@@ -62,6 +69,31 @@ public class SdonNodeCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         return new SdoNodeChildChannelInitializer(out, err, exitCode, controller);
+    }
+
+    @Override
+    protected ChannelHandler getUdpChannelInitializer(final DrasylServerChannel parent) {
+        return new UdpServerChannelInitializer(parent) {
+            @Override
+            protected void initChannel(final DatagramChannel ch) {
+                super.initChannel(ch);
+
+                final ChannelPipeline p = ch.pipeline();
+
+                ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new SimpleChannelInboundHandler<InetAddressedMessage<ApplicationMessage>>() {
+                    @Override
+                    public boolean acceptInboundMessage(final Object msg) throws Exception {
+                        return msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
+                    }
+
+                    @Override
+                    protected void channelRead0(final ChannelHandlerContext ctx,
+                                                final InetAddressedMessage<ApplicationMessage> msg) {
+                        System.out.println();
+                    }
+                });
+            }
+        };
     }
 
     @Override
