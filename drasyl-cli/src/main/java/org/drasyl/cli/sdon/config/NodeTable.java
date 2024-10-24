@@ -97,10 +97,13 @@ public class NodeTable extends LuaTable {
     }
 
     public DrasylAddress device() {
-        return IdentityPublicKey.of(get("device").tojstring());
+        if (get("device") != NIL) {
+            return IdentityPublicKey.of(get("device").tojstring());
+        }
+        return null;
     }
 
-    public Set<Policy> createPolicies(final NetworkTable network) {
+    public Set<Policy> createPolicies() {
         try {
             final Set<Policy> policies = new HashSet<>();
 
@@ -117,17 +120,11 @@ public class NodeTable extends LuaTable {
             final Map<LuaString, NodeTable> nodes = network.getNodes();
             for (final LinkTable link : links) {
                 final LuaString peerName = link.other(get("name").checkstring());
-                Device peerDevice = null;
-                for (final Map.Entry<Device, LuaString> entry : assignments.entrySet()) {
-                    if (entry.getValue().equals(peerName)) {
-                        peerDevice = entry.getKey();
-                        break;
-                    }
-                }
-                if (peerDevice != null) {
-                    final NodeTable peer = nodes.get(peerName);
+                final NodeTable peer = nodes.get(peerName);
+                final DrasylAddress peerAddress = peer.device();
+                if (peerAddress != null) {
                     final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);
-                    final Policy linkPolicy = new LinkPolicy(peerName, peerDevice.address(), peerIpAddress);
+                    final Policy linkPolicy = new LinkPolicy(peerName, peerAddress, peerIpAddress);
                     policies.add(linkPolicy);
                 }
             }

@@ -130,7 +130,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                                 node = entry.getValue();
                             }
                         }
-                        final Set<Policy> policies = node.createPolicies(network);
+                        final Set<Policy> policies = node.createPolicies();
 
                         final ControllerHello controllerHello = new ControllerHello(policies);
                         LOG.debug("Send {} to {}.", controllerHello, device.address());
