@@ -29,7 +29,6 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.handler.remote.PeersManager;
@@ -39,6 +38,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 import java.net.InetSocketAddress;
 import java.time.Duration;
 import java.util.Map;
+import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
@@ -72,9 +72,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Integer> MAX_PEERS = valueOf("MAX_PEERS");
     public static final ChannelOption<Map<IdentityPublicKey, InetSocketAddress>> SUPER_PEERS = valueOf("SUPER_PEERS");
     public static final ChannelOption<InetSocketAddress> UDP_BIND = valueOf("UDP_BIND");
-    public static final ChannelOption<Supplier<EventLoop>> UDP_EVENT_LOOP = valueOf("UDP_EVENT_LOOP");
-    public static final ChannelOption<Class<? extends DatagramChannel>> UDP_CHANNEL_CLASS = valueOf("UDP_CHANNEL_CLASS");
-    public static final ChannelOption<Supplier<Bootstrap>> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
+    public static final ChannelOption<Function<DrasylServerChannel, Bootstrap>> UDP_BOOTSTRAP = valueOf("UDP_BOOTSTRAP");
     public static final ChannelOption<Integer> TCP_CLIENT_CONNECT_PORT = valueOf("TCP_CLIENT_CONNECT_PORT");
     public static final ChannelOption<Supplier<EventLoop>> TCP_CLIENT_EVENT_LOOP = valueOf("TCP_CLIENT_EVENT_LOOP");
     public static final ChannelOption<Class<? extends SocketChannel>> TCP_CLIENT_CHANNEL_CLASS = valueOf("TCP_CLIENT_CHANNEL_CLASS");
@@ -99,12 +97,12 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile int maxPeers = 100;
     private volatile Map<IdentityPublicKey, InetSocketAddress> superPeers = DEFAULT_SUPER_PEERS;
     private volatile InetSocketAddress udpBind = new InetSocketAddress(22527);
-    private volatile Supplier<EventLoop> udpEventLoop = () -> EventLoopGroupUtil.getBestEventLoopGroup(1).next();
-    private volatile Class<? extends DatagramChannel> udpChannelClass = EventLoopGroupUtil.getBestDatagramChannel();
-    private volatile Supplier<Bootstrap> udpBootstrap = () -> new Bootstrap()
+    private volatile Function<DrasylServerChannel, Bootstrap> udpBootstrap = parent -> new Bootstrap()
             .option(SO_BROADCAST, false)
             .option(SO_REUSEADDR, UDP_SO_REUSEADDR)
-            .option(IP_TOS, 0xB8);
+            .option(IP_TOS, 0xB8)
+            .group(EventLoopGroupUtil.getBestEventLoopGroup(1).next())
+            .channel(EventLoopGroupUtil.getBestDatagramChannel());
     private volatile Integer tcpClientConnectPort = 443;
     private volatile Supplier<EventLoop> tcpClientEventLoop;
     private Class<? extends SocketChannel> tcpClientChannelClass = EventLoopGroupUtil.getSocketChannel();
@@ -139,8 +137,6 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 MAX_PEERS,
                 SUPER_PEERS,
                 UDP_BIND,
-                UDP_EVENT_LOOP,
-                UDP_CHANNEL_CLASS,
                 UDP_BOOTSTRAP,
                 TCP_CLIENT_CONNECT_PORT,
                 TCP_CLIENT_EVENT_LOOP,
@@ -160,7 +156,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
 
     @Override
     @SuppressWarnings({ "unchecked" })
-    public <T> T getOption(ChannelOption<T> option) {
+    public <T> T getOption(final ChannelOption<T> option) {
         if (option == NETWORK_ID) {
             return (T) Integer.valueOf(getNetworkId());
         }
@@ -190,12 +186,6 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == UDP_BIND) {
             return (T) getUdpBind();
-        }
-        if (option == UDP_EVENT_LOOP) {
-            return (T) getUdpEventLoop();
-        }
-        if (option == UDP_CHANNEL_CLASS) {
-            return (T) getUdpChannelClass();
         }
         if (option == UDP_BOOTSTRAP) {
             return (T) getUdpBootstrap();
@@ -282,15 +272,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return udpBind;
     }
 
-    public Supplier<EventLoop> getUdpEventLoop() {
-        return udpEventLoop;
-    }
-
-    public Class<? extends DatagramChannel> getUdpChannelClass() {
-        return udpChannelClass;
-    }
-
-    public Supplier<Bootstrap> getUdpBootstrap() {
+    public Function<DrasylServerChannel, Bootstrap> getUdpBootstrap() {
         return udpBootstrap;
     }
 
@@ -350,7 +332,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     }
 
     @Override
-    public <T> boolean setOption(ChannelOption<T> option, T value) {
+    public <T> boolean setOption(final ChannelOption<T> option, final T value) {
         validate(option, value);
 
         if (option == NETWORK_ID) {
@@ -383,14 +365,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         else if (option == UDP_BIND) {
             setUdpBind((InetSocketAddress) value);
         }
-        else if (option == UDP_EVENT_LOOP) {
-            setUdpEventLoop((Supplier<EventLoop>) value);
-        }
-        else if (option == UDP_CHANNEL_CLASS) {
-            setUdpChannelClass((Class<? extends DatagramChannel>) value);
-        }
         else if (option == UDP_BOOTSTRAP) {
-            setUdpBootstrap((Supplier<Bootstrap>) value);
+            setUdpBootstrap((Function<DrasylServerChannel, Bootstrap>) value);
         }
         else if (option == TCP_CLIENT_CONNECT_PORT) {
             setTcpClientConnectPort((Integer) value);
@@ -508,21 +484,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         this.udpBind = requireNonNull(udpBind);
     }
 
-    public void setUdpEventLoop(final Supplier<EventLoop> udpEventLoop) {
-        if (channel.isRegistered()) {
-            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
-        }
-        this.udpEventLoop = requireNonNull(udpEventLoop);
-    }
-
-    public void setUdpChannelClass(final Class<? extends DatagramChannel> udpChannelClass) {
-        if (channel.isRegistered()) {
-            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
-        }
-        this.udpChannelClass = requireNonNull(udpChannelClass);
-    }
-
-    public void setUdpBootstrap(final Supplier<Bootstrap> udpBootstrap) {
+    public void setUdpBootstrap(final Function<DrasylServerChannel, Bootstrap> udpBootstrap) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }

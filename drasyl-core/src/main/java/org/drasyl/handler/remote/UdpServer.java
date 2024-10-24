@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -53,7 +53,6 @@ public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private DatagramChannel udpChannel;
-    private UdpServerToDrasylHandler udpDrasylHandler;
 
     UdpServer(final Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
               final DatagramChannel udpChannel) {
@@ -74,9 +73,7 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start server...");
 
-        final ChannelFuture future = config(ctx).getUdpBootstrap().get()
-                .group(config(ctx).getUdpEventLoop().get())
-                .channel(config(ctx).getUdpChannelClass())
+        final ChannelFuture future = config(ctx).getUdpBootstrap().apply((DrasylServerChannel) ctx.channel())
                 .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
                 .bind(config(ctx).getUdpBind());
         udpChannel = (DatagramChannel) future.channel();
@@ -99,13 +96,6 @@ public class UdpServer extends ChannelDuplexHandler {
     public void flush(final ChannelHandlerContext ctx) throws Exception {
         udpChannel.flush();
         ctx.flush();
-    }
-
-    private UdpServerToDrasylHandler outboundUdpBufferHolder() {
-        if (udpDrasylHandler == null) {
-            udpDrasylHandler = udpChannel.pipeline().get(UdpServerToDrasylHandler.class);
-        }
-        return udpDrasylHandler;
     }
 
     private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -62,6 +62,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -83,12 +84,14 @@ import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
+import static io.netty.channel.ChannelOption.IP_TOS;
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -402,7 +405,12 @@ public class TunCommand extends ChannelOptions {
                     .option(ARMING_ENABLED, !protocolArmDisabled)
                     .option(SUPER_PEERS, superPeers)
                     .option(UDP_BIND, bindAddress)
-                    .option(UDP_EVENT_LOOP, () -> udpChannelLoop)
+                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                            .option(SO_BROADCAST, false)
+                            .option(IP_TOS, 0xB8)
+                            .group(udpChannelLoop)
+                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                    )
                     .handler(handler)
                     .childHandler(childHandler);
             channel = (DrasylServerChannel) b.bind(identity).channel();
