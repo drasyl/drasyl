@@ -98,10 +98,15 @@ public class NodeTable extends LuaTable {
     }
 
     public DrasylAddress device() {
-        if (get("device") != NIL) {
-            return IdentityPublicKey.of(get("device").tojstring());
+        try {
+            if (get("device") != NIL) {
+                return IdentityPublicKey.of(get("device").tojstring());
+            }
+            return null;
         }
-        return null;
+        catch (Exception e) {
+            throw e;
+        }
     }
 
     public Set<Policy> createPolicies() {
