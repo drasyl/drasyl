@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,7 @@
  */
 package org.drasyl.node;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -44,6 +45,7 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
@@ -63,6 +65,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static io.netty.channel.ChannelOption.IP_TOS;
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
@@ -80,7 +84,7 @@ import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
 import static org.drasyl.channel.DrasylServerChannelConfig.TCP_SERVER_BIND;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -175,6 +179,7 @@ public abstract class DrasylNode {
         final EventLoopGroup parentGroup = DrasylNodeSharedEventLoopGroupHolder.getParentGroup();
         final EventLoopGroup childGroup = DrasylNodeSharedEventLoopGroupHolder.getChildGroup();
         final EventLoopGroup udpServerGroup = DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup();
+
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .localAddress(identity)
@@ -188,7 +193,12 @@ public abstract class DrasylNode {
                 .option(MAX_PEERS, config.getRemotePingMaxPeers())
                 .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
                 .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
-                .option(UDP_EVENT_LOOP, udpServerGroup::next)
+                .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                        .option(SO_BROADCAST, false)
+                        .option(IP_TOS, 0xB8)
+                        .group(udpServerGroup.next())
+                        .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                )
                 .option(TCP_CLIENT_CONNECT_PORT, config.getRemoteTcpFallbackClientConnectPort())
                 .option(TCP_SERVER_BIND, new InetSocketAddress(config.getRemoteTcpFallbackServerBindHost(), config.getRemoteTcpFallbackServerBindPort()))
                 .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())

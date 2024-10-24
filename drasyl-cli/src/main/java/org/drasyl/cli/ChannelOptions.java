@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.cli;
 
 import ch.qos.logback.classic.Level;
+import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
@@ -45,12 +46,14 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
+import static io.netty.channel.ChannelOption.IP_TOS;
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
 import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_EVENT_LOOP;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -165,7 +168,12 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                     .option(ARMING_ENABLED, !protocolArmDisabled)
                     .option(SUPER_PEERS, superPeers)
                     .option(UDP_BIND, bindAddress)
-                    .option(UDP_EVENT_LOOP, () -> udpChannelLoop)
+                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                            .option(SO_BROADCAST, false)
+                            .option(IP_TOS, 0xB8)
+                            .group(udpChannelLoop)
+                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                    )
                     .handler(serverChannelInitializer)
                     .childHandler(childChannelInitializer);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();
