@@ -33,6 +33,7 @@ import org.luaj.vm2.LuaValue;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
@@ -107,27 +108,38 @@ public class NodeTable extends LuaTable {
         try {
             final Set<Policy> policies = new HashSet<>();
 
+            // LinkPolicies
+            final Set<LinkTable> links = network.nodeLinks.get(get("name"));
+            final Map<LuaString, NodeTable> nodes = network.getNodes();
+//            for (final LinkTable link : links) {
+//                final LuaString peerName = link.other(get("name").checkstring());
+//                final NodeTable peer = nodes.get(peerName);
+//                final DrasylAddress peerAddress = peer.device();
+//                if (peerAddress != null) {
+//                    final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);
+//                    final Policy linkPolicy = new LinkPolicy(peerName, peerAddress, peerIpAddress);
+//                    policies.add(linkPolicy);
+//                }
+//            }
+
             // IpPolicy
             final String ipString = get("ip").tojstring();
             final String[] parts = ipString.split("/", 2);
             final InetAddress ipAddress = InetAddress.getByName(parts[0]);
             final short ipNetmask = Short.valueOf(parts[1]);
-            final Policy ipPolicy = new IpPolicy(ipAddress, ipNetmask);
-            policies.add(ipPolicy);
-
-            // LinkPolicies
-            final Set<LinkTable> links = network.nodeLinks.get(get("name"));
-            final Map<LuaString, NodeTable> nodes = network.getNodes();
+            final Map<InetAddress, DrasylAddress> mapping = new HashMap<>();
             for (final LinkTable link : links) {
                 final LuaString peerName = link.other(get("name").checkstring());
                 final NodeTable peer = nodes.get(peerName);
                 final DrasylAddress peerAddress = peer.device();
                 if (peerAddress != null) {
                     final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);
-                    final Policy linkPolicy = new LinkPolicy(peerName, peerAddress, peerIpAddress);
-                    policies.add(linkPolicy);
+                    mapping.put(peerIpAddress, peerAddress);
                 }
             }
+
+            final Policy ipPolicy = new IpPolicy(ipAddress, ipNetmask, mapping);
+            policies.add(ipPolicy);
 
             return policies;
         }

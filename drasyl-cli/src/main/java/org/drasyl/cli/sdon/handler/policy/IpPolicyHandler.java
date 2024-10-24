@@ -12,7 +12,10 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.concurrent.Future;
+import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
+import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -25,6 +28,7 @@ import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.handler.SdonNodeHandler;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
@@ -34,6 +38,7 @@ import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
 import java.net.SocketAddress;
+import java.util.Map;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
@@ -156,12 +161,17 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
             LOG.error("Got packet `{}`", () -> packet);
             LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
-            final SdonNodeHandler handler = drasylServerChannel.pipeline().get(SdonNodeHandler.class);
-            for (final Policy policy : handler.policies) {
-                if (policy instanceof LinkPolicy) {
-                    LinkPolicy linkPolicy = (LinkPolicy) policy;
-                    System.out.printf("");
-                }
+            // mapping
+            final Map<InetAddress, DrasylAddress> mapping = policy.mapping();
+            final DrasylAddress drasylAddress = mapping.get(dst);
+
+            if (drasylAddress != null) {
+                drasylServerChannel.serve(drasylAddress).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
+                    if (future.isSuccess()) {
+                        final DrasylChannel channel = future.getNow();
+                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
+                });
             }
 
 //            LOG.error("routes = {}; containsKey = {}; directPath = {}", policy.routes(), policy.routes().containsKey(dst), policy.routes().containsKey(dst) ? drasylServerChannel.isDirectPathPresent(policy.routes().get(dst)) : "null");
