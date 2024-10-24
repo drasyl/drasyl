@@ -62,8 +62,6 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
         final ChannelPipeline p = ctx.pipeline();
 
         p.addLast(new JacksonCodec<>(SdonMessage.class));
-        p.addBefore(p.context(SegmentCodec.class).name(), null, new TunPacketCodec());
-        p.addLast(new DrasylToTunHandler());
         p.addLast(new SdonMessageChildHandler());
     }
 

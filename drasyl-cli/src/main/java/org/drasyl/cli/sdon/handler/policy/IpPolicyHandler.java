@@ -17,6 +17,7 @@ import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
@@ -28,7 +29,11 @@ import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.handler.SdonNodeHandler;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
@@ -37,6 +42,7 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 
@@ -167,12 +173,11 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
 
             if (drasylAddress != null) {
                 LOG.info("Write to `{}`", () -> drasylAddress);
-                drasylServerChannel.serve(drasylAddress).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                    if (future.isSuccess()) {
-                        final DrasylChannel channel = future.getNow();
-                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                    }
-                });
+
+                final PeersManager peersManager = drasylServerChannel.config().getPeersManager();
+                final InetSocketAddress endpoint = peersManager.resolve(drasylAddress);
+                final InetAddressedMessage<Tun4Packet> inetMsg = new InetAddressedMessage<>(packet, endpoint);
+                drasylServerChannel.udpChannel().writeAndFlush(inetMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {
                 LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
