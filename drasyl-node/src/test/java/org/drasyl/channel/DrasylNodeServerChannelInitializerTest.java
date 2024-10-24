@@ -50,7 +50,6 @@ class DrasylNodeServerChannelInitializerTest {
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
             when(config.isRemoteEnabled()).thenReturn(true);
-            when(config.isRemoteExposeEnabled()).thenReturn(true);
             when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
             when(config.isRemoteLocalNetworkDiscoveryEnabled()).thenReturn(true);
             when(config.isRemoteLocalHostDiscoveryEnabled()).thenReturn(true);

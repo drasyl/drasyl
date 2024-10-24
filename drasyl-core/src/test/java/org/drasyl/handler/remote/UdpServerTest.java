@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -79,7 +79,7 @@ class UdpServerTest {
             });
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(channelInitializerSupplier, null);
+            final UdpServer handler = new UdpServer(null);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
             channel.pipeline().addLast(handler);
             try {
@@ -103,7 +103,7 @@ class UdpServerTest {
             final InetSocketAddress recipient = new InetSocketAddress(1234);
 
             final NioEventLoopGroup serverGroup = new NioEventLoopGroup(1);
-            final UdpServer handler = new UdpServer(channelInitializerSupplier, udpChannel);
+            final UdpServer handler = new UdpServer(udpChannel);
             final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(config);
             channel.pipeline().addLast(handler);
             try {

@@ -57,6 +57,7 @@ import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -410,6 +411,7 @@ public class TunCommand extends ChannelOptions {
                             .option(IP_TOS, 0xB8)
                             .group(udpChannelLoop)
                             .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                            .handler(new UdpServerChannelInitializer(parent))
                     )
                     .handler(handler)
                     .childHandler(childHandler);

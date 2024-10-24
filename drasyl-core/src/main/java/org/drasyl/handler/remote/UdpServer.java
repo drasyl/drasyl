@@ -26,7 +26,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.PromiseNotifier;
@@ -40,7 +39,6 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
-import java.util.function.Function;
 
 import static java.util.Objects.requireNonNull;
 
@@ -51,21 +49,14 @@ import static java.util.Objects.requireNonNull;
 @UnstableApi
 public class UdpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
-    private final Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     private DatagramChannel udpChannel;
 
-    UdpServer(final Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier,
-              final DatagramChannel udpChannel) {
-        this.channelInitializerSupplier = requireNonNull(channelInitializerSupplier);
+    UdpServer(final DatagramChannel udpChannel) {
         this.udpChannel = udpChannel;
     }
 
-    public UdpServer(final Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier) {
-        this(channelInitializerSupplier, null);
-    }
-
     public UdpServer() {
-        this(UdpServerChannelInitializer::new);
+        this(null);
     }
 
     @SuppressWarnings("java:S1905")
@@ -74,7 +65,6 @@ public class UdpServer extends ChannelDuplexHandler {
         LOG.debug("Start server...");
 
         final ChannelFuture future = config(ctx).getUdpBootstrap().apply((DrasylServerChannel) ctx.channel())
-                .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
                 .bind(config(ctx).getUdpBind());
         udpChannel = (DatagramChannel) future.channel();
         future.addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel()));
