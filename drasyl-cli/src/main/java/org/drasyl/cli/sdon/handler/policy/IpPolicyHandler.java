@@ -158,20 +158,25 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet packet) {
             final InetAddress dst = packet.destinationAddress();
-            LOG.error("Got packet `{}`", () -> packet);
-            LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
+            LOG.info("Got packet `{}`", () -> packet);
+            LOG.info("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
             // mapping
             final Map<InetAddress, DrasylAddress> mapping = policy.mapping();
             final DrasylAddress drasylAddress = mapping.get(dst);
 
             if (drasylAddress != null) {
+                LOG.info("Write to `{}`", () -> drasylAddress);
                 drasylServerChannel.serve(drasylAddress).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                     if (future.isSuccess()) {
                         final DrasylChannel channel = future.getNow();
                         channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                 });
+            }
+            else {
+                LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
+                packet.release();
             }
 
 //            LOG.error("routes = {}; containsKey = {}; directPath = {}", policy.routes(), policy.routes().containsKey(dst), policy.routes().containsKey(dst) ? drasylServerChannel.isDirectPathPresent(policy.routes().get(dst)) : "null");
