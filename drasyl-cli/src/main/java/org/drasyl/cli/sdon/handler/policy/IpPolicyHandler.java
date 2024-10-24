@@ -20,6 +20,9 @@ import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import org.drasyl.cli.sdon.config.IpPolicy;
+import org.drasyl.cli.sdon.config.LinkPolicy;
+import org.drasyl.cli.sdon.config.Policy;
+import org.drasyl.cli.sdon.handler.SdonNodeHandler;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.logging.Logger;
@@ -63,11 +66,11 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                         p.addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), policy));
                     }
                 });
-        tunChannel = b.bind(new TunAddress("utun12")).addListener((ChannelFutureListener) future -> {
+        tunChannel = b.bind(new TunAddress()).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 final String name = future.channel().localAddress().toString();
-                final Subnet subnet = null;//new Subnet(policy.subnet());
                 final String addressStr = policy.address().getHostAddress();
+                final Subnet subnet = new Subnet(addressStr + "/" + policy.netmask());
                 if (PlatformDependent.isOsx()) {
                     // macOS
                     exec("/sbin/ifconfig", name, "add", addressStr, addressStr);
@@ -82,7 +85,8 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                     AddressAndNetmaskHelper.setIPv4AndNetmask(interfaceLuid, addressStr, subnet.netmaskLength());
 
 //                    exec("netsh", "interface", "ipv4", "set", "subinterface", name, "mtu=" + policy.mtu(), "store=active");
-                } else {
+                }
+                else {
                     // Linux
                     exec("/sbin/ip", "addr", "add", addressStr + "/" + subnet.netmaskLength(), "dev", name);
                     exec("/sbin/ip", "link", "set", "dev", name, "up");
@@ -151,6 +155,14 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
             final InetAddress dst = packet.destinationAddress();
             LOG.error("Got packet `{}`", () -> packet);
             LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
+
+            final SdonNodeHandler handler = drasylServerChannel.pipeline().get(SdonNodeHandler.class);
+            for (final Policy policy : handler.policies) {
+                if (policy instanceof LinkPolicy) {
+                    LinkPolicy linkPolicy = (LinkPolicy) policy;
+                    System.out.printf("");
+                }
+            }
 
 //            LOG.error("routes = {}; containsKey = {}; directPath = {}", policy.routes(), policy.routes().containsKey(dst), policy.routes().containsKey(dst) ? drasylServerChannel.isDirectPathPresent(policy.routes().get(dst)) : "null");
 //            final DrasylAddress publicKey = policy.routes().get(dst);

@@ -34,9 +34,7 @@ public class IpPolicy extends Policy {
     }
 
     public void addPolicy(final ChannelPipeline pipeline) {
-        if (false) {
-            pipeline.addLast(HANDLER_NAME, new IpPolicyHandler(this));
-        }
+        pipeline.addLast(HANDLER_NAME, new IpPolicyHandler(this));
     }
 
     @Override

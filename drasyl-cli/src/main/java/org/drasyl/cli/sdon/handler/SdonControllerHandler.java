@@ -37,14 +37,18 @@ import org.drasyl.cli.sdon.message.ControllerHello;
 import org.drasyl.cli.sdon.message.NodeHello;
 import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.HashSetMultimap;
+import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaString;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.Objects;
 import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
@@ -92,7 +96,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                     network.callCallback();
 
                     // do matchmaking
-                    final Map<Device, LuaString> assignments = new HashMap<>();
+                    final Set<Device> assignedDevices = new HashSet<>();
                     final Map<LuaString, NodeTable> nodes = network.getNodes();
                     for (final Entry<LuaString, NodeTable> entry : nodes.entrySet()) {
                         final LuaString name = entry.getKey();
@@ -101,7 +105,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                         Device bestMatch = null;
                         int minDistance = Integer.MAX_VALUE;
                         for (final Device device : network.getDevices()) {
-                            if (!assignments.containsKey(device)) {
+                            if (!assignedDevices.contains(device)) {
                                 final int distance = node.getDistance(device);
                                 if (distance < minDistance) {
                                     minDistance = distance;
@@ -111,22 +115,27 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                         }
 
                         if (bestMatch != null) {
-                            assignments.put(bestMatch, name);
+                            assignedDevices.add(bestMatch);
+                            node.setDevice(bestMatch);
                         }
                     }
 
                     // disseminate policies
                     for (final Device device : network.getDevices()) {
-                        if (device.isOnline()) {
-                            final LuaString name = assignments.get(device);
-                            final NodeTable node = nodes.get(name);
-                            final Set<Policy> policies = node.createPolicies(device);
-
-                            final ControllerHello controllerHello = new ControllerHello(policies);
-                            LOG.debug("Send {} to {}.", controllerHello, device.address());
-                            final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(device.address());
-                            channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        LuaString name = null;
+                        NodeTable node = null;
+                        for (final Entry<LuaString, NodeTable> entry : nodes.entrySet()) {
+                            if (Objects.equals(entry.getValue().device(), device.address())) {
+                                name = entry.getKey();
+                                node = entry.getValue();
+                            }
                         }
+                        final Set<Policy> policies = node.createPolicies(network);
+
+                        final ControllerHello controllerHello = new ControllerHello(policies);
+                        LOG.debug("Send {} to {}.", controllerHello, device.address());
+                        final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(device.address());
+                        channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     }
                 }
                 catch (final Exception e) {

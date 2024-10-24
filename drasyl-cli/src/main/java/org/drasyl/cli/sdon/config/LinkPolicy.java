@@ -25,6 +25,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.identity.DrasylAddress;
 import org.luaj.vm2.LuaString;
 
 import java.net.InetAddress;
@@ -34,24 +35,33 @@ import static java.util.Objects.requireNonNull;
 
 public class LinkPolicy extends Policy {
     private final String peer;
+    private final DrasylAddress peerAddress;
     private final InetAddress peerIpAddress;
 
     @JsonCreator
     public LinkPolicy(@JsonProperty("peer") final String peer,
+                      @JsonProperty("peerAddress") final DrasylAddress peerAddress,
                       @JsonProperty("peerIpAddress") final InetAddress peerIpAddress) {
         super(PolicyState.PRESENT, PolicyState.PRESENT);
         this.peer = requireNonNull(peer);
+        this.peerAddress = requireNonNull(peerAddress);
         this.peerIpAddress = requireNonNull(peerIpAddress);
     }
 
     public LinkPolicy(final LuaString peer,
+                      final DrasylAddress peerAddress,
                       final InetAddress peerIpAddress) {
-        this(peer.tojstring(), peerIpAddress);
+        this(peer.tojstring(), peerAddress, peerIpAddress);
     }
 
     @JsonGetter("peer")
     public String peer() {
         return peer;
+    }
+
+    @JsonGetter("peerAddress")
+    public DrasylAddress peerAddress() {
+        return peerAddress;
     }
 
     @JsonGetter("peerIpAddress")
@@ -68,18 +78,19 @@ public class LinkPolicy extends Policy {
             return false;
         }
         LinkPolicy that = (LinkPolicy) o;
-        return Objects.equals(peer, that.peer) && Objects.equals(peerIpAddress, that.peerIpAddress);
+        return Objects.equals(peer, that.peer) && Objects.equals(peerAddress, that.peerAddress) && Objects.equals(peerIpAddress, that.peerIpAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(peer, peerIpAddress);
+        return Objects.hash(peer, peerAddress, peerIpAddress);
     }
 
     @Override
     public String toString() {
         return "LinkPolicy{" +
                 "peer=" + peer +
+                ", peerAddress=" + peerAddress +
                 ", peerIpAddress=" + peerIpAddress +
                 ", currentState=" + currentState +
                 ", desiredState=" + desiredState +

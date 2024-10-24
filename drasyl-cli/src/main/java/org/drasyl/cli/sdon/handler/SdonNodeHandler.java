@@ -54,7 +54,7 @@ public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
     private final String[] tags;
     State state;
     private DrasylChannel controllerChannel;
-    private final Set<Policy> policies = new HashSet<>();
+    public final Set<Policy> policies = new HashSet<>();
 
     public SdonNodeHandler(final IdentityPublicKey controller,
                            final String[] tags) {
@@ -123,8 +123,10 @@ public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
                 }
 
                 // add new policies
-                for (final Policy policy : newPolicies) {
-                    policy.addPolicy(ctx.pipeline());
+                for (final Policy newPolicy : newPolicies) {
+                    if (!policies.contains(newPolicy)) {
+                        newPolicy.addPolicy(ctx.pipeline());
+                    }
                 }
 
                 policies.addAll(newPolicies);

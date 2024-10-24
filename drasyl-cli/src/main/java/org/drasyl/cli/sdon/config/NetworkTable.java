@@ -58,7 +58,7 @@ public class NetworkTable extends LuaTable {
     private final Map<LuaString, NodeTable> nodes = new HashMap<>();
     private final Set<LinkTable> links = new HashSet<>();
     final SetMultimap<LuaString, LinkTable> nodeLinks = new HashSetMultimap<>();
-    private final Map<DrasylAddress, Device> devices = new HashMap<>();
+    private final DevicesTable devices = new DevicesTable();
     private int nextIpIndex;
     private LuaFunction callback;
 
@@ -329,15 +329,15 @@ public class NetworkTable extends LuaTable {
     }
 
     public Collection<Device> getDevices() {
-        return devices.values();
+        return devices.getDevices();
     }
 
-    private LuaTable getDevicesTable() {
-        return LuaHelper.createTable(devices.values());
+    private DevicesTable getDevicesTable() {
+        return devices;
     }
 
     public Device getOrCreateDevice(final DrasylAddress address, final String[] tags) {
-        return devices.computeIfAbsent(address, k -> new Device(k, tags));
+        return devices.getOrCreateDevice(address, tags);
     }
 
     /*

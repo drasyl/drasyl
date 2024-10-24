@@ -2,7 +2,7 @@
   <configuration default="false" name="CLI: sdo node (#1)" type="Application" factoryName="Application">
     <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
     <module name="drasyl-cli" />
-    <option name="PROGRAM_PARAMETERS" value="sdon node --verbose info --identity ./sdon-node1.identity --controller 8d94570d21619c95cfaef704416bdd0bf62517d2901c3a60e08a93020cac33d9 --tag alice" />
+    <option name="PROGRAM_PARAMETERS" value="sdon node --verbose info --identity ./sdon-node1.identity --controller 95bb014e728c43bbacb638bf8bd7101bdd605c59043410b78282f881b3bb3783 --tag alice" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.*" />
