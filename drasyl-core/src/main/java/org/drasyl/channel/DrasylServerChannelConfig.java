@@ -32,6 +32,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.EventLoopGroupUtil;
 
@@ -102,7 +103,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             .option(SO_REUSEADDR, UDP_SO_REUSEADDR)
             .option(IP_TOS, 0xB8)
             .group(EventLoopGroupUtil.getBestEventLoopGroup(1).next())
-            .channel(EventLoopGroupUtil.getBestDatagramChannel());
+            .channel(EventLoopGroupUtil.getBestDatagramChannel())
+            .handler(new UdpServerChannelInitializer(parent));
     private volatile Integer tcpClientConnectPort = 443;
     private volatile Supplier<EventLoop> tcpClientEventLoop;
     private Class<? extends SocketChannel> tcpClientChannelClass = EventLoopGroupUtil.getSocketChannel();

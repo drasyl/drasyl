@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,6 @@ package org.drasyl.node.channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
@@ -40,13 +39,10 @@ import org.drasyl.handler.remote.StaticRoutesHandler;
 import org.drasyl.handler.remote.UdpMulticastServer;
 import org.drasyl.handler.remote.UdpMulticastServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServer;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
-import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.UnresolvedOverlayMessageHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler;
 import org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler;
 import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
-import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.remote.tcp.TcpClient;
 import org.drasyl.handler.remote.tcp.TcpServer;
 import org.drasyl.identity.Identity;
@@ -78,7 +74,6 @@ import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
  */
 @UnstableApi
 public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
-    public static final short MIN_DERIVED_PORT = 22528;
     public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup(), UdpMulticastServerChannelInitializer::new);
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
@@ -136,21 +131,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      */
     private void ipStage(final DrasylServerChannel ch) {
         // udp server
-        if (config.isRemoteExposeEnabled()) {
-            // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-            ch.pipeline().addLast(new UdpServer(ctx -> new UdpServerChannelInitializer(ch) {
-                @Override
-                protected void initChannel(final DatagramChannel ch) {
-                    super.initChannel(ch);
-
-                    ch.pipeline().addBefore(ch.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new PortMapper());
-                }
-            }));
-        }
-        else {
-            // use default datagram channel
-            ch.pipeline().addLast(new UdpServer());
-        }
+        ch.pipeline().addLast(new UdpServer());
 
         // tcp fallback
         if (config.isRemoteTcpFallbackEnabled()) {
