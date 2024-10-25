@@ -30,6 +30,7 @@ import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.tun.Tun4Packet;
+import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdoNodeChannelInitializer;
@@ -102,7 +103,13 @@ public class SdonNodeCommand extends ChannelOptions {
                                 }
 
                                 final Tun4Packet packet = new Tun4Packet(payload.slice());
-                                ctx.channel().attr(TUN_CHANNEL_KEY).get().writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                                final TunChannel tunChannel = ctx.channel().attr(TUN_CHANNEL_KEY).get();
+                                if (tunChannel != null) {
+                                    tunChannel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                                }
+                                else {
+                                    appMsg.release();
+                                }
                             }
                             else {
                                 ctx.fireChannelRead(msg);
