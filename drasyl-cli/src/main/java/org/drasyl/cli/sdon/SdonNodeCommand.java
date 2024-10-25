@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,17 +21,22 @@
  */
 package org.drasyl.cli.sdon;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdoNodeChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdoNodeChildChannelInitializer;
+import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -80,6 +85,26 @@ public class SdonNodeCommand extends ChannelOptions {
 
                 final ChannelPipeline p = ch.pipeline();
 
+                ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new ChannelDuplexHandler() {
+                    @Override
+                    public void write(final ChannelHandlerContext ctx,
+                                      final Object msg,
+                                      final ChannelPromise promise) {
+                        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof Tun4Packet) {
+                            System.out.println();
+                        }
+                        else {
+                            ctx.write(msg, promise);
+                        }
+                    }
+
+                    @Override
+                    public void channelRead(final ChannelHandlerContext ctx,
+                                            final Object msg) {
+                        ctx.fireChannelRead(msg);
+                    }
+                });
+
                 ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new SimpleChannelInboundHandler<InetAddressedMessage<ApplicationMessage>>() {
                     @Override
                     public boolean acceptInboundMessage(final Object msg) throws Exception {
@@ -89,7 +114,21 @@ public class SdonNodeCommand extends ChannelOptions {
                     @Override
                     protected void channelRead0(final ChannelHandlerContext ctx,
                                                 final InetAddressedMessage<ApplicationMessage> msg) {
-                        System.out.println();
+                        final ApplicationMessage appMsg = msg.content();
+                        final ByteBuf payload = appMsg.getPayload();
+                        if (payload.readableBytes() >= Integer.BYTES) {
+                            payload.markReaderIndex();
+                            if (payload.readInt() != TunPacketCodec.MAGIC_NUMBER) {
+                                payload.resetReaderIndex();
+                                return;
+                            }
+
+                            final Tun4Packet packet = new Tun4Packet(payload.retainedSlice());
+                            System.out.println(packet); // FIXME
+                        }
+                        else {
+                            ctx.fireChannelRead(msg.retain());
+                        }
                     }
                 });
             }
