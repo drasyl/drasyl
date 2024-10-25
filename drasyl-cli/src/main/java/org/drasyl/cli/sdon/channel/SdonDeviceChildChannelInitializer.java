@@ -68,7 +68,8 @@ public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitiali
         if (controller.equals(ctx.channel().remoteAddress())) {
             // handshake with controller failed
             ctx.channel().parent().pipeline().fireUserEventTriggered(cause);
-        } else {
+        }
+        else {
             // handshake with other node failed
             out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
             ctx.close();
