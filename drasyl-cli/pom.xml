@@ -102,7 +102,7 @@
             <artifactId>awaitility</artifactId>
         </dependency>
 
-        <!-- lua-based sdo programming -->
+        <!-- lua-based overlay programming -->
         <dependency>
             <groupId>org.luaj</groupId>
             <artifactId>luaj-jse</artifactId>
