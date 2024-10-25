@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,24 +27,24 @@ import org.drasyl.identity.DrasylAddress;
 import static java.util.Objects.requireNonNull;
 
 public class SdonMessageReceived {
-    private final DrasylAddress node;
+    private final DrasylAddress address;
     private final SdonMessage msg;
 
-    public SdonMessageReceived(final DrasylAddress node, final SdonMessage msg) {
-        this.node = requireNonNull(node);
+    public SdonMessageReceived(final DrasylAddress address, final SdonMessage msg) {
+        this.address = requireNonNull(address);
         this.msg = requireNonNull(msg);
     }
 
     @Override
     public String toString() {
         return "SdoMessageReceived{" +
-                "node=" + node +
+                "address=" + address +
                 ", msg=" + msg +
                 '}';
     }
 
-    public DrasylAddress node() {
-        return node;
+    public DrasylAddress address() {
+        return address;
     }
 
     public SdonMessage msg() {

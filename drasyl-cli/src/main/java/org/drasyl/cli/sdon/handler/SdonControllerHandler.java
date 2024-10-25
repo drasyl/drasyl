@@ -142,7 +142,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) throws IOException {
         if (evt instanceof SdonMessageReceived) {
-            final DrasylAddress sender = ((SdonMessageReceived) evt).node();
+            final DrasylAddress sender = ((SdonMessageReceived) evt).address();
             final SdonMessage msg = ((SdonMessageReceived) evt).msg();
             LOG.trace("Received from `{}`: {}`", sender, msg);
 
