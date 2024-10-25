@@ -55,7 +55,7 @@ public abstract class Policy {
     @JsonIgnore
     public void setCurrentState(final PolicyState state) {
         if (currentState != state) {
-            LOG.error("Policy `{}` went to state `{}`.", this, state);
+            LOG.debug("Policy `{}` went to state `{}`.", this, state);
         }
         this.currentState = requireNonNull(state);
     }

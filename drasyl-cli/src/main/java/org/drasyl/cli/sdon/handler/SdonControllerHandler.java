@@ -151,11 +151,11 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                 if (device.isOffline()) {
                     channel.closeFuture().addListener((ChannelFutureListener) future -> {
                         device.setOffline();
-                        LOG.info("`{}` now offline.", sender);
+                        LOG.debug("`{}` now offline.", sender);
                     });
 
                     device.setOnline();
-                    LOG.info("`{}` now online.", sender);
+                    LOG.debug("`{}` now online.", sender);
 
                     final ControllerHello controllerHello = new ControllerHello();
                     LOG.debug("Send {} to {}.", controllerHello, sender);

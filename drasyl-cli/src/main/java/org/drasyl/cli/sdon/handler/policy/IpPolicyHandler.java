@@ -185,15 +185,15 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet packet) {
             final InetAddress dst = packet.destinationAddress();
-            LOG.info("Got packet from TUN interface `{}`.", () -> packet);
-            LOG.info("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
+            LOG.debug("Got packet from TUN interface `{}`.", () -> packet);
+            LOG.trace("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
             // mapping
             final Map<InetAddress, DrasylAddress> mapping = policy.mapping();
             final DrasylAddress drasylAddress = mapping.get(dst);
 
             if (drasylAddress != null) {
-                LOG.info("Write to `{}`", () -> drasylAddress);
+                LOG.debug("Write to `{}`", () -> drasylAddress);
 
                 // resolve endpoint
                 final PeersManager peersManager = parent.config().getPeersManager();
@@ -210,7 +210,7 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                 parent.udpChannel().writeAndFlush(inetMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {
-                LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
+                LOG.info("Drop packet `{}` with unroutable destination.", () -> packet);
                 packet.release();
             }
         }

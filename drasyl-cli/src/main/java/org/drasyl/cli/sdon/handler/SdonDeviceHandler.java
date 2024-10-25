@@ -104,7 +104,7 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
 
             if (sender.equals(controller) && msg instanceof ControllerHello) {
                 if (state != JOINED) {
-                    LOG.info("Joined network.");
+                    LOG.debug("Joined network.");
                 }
                 state = JOINED;
 
@@ -114,7 +114,7 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
                 // remove old policies
                 for (final Policy policy : policies) {
                     if (!newPolicies.contains(policy)) {
-                        LOG.info("Remove old policy: {}", policy);
+                        LOG.debug("Remove old policy: {}", policy);
                         policy.removePolicy(ctx.pipeline());
                     }
                 }
@@ -122,7 +122,7 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
                 // add new policies
                 for (final Policy newPolicy : newPolicies) {
                     if (!policies.contains(newPolicy)) {
-                        LOG.info("Add new policy: {}", newPolicy);
+                        LOG.debug("Add new policy: {}", newPolicy);
                         newPolicy.addPolicy(ctx.pipeline());
                     }
                 }
