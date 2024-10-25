@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -164,7 +164,7 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
                                 final InetAddressedMessage<RemoteMessage> addressedMsg,
                                 final InetSocketAddress inetAddress) {
         final RemoteMessage msg = addressedMsg.content();
-        LOG.trace("Got RemoteMessage `{}` for children peer `{}`. Resolve it to inet address `{}`.", msg::getNonce, msg::getRecipient, () -> inetAddress);
+        LOG.error("Got RemoteMessage `{}` from `{}` for children peer `{}`. Resolve it to inet address `{}`.", msg::getNonce, msg::getSender, msg::getRecipient, () -> inetAddress);
 
         // increment hop count every time a message is relayed
         if (hopLimit.compareTo(msg.getHopCount()) > 0) {
