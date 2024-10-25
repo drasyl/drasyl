@@ -79,12 +79,12 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
             System.out.println("Node listening on address " + ctx.channel().localAddress());
             System.out.println("----------------------------------------------------------------------------------------------");
 
-            LOG.info("Connecting to controller `{}`", controller);
+            LOG.debug("Connecting to controller `{}`", controller);
             ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 controllerChannel = future.getNow();
 
                 if (state == INITIALIZED) {
-                    LOG.info("Connected to controller. Try to join network.");
+                    LOG.debug("Connected to controller. Try to join network.");
                     state = JOINING;
                     controllerChannel.eventLoop().execute(() -> {
                         controllerChannel.writeAndFlush(new DeviceHello(tags)).addListener(FIRE_EXCEPTION_ON_FAILURE);
