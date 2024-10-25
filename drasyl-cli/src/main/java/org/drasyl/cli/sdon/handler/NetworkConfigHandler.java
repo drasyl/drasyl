@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,27 +23,16 @@ package org.drasyl.cli.sdon.handler;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
-import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.AttributeKey;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun;
 import org.drasyl.cli.sdon.config.NetworkConfig;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
-import org.drasyl.crypto.HexUtil;
-import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
@@ -51,7 +40,6 @@ import org.drasyl.util.network.Subnet;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -243,54 +231,6 @@ public class NetworkConfigHandler extends ChannelInboundHandlerAdapter {
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
-            }
-        }
-    }
-
-    public static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        private final DrasylServerChannel drasylServerChannel;
-        private final Map<InetAddress, DrasylAddress> routes;
-
-        public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel,
-                                  final Map<InetAddress, DrasylAddress> routes) {
-            super(false);
-            this.drasylServerChannel = requireNonNull(drasylServerChannel);
-            this.routes = requireNonNull(routes);
-        }
-
-        @Override
-        public void handlerAdded(final ChannelHandlerContext tunCtx) throws Exception {
-            drasylServerChannel.attr(TUN_CHANNEL_KEY).set((TunChannel) tunCtx.channel());
-            for (final DrasylAddress peer : routes.values()) {
-                //drasylServerChannel.serve(peer);
-            }
-        }
-
-        @Override
-        protected void channelRead0(final ChannelHandlerContext tunCtx,
-                                    final Tun4Packet msg) throws Exception {
-            final InetAddress dst = msg.destinationAddress();
-            LOG.error("Got packet `{}`", () -> msg);
-            LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(msg.content())));
-
-            final DrasylAddress publicKey = routes.get(dst);
-            if (routes.containsKey(dst)) {
-                LOG.trace("Pass packet `{}` to peer `{}`", () -> msg, () -> publicKey);
-                drasylServerChannel.serve(routes.get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                    if (future.isSuccess()) {
-                        final DrasylChannel channel = future.getNow();
-                        channel.writeAndFlush(msg).addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(ChannelFuture channelFuture) throws Exception {
-                                System.out.print("");
-                            }
-                        });
-                    }
-                });
-            }
-            else {
-                LOG.trace("Drop packet `{}` with unroutable destination.", () -> msg);
-                // TODO: reply with ICMP host unreachable message?
             }
         }
     }

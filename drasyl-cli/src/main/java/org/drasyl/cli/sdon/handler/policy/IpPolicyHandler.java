@@ -1,8 +1,31 @@
+/*
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ *
+ * Permission is hereby granted, free of charge, to any person obtaining a copy
+ * of this software and associated documentation files (the "Software"), to deal
+ * in the Software without restriction, including without limitation the rights
+ * to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+ * copies of the Software, and to permit persons to whom the Software is
+ * furnished to do so, subject to the following conditions:
+ *
+ * The above copyright notice and this permission notice shall be included in all
+ * copies or substantial portions of the Software.
+ *
+ * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+ * EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF
+ * MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT.
+ * IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM,
+ * DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
+ * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
+ * OR OTHER DEALINGS IN THE SOFTWARE.
+ */
+
 package org.drasyl.cli.sdon.handler.policy;
 
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
+import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
@@ -24,7 +47,10 @@ import org.drasyl.cli.sdon.config.IpPolicy;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
@@ -43,6 +69,8 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
+import static org.drasyl.cli.sdon.handler.NetworkConfigHandler.TUN_CHANNEL_KEY;
+import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IpPolicyHandler.class);
@@ -65,7 +93,10 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        p.addLast(new TunToDrasylHandler((DrasylServerChannel) ctx.channel(), policy));
+                        final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
+                        parent.attr(TUN_CHANNEL_KEY).set((TunChannel) ch);
+
+                        p.addLast(new TunToDrasylHandler(parent, policy));
                     }
                 });
         tunChannel = b.bind(new TunAddress()).addListener((ChannelFutureListener) future -> {
@@ -119,20 +150,20 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
     private void exec(final String... command) throws IOException {
         try {
             LOG.trace("Execute: {}", String.join(" ", command));
-            Process process = Runtime.getRuntime().exec(command);
+            final Process process = Runtime.getRuntime().exec(command);
             final int exitCode = process.waitFor();
             if (exitCode != 0) {
                 // Get the stderr output
-                BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
+                final BufferedReader errorReader = new BufferedReader(new InputStreamReader(process.getErrorStream()));
                 String line;
-                StringBuilder errorOutput = new StringBuilder();
+                final StringBuilder errorOutput = new StringBuilder();
 
                 while ((line = errorReader.readLine()) != null) {
                     errorOutput.append(line).append("\n");
                 }
 
                 // Print or handle the stderr output
-                System.out.println("Stderr Output: " + errorOutput.toString());
+                System.out.println("Stderr Output: " + errorOutput);
 
                 throw new IOException("Executing `" + String.join(" ", command) + "` returned non-zero exit code (" + exitCode + ").");
             }
@@ -142,13 +173,13 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        private final DrasylServerChannel drasylServerChannel;
+        private final DrasylServerChannel parent;
         private final IpPolicy policy;
 
-        public TunToDrasylHandler(final DrasylServerChannel drasylServerChannel,
+        public TunToDrasylHandler(final DrasylServerChannel parent,
                                   final IpPolicy policy) {
             super(false);
-            this.drasylServerChannel = requireNonNull(drasylServerChannel);
+            this.parent = requireNonNull(parent);
             this.policy = requireNonNull(policy);
         }
 
@@ -165,41 +196,24 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
             if (drasylAddress != null) {
                 LOG.info("Write to `{}`", () -> drasylAddress);
 
-                final PeersManager peersManager = drasylServerChannel.config().getPeersManager();
+                // resolve endpoint
+                final PeersManager peersManager = parent.config().getPeersManager();
                 final InetSocketAddress endpoint = peersManager.resolve(drasylAddress);
-                final InetAddressedMessage<Tun4Packet> inetMsg = new InetAddressedMessage<>(packet, endpoint);
-                drasylServerChannel.udpChannel().writeAndFlush(inetMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+
+                // build message
+                final ByteBuf byteBuf = ctx.alloc().compositeBuffer(2)
+                        .addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER))
+                        .addComponent(true, packet.content().retain());
+                final ApplicationMessage appMsg = ApplicationMessage.of(parent.config().getNetworkId(), (IdentityPublicKey) drasylAddress, ((Identity) parent.localAddress()).getIdentityPublicKey(), ((Identity) parent.localAddress()).getProofOfWork(), byteBuf);
+                final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
+
+                // send message
+                parent.udpChannel().writeAndFlush(inetMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
             }
             else {
                 LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
                 packet.release();
             }
-
-//            LOG.error("routes = {}; containsKey = {}; directPath = {}", policy.routes(), policy.routes().containsKey(dst), policy.routes().containsKey(dst) ? drasylServerChannel.isDirectPathPresent(policy.routes().get(dst)) : "null");
-//            final DrasylAddress publicKey = policy.routes().get(dst);
-//            if (policy.routes().containsKey(dst) && drasylServerChannel.isDirectPathPresent(publicKey)) {
-//                LOG.error("Pass packet `{}` to peer `{}`", () -> packet, () -> publicKey);
-//                drasylServerChannel.serve(policy.routes().get(dst)).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-//                    if (future.isSuccess()) {
-//                        final DrasylChannel channel = future.getNow();
-//                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//                    }
-//                });
-//            }
-//            else if (policy.defaultRoute() != null && drasylServerChannel.isDirectPathPresent(policy.defaultRoute())) {
-//                LOG.error("Pass packet `{}` to default route `{}`", () -> packet, policy::defaultRoute);
-//                drasylServerChannel.serve(policy.defaultRoute()).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-//                    if (future.isSuccess()) {
-//                        final DrasylChannel channel = future.getNow();
-//                        channel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//                    }
-//                });
-//            }
-//            else {
-//                LOG.error("Drop packet `{}` with unroutable destination. public-key = {}; direct-path = {}", () -> packet, () -> publicKey, () -> drasylServerChannel.isDirectPathPresent(publicKey));
-//                packet.release();
-//                // TODO: reply with ICMP host unreachable message?
-//            }
         }
     }
 

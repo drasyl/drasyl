@@ -26,8 +26,6 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
@@ -36,7 +34,6 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdoNodeChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdoNodeChildChannelInitializer;
-import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -46,6 +43,10 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
+import static org.drasyl.cli.sdon.handler.NetworkConfigHandler.TUN_CHANNEL_KEY;
+import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 @Command(
         name = "node",
@@ -87,47 +88,28 @@ public class SdonNodeCommand extends ChannelOptions {
 
                 ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new ChannelDuplexHandler() {
                     @Override
-                    public void write(final ChannelHandlerContext ctx,
-                                      final Object msg,
-                                      final ChannelPromise promise) {
-                        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof Tun4Packet) {
-                            System.out.println();
-                        }
-                        else {
-                            ctx.write(msg, promise);
-                        }
-                    }
-
-                    @Override
                     public void channelRead(final ChannelHandlerContext ctx,
                                             final Object msg) {
-                        ctx.fireChannelRead(msg);
-                    }
-                });
+                        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+                            final ApplicationMessage appMsg = ((InetAddressedMessage<ApplicationMessage>) msg).content();
+                            final ByteBuf payload = appMsg.getPayload();
+                            if (payload.readableBytes() >= Integer.BYTES) {
+                                payload.markReaderIndex();
+                                if (payload.readInt() != MAGIC_NUMBER) {
+                                    payload.resetReaderIndex();
+                                    ctx.fireChannelRead(msg);
+                                    return;
+                                }
 
-                ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new SimpleChannelInboundHandler<InetAddressedMessage<ApplicationMessage>>() {
-                    @Override
-                    public boolean acceptInboundMessage(final Object msg) throws Exception {
-                        return msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage;
-                    }
-
-                    @Override
-                    protected void channelRead0(final ChannelHandlerContext ctx,
-                                                final InetAddressedMessage<ApplicationMessage> msg) {
-                        final ApplicationMessage appMsg = msg.content();
-                        final ByteBuf payload = appMsg.getPayload();
-                        if (payload.readableBytes() >= Integer.BYTES) {
-                            payload.markReaderIndex();
-                            if (payload.readInt() != TunPacketCodec.MAGIC_NUMBER) {
-                                payload.resetReaderIndex();
-                                return;
+                                final Tun4Packet packet = new Tun4Packet(payload.slice());
+                                ctx.channel().attr(TUN_CHANNEL_KEY).get().writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
                             }
-
-                            final Tun4Packet packet = new Tun4Packet(payload.retainedSlice());
-                            System.out.println(packet); // FIXME
+                            else {
+                                ctx.fireChannelRead(msg);
+                            }
                         }
                         else {
-                            ctx.fireChannelRead(msg.retain());
+                            ctx.fireChannelRead(msg);
                         }
                     }
                 });
