@@ -169,13 +169,15 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
                     .option(ARMING_ENABLED, !protocolArmDisabled)
                     .option(SUPER_PEERS, superPeers)
                     .option(UDP_BIND, bindAddress)
-                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
-                            .option(SO_BROADCAST, false)
-                            .option(IP_TOS, 0xB8)
-                            .group(udpChannelLoop)
-                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                            .handler(new UdpServerChannelInitializer(parent))
-                    )
+                    .option(UDP_BOOTSTRAP, parent -> {
+                        final ChannelHandler udpChannelInitializer = getUdpChannelInitializer(parent);
+                        return new Bootstrap()
+                                .option(SO_BROADCAST, false)
+                                .option(IP_TOS, 0xB8)
+                                .group(udpChannelLoop)
+                                .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                                .handler(udpChannelInitializer);
+                    })
                     .handler(serverChannelInitializer)
                     .childHandler(childChannelInitializer);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();
@@ -222,4 +224,8 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected abstract ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode);
 
     protected abstract ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode);
+
+    protected ChannelHandler getUdpChannelInitializer(final DrasylServerChannel parent) {
+        return new UdpServerChannelInitializer(parent);
+    }
 }
