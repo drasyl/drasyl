@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -100,7 +100,7 @@ public class NetworkNode extends LuaTable {
             final Set<NetworkLink> links = network.nodeLinks.get(get("name"));
             final Map<LuaString, NetworkNode> nodes = network.getNodes();
 
-            // IpPolicy
+            // TunPolicy
             final String ipString = get("ip").tojstring();
             final String[] parts = ipString.split("/", 2);
             final InetAddress ipAddress = InetAddress.getByName(parts[0]);
@@ -116,8 +116,8 @@ public class NetworkNode extends LuaTable {
                 }
             }
 
-            final Policy ipPolicy = new IpPolicy(ipAddress, ipNetmask, mapping);
-            policies.add(ipPolicy);
+            final Policy tunPolicy = new TunPolicy(ipAddress, ipNetmask, mapping);
+            policies.add(tunPolicy);
 
             return policies;
         }

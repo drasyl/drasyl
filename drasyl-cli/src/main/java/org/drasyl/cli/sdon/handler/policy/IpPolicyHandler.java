@@ -43,7 +43,7 @@ import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.channel.tun.jna.windows.WindowsTunDevice;
 import org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
-import org.drasyl.cli.sdon.config.IpPolicy;
+import org.drasyl.cli.sdon.config.TunPolicy;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.handler.remote.PeersManager;
@@ -73,10 +73,10 @@ import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IpPolicyHandler.class);
-    private final IpPolicy policy;
+    private final TunPolicy policy;
     private Channel tunChannel;
 
-    public IpPolicyHandler(final IpPolicy policy) {
+    public IpPolicyHandler(final TunPolicy policy) {
         this.policy = requireNonNull(policy);
     }
 
@@ -173,10 +173,10 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
 
     private static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
         private final DrasylServerChannel parent;
-        private final IpPolicy policy;
+        private final TunPolicy policy;
 
         public TunToDrasylHandler(final DrasylServerChannel parent,
-                                  final IpPolicy policy) {
+                                  final TunPolicy policy) {
             super(false);
             this.parent = requireNonNull(parent);
             this.policy = requireNonNull(policy);

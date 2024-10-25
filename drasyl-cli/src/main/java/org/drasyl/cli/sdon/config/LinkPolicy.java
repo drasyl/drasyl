@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,13 +26,15 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.identity.DrasylAddress;
-import org.luaj.vm2.LuaString;
 
 import java.net.InetAddress;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Policy for a link to an other device.
+ */
 public class LinkPolicy extends Policy {
     private final String peer;
     private final DrasylAddress peerAddress;
@@ -46,12 +48,6 @@ public class LinkPolicy extends Policy {
         this.peer = requireNonNull(peer);
         this.peerAddress = requireNonNull(peerAddress);
         this.peerIpAddress = requireNonNull(peerIpAddress);
-    }
-
-    public LinkPolicy(final LuaString peer,
-                      final DrasylAddress peerAddress,
-                      final InetAddress peerIpAddress) {
-        this(peer.tojstring(), peerAddress, peerIpAddress);
     }
 
     @JsonGetter("peer")
@@ -70,14 +66,14 @@ public class LinkPolicy extends Policy {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        LinkPolicy that = (LinkPolicy) o;
+        final LinkPolicy that = (LinkPolicy) o;
         return Objects.equals(peer, that.peer) && Objects.equals(peerAddress, that.peerAddress) && Objects.equals(peerIpAddress, that.peerIpAddress);
     }
 

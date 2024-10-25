@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ import static org.drasyl.cli.sdon.config.Policy.PolicyState.PRESENT;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
-        @Type(IpPolicy.class),
+        @Type(TunPolicy.class),
         @Type(LinkPolicy.class),
 })
 public abstract class Policy {
@@ -74,7 +74,6 @@ public abstract class Policy {
 
     public enum PolicyState {
         ABSENT,
-        READY,
         PRESENT,
     }
 }
