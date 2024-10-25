@@ -25,8 +25,6 @@ import org.drasyl.cli.util.LuaHashCodes;
 import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
@@ -40,13 +38,15 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Represents a network node.
+ */
 public class NetworkNode extends LuaTable {
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkNode.class);
     private final Network network;
 
-    public NetworkNode(final Network network,
-                       final LuaString name,
-                       final LuaTable params) {
+    NetworkNode(final Network network,
+                final LuaString name,
+                final LuaTable params) {
         this.network = requireNonNull(network);
 
         // name
@@ -58,17 +58,6 @@ public class NetworkNode extends LuaTable {
             ip = LuaValue.valueOf(network.getNextIp());
         }
         set("ip", ip);
-
-//        for (final LuaValue key : network.nodeDefaults.keys()) {
-//            final LuaValue defaultValue = network.nodeDefaults.get(key);
-//            set(key, LuaClones.clone(defaultValue));
-//        }
-//        for (final LuaValue key : params.keys()) {
-//            set(key, params.get(key));
-//        }
-
-        //set("state", new LuaNodeStateTable());
-        //set("links", new LinksValue());
     }
 
     @Override
@@ -98,34 +87,18 @@ public class NetworkNode extends LuaTable {
     }
 
     public DrasylAddress device() {
-        try {
-            if (get("device") != NIL) {
-                return IdentityPublicKey.of(get("device").tojstring());
-            }
-            return null;
+        if (get("device") != NIL) {
+            return IdentityPublicKey.of(get("device").tojstring());
         }
-        catch (Exception e) {
-            throw e;
-        }
+        return null;
     }
 
     public Set<Policy> createPolicies() {
         try {
             final Set<Policy> policies = new HashSet<>();
 
-            // LinkPolicies
             final Set<NetworkLink> links = network.nodeLinks.get(get("name"));
             final Map<LuaString, NetworkNode> nodes = network.getNodes();
-//            for (final LinkTable link : links) {
-//                final LuaString peerName = link.other(get("name").checkstring());
-//                final NodeTable peer = nodes.get(peerName);
-//                final DrasylAddress peerAddress = peer.device();
-//                if (peerAddress != null) {
-//                    final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);
-//                    final Policy linkPolicy = new LinkPolicy(peerName, peerAddress, peerIpAddress);
-//                    policies.add(linkPolicy);
-//                }
-//            }
 
             // IpPolicy
             final String ipString = get("ip").tojstring();

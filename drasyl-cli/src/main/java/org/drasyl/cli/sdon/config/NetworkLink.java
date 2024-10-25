@@ -25,8 +25,13 @@ import org.drasyl.cli.util.LuaStrings;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 
+import java.util.Objects;
+
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Represents a network link.
+ */
 public class NetworkLink extends LuaTable {
     private final Network network;
 
@@ -35,13 +40,6 @@ public class NetworkLink extends LuaTable {
                        final LuaString node2,
                        final LuaTable params) {
         this.network = requireNonNull(network);
-//        for (final LuaValue key : network.linkDefaults.keys()) {
-//            final LuaValue defaultValue = network.linkDefaults.get(key);
-//            set(key, LuaClones.clone(defaultValue));
-//        }
-//        for (final LuaValue key : params.keys()) {
-//            set(key, params.get(key));
-//        }
         set("node1", node1);
         set("node2", node2);
     }
@@ -71,10 +69,10 @@ public class NetworkLink extends LuaTable {
     @Override
     public int hashCode() {
         if (node1().hashCode() > node2().hashCode()) {
-            return 31 * node1().hashCode() + node2().hashCode();
+            return Objects.hash(network, node1(), node2());
         }
         else {
-            return 31 * node2().hashCode() + node1().hashCode();
+            return Objects.hash(network, node2(), node1());
         }
     }
 
@@ -86,6 +84,7 @@ public class NetworkLink extends LuaTable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        return hashCode() == o.hashCode();
+        final NetworkLink that = (NetworkLink) o;
+        return (Objects.equals(node1(), that.node1()) && Objects.equals(node2(), that.node2())) || (Objects.equals(node1(), that.node2()) && Objects.equals(node2(), that.node1()));
     }
 }
