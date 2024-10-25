@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -39,16 +39,16 @@ import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 
-public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer {
+public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitializer {
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
     private final IdentityPublicKey controller;
 
-    public SdoNodeChildChannelInitializer(final PrintStream out,
-                                          final PrintStream err,
-                                          final Worm<Integer> exitCode,
-                                          final IdentityPublicKey controller) {
+    public SdonDeviceChildChannelInitializer(final PrintStream out,
+                                             final PrintStream err,
+                                             final Worm<Integer> exitCode,
+                                             final IdentityPublicKey controller) {
         super(false, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
@@ -69,8 +69,7 @@ public class SdoNodeChildChannelInitializer extends ConnectionChannelInitializer
         if (controller.equals(ctx.channel().remoteAddress())) {
             // handshake with controller failed
             ctx.channel().parent().pipeline().fireUserEventTriggered(new ControllerHandshakeFailed(cause));
-        }
-        else {
+        } else {
             // handshake with other node failed
             out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
             ctx.close();

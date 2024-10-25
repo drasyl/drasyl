@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,7 +31,7 @@ import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.event.SdonMessageReceived;
 import org.drasyl.cli.sdon.message.AccessDenied;
 import org.drasyl.cli.sdon.message.ControllerHello;
-import org.drasyl.cli.sdon.message.NodeHello;
+import org.drasyl.cli.sdon.message.DeviceHello;
 import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -43,21 +43,18 @@ import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.sdon.handler.SdonNodeHandler.State.CLOSING;
-import static org.drasyl.cli.sdon.handler.SdonNodeHandler.State.INITIALIZED;
-import static org.drasyl.cli.sdon.handler.SdonNodeHandler.State.JOINED;
-import static org.drasyl.cli.sdon.handler.SdonNodeHandler.State.JOINING;
+import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.*;
 
-public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(SdonNodeHandler.class);
+public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(SdonDeviceHandler.class);
     private final IdentityPublicKey controller;
     private final String[] tags;
     State state;
     private DrasylChannel controllerChannel;
     public final Set<Policy> policies = new HashSet<>();
 
-    public SdonNodeHandler(final IdentityPublicKey controller,
-                           final String[] tags) {
+    public SdonDeviceHandler(final IdentityPublicKey controller,
+                             final String[] tags) {
         this.controller = requireNonNull(controller);
         this.tags = requireNonNull(tags);
     }
@@ -91,7 +88,7 @@ public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
                     LOG.info("Connected to controller. Try to join network.");
                     state = JOINING;
                     controllerChannel.eventLoop().execute(() -> {
-                        controllerChannel.writeAndFlush(new NodeHello(tags)).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        controllerChannel.writeAndFlush(new DeviceHello(tags)).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     });
                 }
             });
@@ -133,14 +130,12 @@ public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
 
                 policies.clear();
                 policies.addAll(newPolicies);
-            }
-            else if (sender.equals(controller) && msg instanceof AccessDenied) {
+            } else if (sender.equals(controller) && msg instanceof AccessDenied) {
                 LOG.error("Controller declined our join request. Shutdown.");
                 state = CLOSING;
                 ctx.channel().close();
             }
-        }
-        else {
+        } else {
             ctx.fireUserEventTriggered(evt);
         }
     }

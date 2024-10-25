@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,24 +27,17 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.cli.sdon.config.Device;
-import org.drasyl.cli.sdon.config.NetworkConfig;
-import org.drasyl.cli.sdon.config.NetworkTable;
-import org.drasyl.cli.sdon.config.NodeTable;
-import org.drasyl.cli.sdon.config.Policy;
+import org.drasyl.cli.sdon.config.*;
 import org.drasyl.cli.sdon.event.SdonMessageReceived;
 import org.drasyl.cli.sdon.message.ControllerHello;
-import org.drasyl.cli.sdon.message.NodeHello;
+import org.drasyl.cli.sdon.message.DeviceHello;
 import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.HashSetMultimap;
-import org.drasyl.util.SetMultimap;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaString;
 
 import java.io.IOException;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -153,12 +146,12 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
             final SdonMessage msg = ((SdonMessageReceived) evt).msg();
             LOG.trace("Received from `{}`: {}`", sender, msg);
 
-            if (msg instanceof NodeHello) {
-                final NodeHello nodeHello = (NodeHello) msg;
+            if (msg instanceof DeviceHello) {
+                final DeviceHello deviceHello = (DeviceHello) msg;
 
                 // add devices
                 final NetworkTable network = config.network();
-                final Device device = network.getOrCreateDevice(sender, nodeHello.tags());
+                final Device device = network.getOrCreateDevice(sender, deviceHello.tags());
 
                 final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(sender);
                 if (device.isOffline()) {

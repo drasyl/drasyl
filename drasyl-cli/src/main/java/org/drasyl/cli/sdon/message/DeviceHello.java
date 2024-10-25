@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,14 @@ import java.util.Arrays;
 
 import static java.util.Objects.requireNonNull;
 
-public class NodeHello implements SdonMessage {
+/**
+ * Message sent from device to controller.
+ */
+public class DeviceHello implements SdonMessage {
     private final String[] tags;
 
     @JsonCreator
-    public NodeHello(@JsonProperty("tags") final String[] tags) {
+    public DeviceHello(@JsonProperty("tags") final String[] tags) {
         this.tags = requireNonNull(tags);
     }
 

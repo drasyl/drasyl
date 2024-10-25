@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.channel.AbstractChannelInitializer;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
-import org.drasyl.cli.sdon.handler.SdonNodeHandler;
+import org.drasyl.cli.sdon.handler.SdonDeviceHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
@@ -34,7 +34,7 @@ import java.io.PrintStream;
 import static java.util.Objects.requireNonNull;
 
 @SuppressWarnings("java:S110")
-public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
+public class SdonDeviceChannelInitializer extends AbstractChannelInitializer {
     private final PrintStream out;
     private final PrintStream err;
     private final Worm<Integer> exitCode;
@@ -42,12 +42,12 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
     private final String[] tags;
 
     @SuppressWarnings("java:S107")
-    public SdoNodeChannelInitializer(final long onlineTimeoutMillis,
-                                     final PrintStream out,
-                                     final PrintStream err,
-                                     final Worm<Integer> exitCode,
-                                     final IdentityPublicKey controller,
-                                     final String[] tags) {
+    public SdonDeviceChannelInitializer(final long onlineTimeoutMillis,
+                                        final PrintStream out,
+                                        final PrintStream err,
+                                        final Worm<Integer> exitCode,
+                                        final IdentityPublicKey controller,
+                                        final String[] tags) {
         super(onlineTimeoutMillis);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
@@ -62,7 +62,7 @@ public class SdoNodeChannelInitializer extends AbstractChannelInitializer {
 
         super.initChannel(ch);
 
-        p.addLast(new SdonNodeHandler(controller, tags));
+        p.addLast(new SdonDeviceHandler(controller, tags));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

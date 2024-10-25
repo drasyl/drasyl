@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,7 @@ import java.io.IOException;
 
 @Command(
         name = "controller",
-        header = "",
+        header = "Controls the overlay network.",
         defaultValueProvider = ChannelOptionsDefaultProvider.class
 )
 public class SdonControllerCommand extends ChannelOptions {
