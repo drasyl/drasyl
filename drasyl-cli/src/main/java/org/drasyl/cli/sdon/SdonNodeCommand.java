@@ -24,6 +24,7 @@ package org.drasyl.cli.sdon;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -108,9 +109,10 @@ public class SdonNodeCommand extends ChannelOptions {
                                 LOG.info("Got packet from drasyl `{}`.", () -> packet);
                                 LOG.info("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
-                                final TunChannel tunChannel = ctx.channel().attr(TUN_CHANNEL_KEY).get();
+                                final TunChannel tunChannel = parent.attr(TUN_CHANNEL_KEY).get();
                                 if (tunChannel != null) {
-                                    tunChannel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                                    ChannelFuture channelFuture = tunChannel.writeAndFlush(packet);
+                                    channelFuture.addListener(FIRE_EXCEPTION_ON_FAILURE);
                                 }
                                 else {
                                     appMsg.release();
