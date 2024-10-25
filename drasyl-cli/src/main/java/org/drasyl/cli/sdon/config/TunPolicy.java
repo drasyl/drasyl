@@ -99,7 +99,7 @@ public class TunPolicy extends Policy {
 
     @Override
     public String toString() {
-        return "IpPolicy{" +
+        return "TunPolicy{" +
                 "address=" + address +
                 ", netmask=" + netmask +
                 ", mapping=" + mapping +

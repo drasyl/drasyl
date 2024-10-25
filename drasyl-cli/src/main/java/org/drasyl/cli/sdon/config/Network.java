@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -54,7 +54,7 @@ import java.util.Set;
 public class Network extends LuaTable {
     private final Map<LuaString, NetworkNode> nodes = new HashMap<>();
     private final Set<NetworkLink> links = new HashSet<>();
-    final SetMultimap<LuaString, NetworkLink> nodeLinks = new HashSetMultimap<>();
+    private final SetMultimap<LuaString, NetworkLink> nodeLinks = new HashSetMultimap<>();
     private final Devices devices = new Devices();
     private int nextIpIndex;
     private LuaFunction callback;
@@ -151,6 +151,10 @@ public class Network extends LuaTable {
     /*
      * Links
      */
+
+    public SetMultimap<LuaString, NetworkLink> getNodeLinks() {
+        return nodeLinks;
+    }
 
     private LuaTable getLinks() {
         final LuaTable linksTable = tableOf();

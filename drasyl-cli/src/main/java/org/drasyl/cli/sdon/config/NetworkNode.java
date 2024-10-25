@@ -97,7 +97,7 @@ public class NetworkNode extends LuaTable {
         try {
             final Set<Policy> policies = new HashSet<>();
 
-            final Set<NetworkLink> links = network.nodeLinks.get(get("name"));
+            final Set<NetworkLink> links = network.getNodeLinks().get(get("name"));
             final Map<LuaString, NetworkNode> nodes = network.getNodes();
 
             // TunPolicy
