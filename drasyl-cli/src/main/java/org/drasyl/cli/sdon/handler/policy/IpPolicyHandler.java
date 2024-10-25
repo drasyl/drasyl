@@ -37,6 +37,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -204,7 +205,7 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                 final ByteBuf byteBuf = ctx.alloc().compositeBuffer(2)
                         .addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER))
                         .addComponent(true, packet.content().retain());
-                final ApplicationMessage appMsg = ApplicationMessage.of(parent.config().getNetworkId(), (IdentityPublicKey) drasylAddress, ((Identity) parent.localAddress()).getIdentityPublicKey(), ((Identity) parent.localAddress()).getProofOfWork(), byteBuf);
+                final ApplicationMessage appMsg = ApplicationMessage.of(parent.config().getNetworkId(), (IdentityPublicKey) drasylAddress, parent.identity().getIdentityPublicKey(), parent.identity().getProofOfWork(), byteBuf);
                 final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
                 // send message
