@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.cli.sdon.event.ControllerHandshakeFailed;
 import org.drasyl.cli.sdon.handler.SdonMessageChildHandler;
 import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
@@ -68,7 +67,7 @@ public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitiali
     protected void handshakeFailed(final ChannelHandlerContext ctx, final Throwable cause) {
         if (controller.equals(ctx.channel().remoteAddress())) {
             // handshake with controller failed
-            ctx.channel().parent().pipeline().fireUserEventTriggered(new ControllerHandshakeFailed(cause));
+            ctx.channel().parent().pipeline().fireUserEventTriggered(cause);
         } else {
             // handshake with other node failed
             out.println("Close connection to " + ctx.channel().remoteAddress() + " as handshake was not fulfilled within " + config.userTimeout().toMillis() + "ms.");
