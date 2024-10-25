@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,10 +27,8 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageCodec;
-import org.drasyl.handler.dht.chord.LocalChordNode;
 import org.drasyl.handler.dht.chord.LocalChordNode.DrasylAddressMixin;
 import org.drasyl.handler.dht.chord.LocalChordNode.IdentityPublicKeyMixin;
-import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.ThrowingBiConsumer;
@@ -114,7 +112,7 @@ public class JacksonCodec<T> extends MessageToMessageCodec<ByteBuf, T> {
             }
 
             try (final InputStream inputStream = new ByteBufInputStream(in)) {
-                T msg = jacksonReader.apply(inputStream, clazz);
+                final T msg = jacksonReader.apply(inputStream, clazz);
                 LOG.trace("Received from `{}`: {}", ctx.channel().remoteAddress(), msg);
                 out.add(msg);
             }
