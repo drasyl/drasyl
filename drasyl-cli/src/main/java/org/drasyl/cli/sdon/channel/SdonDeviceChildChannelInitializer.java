@@ -30,7 +30,6 @@ import org.drasyl.cli.sdon.message.SdonMessage;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.handler.noop.NoopDiscardHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
@@ -78,11 +77,9 @@ public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitiali
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
-        final ChannelPipeline p = ch.pipeline();
-        p.addLast(new NoopDiscardHandler());
-
         super.initChannel(ch);
 
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new JacksonCodec<>(SdonMessage.class));
         p.addBefore(p.context(SegmentCodec.class).name(), null, new TunPacketCodec());
         p.addLast(new SdonMessageChildHandler());
