@@ -35,10 +35,10 @@ import static java.util.Objects.requireNonNull;
 public class NetworkLink extends LuaTable {
     private final Network network;
 
-    public NetworkLink(final Network network,
-                       final LuaString node1,
-                       final LuaString node2,
-                       final LuaTable params) {
+    NetworkLink(final Network network,
+                final LuaString node1,
+                final LuaString node2,
+                final LuaTable params) {
         this.network = requireNonNull(network);
         set("node1", node1);
         set("node2", node2);

@@ -33,6 +33,9 @@ import java.util.Map;
 public class Devices extends LuaTable {
     private final Map<DrasylAddress, Device> devices = new HashMap<>();
 
+    Devices() {
+    }
+
     @Override
     public String toString() {
         return "Devices" + LuaStrings.toString(LuaHelper.createTable(devices.values()));

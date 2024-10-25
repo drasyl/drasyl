@@ -35,7 +35,7 @@ import java.util.stream.Collectors;
  * Represents a device.
  */
 public class Device extends LuaTable {
-    public Device(final DrasylAddress address, final String[] tags) {
+    Device(final DrasylAddress address, final String[] tags) {
         set("address", LuaValue.valueOf(address.toString()));
         set("online", FALSE);
         set("tags", LuaHelper.createTable(Arrays.asList(tags).stream().map(LuaValue::valueOf).collect(Collectors.toList())));
