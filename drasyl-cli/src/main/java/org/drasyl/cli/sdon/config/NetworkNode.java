@@ -40,13 +40,13 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public class NodeTable extends LuaTable {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeTable.class);
-    private final NetworkTable network;
+public class NetworkNode extends LuaTable {
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkNode.class);
+    private final Network network;
 
-    public NodeTable(final NetworkTable network,
-                     final LuaString name,
-                     final LuaTable params) {
+    public NetworkNode(final Network network,
+                       final LuaString name,
+                       final LuaTable params) {
         this.network = requireNonNull(network);
 
         // name
@@ -73,10 +73,10 @@ public class NodeTable extends LuaTable {
 
     @Override
     public String toString() {
-        final LuaTable publicTable = tableOf();
-        publicTable.set("name", get("name"));
-        publicTable.set("ip", get("ip"));
-        return "Node" + LuaStrings.toString(publicTable);
+        final LuaTable stringTable = tableOf();
+        stringTable.set("name", get("name"));
+        stringTable.set("ip", get("ip"));
+        return "Node" + LuaStrings.toString(stringTable);
     }
 
     @Override
@@ -114,8 +114,8 @@ public class NodeTable extends LuaTable {
             final Set<Policy> policies = new HashSet<>();
 
             // LinkPolicies
-            final Set<LinkTable> links = network.nodeLinks.get(get("name"));
-            final Map<LuaString, NodeTable> nodes = network.getNodes();
+            final Set<NetworkLink> links = network.nodeLinks.get(get("name"));
+            final Map<LuaString, NetworkNode> nodes = network.getNodes();
 //            for (final LinkTable link : links) {
 //                final LuaString peerName = link.other(get("name").checkstring());
 //                final NodeTable peer = nodes.get(peerName);
@@ -133,9 +133,9 @@ public class NodeTable extends LuaTable {
             final InetAddress ipAddress = InetAddress.getByName(parts[0]);
             final short ipNetmask = Short.valueOf(parts[1]);
             final Map<InetAddress, DrasylAddress> mapping = new HashMap<>();
-            for (final LinkTable link : links) {
+            for (final NetworkLink link : links) {
                 final LuaString peerName = link.other(get("name").checkstring());
-                final NodeTable peer = nodes.get(peerName);
+                final NetworkNode peer = nodes.get(peerName);
                 final DrasylAddress peerAddress = peer.device();
                 if (peerAddress != null) {
                     final InetAddress peerIpAddress = InetAddress.getByName(peer.get("ip").tojstring().split("/", 2)[0]);

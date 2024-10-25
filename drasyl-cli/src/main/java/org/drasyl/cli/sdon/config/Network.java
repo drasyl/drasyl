@@ -27,8 +27,6 @@ import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
-import org.drasyl.util.logging.Logger;
-import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
 import org.luaj.vm2.LuaBoolean;
 import org.luaj.vm2.LuaError;
@@ -53,61 +51,20 @@ import java.util.Objects;
 import java.util.Set;
 
 @SuppressWarnings("java:S110")
-public class NetworkTable extends LuaTable {
-    private static final Logger LOG = LoggerFactory.getLogger(NetworkTable.class);
-    private final Map<LuaString, NodeTable> nodes = new HashMap<>();
-    private final Set<LinkTable> links = new HashSet<>();
-    final SetMultimap<LuaString, LinkTable> nodeLinks = new HashSetMultimap<>();
-    private final DevicesTable devices = new DevicesTable();
+public class Network extends LuaTable {
+    private final Map<LuaString, NetworkNode> nodes = new HashMap<>();
+    private final Set<NetworkLink> links = new HashSet<>();
+    final SetMultimap<LuaString, NetworkLink> nodeLinks = new HashSetMultimap<>();
+    private final Devices devices = new Devices();
     private int nextIpIndex;
     private LuaFunction callback;
 
-    public NetworkTable(final LuaTable params) {
+    public Network(final LuaTable params) {
         LuaValue subnet = params.get("subnet");
         if (subnet == NIL) {
             subnet = LuaValue.valueOf("10.0.0.0/8");
         }
         set("subnet", subnet);
-
-//        nodeDefaults.set("default_route", NIL);
-//
-//        nodeDefaults.set("tun_enabled", LuaValue.valueOf(false));
-//        nodeDefaults.set("tun_name", LuaValue.valueOf("utun0"));
-//        nodeDefaults.set("tun_subnet", LuaValue.valueOf("10.10.2.0/24"));
-//        nodeDefaults.set("tun_mtu", LuaValue.valueOf(1225));
-//        nodeDefaults.set("tun_routes", tableOf());
-//        // FIXME: add tun_address default
-//
-//        for (final LuaValue key : params.keys()) {
-//            switch (key.checkstring().tojstring()) {
-//                case "node_defaults":
-//                    final LuaTable nodeDefaults = params.get(key).checktable();
-//                    for (final LuaValue key2 : nodeDefaults.keys()) {
-//                        this.nodeDefaults.set(key2, nodeDefaults.get(key2));
-//                    }
-//                    break;
-//                case "link_defaults":
-//                    final LuaTable linkDefaults = params.get(key).checktable();
-//                    for (final LuaValue key2 : linkDefaults.keys()) {
-//                        this.linkDefaults.set(key2, linkDefaults.get(key2));
-//                    }
-//                    break;
-//                case "network_listener":
-//                    this.networkListener = (LuaClosure) params.get(key).checkfunction();
-//                    break;
-//                case "proactive_latency_measurements_ratio":
-//                    this.proactiveLatencyMeasurementsRatio = params.get(key).checknumber();
-//                    break;
-//                case "proactive_latency_measurements_interval":
-//                    this.proactiveLatencyMeasurementsInterval = params.get(key).checknumber();
-//                    break;
-//                case "proactive_latency_measurements_candidates":
-//                    this.proactiveLatencyMeasurementsCandidates = params.get(key).checktable();
-//                    break;
-//                default:
-//                    throw new LuaError("Param `" + key.checkstring().tojstring() + "` does not exist.");
-//            }
-//        }
 
         // nodes
         set("get_nodes", new GetNodesFunction());
@@ -127,23 +84,23 @@ public class NetworkTable extends LuaTable {
         set("set_callback", new SetCallbackFunction());
     }
 
-    public NetworkTable(final LuaValue params) {
+    public Network(final LuaValue params) {
         this(params == NIL ? tableOf() : params.checktable());
     }
 
     @Override
     public String toString() {
-        final LuaTable publicTable = tableOf();
-        publicTable.set("nodes", getNodesTable());
-        publicTable.set("links", getLinks());
-        return "Network" + LuaStrings.toString(publicTable);
+        final LuaTable stringTable = tableOf();
+        stringTable.set("nodes", getNodesTable());
+        stringTable.set("links", getLinks());
+        return "Network" + LuaStrings.toString(stringTable);
     }
 
     /*
      * Nodes
      */
 
-    public Map<LuaString, NodeTable> getNodes() {
+    public Map<LuaString, NetworkNode> getNodes() {
         return nodes;
     }
 
@@ -152,25 +109,25 @@ public class NetworkTable extends LuaTable {
     }
 
     private LuaValue getNode(final LuaString nameString) {
-        final NodeTable nodeTable = nodes.get(nameString);
+        final NetworkNode networkNode = nodes.get(nameString);
 
-        if (nodeTable == null) {
+        if (networkNode == null) {
             return NIL;
         }
-        return nodeTable;
+        return networkNode;
     }
 
-    private NodeTable addNode(final LuaString name, final LuaTable params) {
-        final NodeTable node = new NodeTable(this, name, params);
+    private NetworkNode addNode(final LuaString name, final LuaTable params) {
+        final NetworkNode node = new NetworkNode(this, name, params);
 
         nodes.put(name, node);
         return node;
     }
 
     private LuaValue removeNode(final LuaString name) {
-        final NodeTable nodeTable = nodes.remove(name);
+        final NetworkNode networkNode = nodes.remove(name);
 
-        if (nodeTable == null) {
+        if (networkNode == null) {
             return NIL;
         }
 
@@ -180,7 +137,7 @@ public class NetworkTable extends LuaTable {
             nodeLinks.remove(name, nodeLink);
         });
 
-        return nodeTable;
+        return networkNode;
     }
 
     private LuaNil clearNodes() {
@@ -198,16 +155,16 @@ public class NetworkTable extends LuaTable {
     private LuaTable getLinks() {
         final LuaTable linksTable = tableOf();
         int index = 1;
-        for (final LinkTable link : links) {
+        for (final NetworkLink link : links) {
             linksTable.set(index++, link);
         }
         return linksTable;
     }
 
     private LuaValue getLink(final LuaString node1String, final LuaString node2String) {
-        final Iterator<LinkTable> iterator = links.iterator();
+        final Iterator<NetworkLink> iterator = links.iterator();
         while (iterator.hasNext()) {
-            final LinkTable link = iterator.next();
+            final NetworkLink link = iterator.next();
 
             if ((link.node1().equals(node1String) && link.node2().equals(node1String)) || (link.node1().equals(node2String) && link.node2().equals(node2String))) {
                 return link;
@@ -220,7 +177,7 @@ public class NetworkTable extends LuaTable {
     private LuaBoolean addLink(final LuaString node1String,
                                final LuaString node2String,
                                final LuaTable params) {
-        final LinkTable link = new LinkTable(this, node1String, node2String, params);
+        final NetworkLink link = new NetworkLink(this, node1String, node2String, params);
 
         final boolean newLink = links.add(link);
         nodeLinks.put(link.node1(), link);
@@ -237,9 +194,9 @@ public class NetworkTable extends LuaTable {
             throw new LuaError("Node `" + node2String + "` does not exist.");
         }
 
-        final Iterator<LinkTable> iterator = links.iterator();
+        final Iterator<NetworkLink> iterator = links.iterator();
         while (iterator.hasNext()) {
-            final LinkTable link = iterator.next();
+            final NetworkLink link = iterator.next();
 
             if ((link.node1().equals(node1String) && link.node2().equals(node1String)) || (link.node1().equals(node2String) && link.node2().equals(node2String))) {
                 iterator.remove();
@@ -273,7 +230,7 @@ public class NetworkTable extends LuaTable {
         if (!super.equals(o)) {
             return false;
         }
-        final NetworkTable that = (NetworkTable) o;
+        final Network that = (Network) o;
         return Objects.equals(nodes, that.nodes) && Objects.equals(links, that.links);
     }
 
@@ -332,7 +289,7 @@ public class NetworkTable extends LuaTable {
         return devices.getDevices();
     }
 
-    private DevicesTable getDevicesTable() {
+    private Devices getDevicesTable() {
         return devices;
     }
 
@@ -347,36 +304,36 @@ public class NetworkTable extends LuaTable {
     static class GetNodesFunction extends OneArgFunction {
         @Override
         public LuaTable call(final LuaValue networkArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
 
-            return networkTable.getNodesTable();
+            return network.getNodesTable();
         }
     }
 
     static class GetNodeFunction extends TwoArgFunction {
         @Override
         public LuaValue call(final LuaValue networkArg, final LuaValue nameArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaString nameString = nameArg.checkstring();
 
-            return networkTable.getNode(nameString);
+            return network.getNode(nameString);
         }
     }
 
     static class AddNodeFunction extends ThreeArgFunction {
         @Override
-        public NodeTable call(final LuaValue networkArg,
-                             final LuaValue nameArg,
-                             final LuaValue paramsArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+        public NetworkNode call(final LuaValue networkArg,
+                                final LuaValue nameArg,
+                                final LuaValue paramsArg) {
+            final Network network = (Network) networkArg.checktable();
             final LuaString nameString = nameArg.checkstring();
             final LuaTable paramsTable = paramsArg.checktable();
 
-            return networkTable.addNode(nameString, paramsTable);
+            return network.addNode(nameString, paramsTable);
         }
 
         @Override
-        public NodeTable call(final LuaValue networkArg, final LuaValue nameArg) {
+        public NetworkNode call(final LuaValue networkArg, final LuaValue nameArg) {
             return call(networkArg, nameArg, tableOf());
         }
     }
@@ -384,19 +341,19 @@ public class NetworkTable extends LuaTable {
     static class RemoveNodeFunction extends TwoArgFunction {
         @Override
         public LuaValue call(final LuaValue networkArg, final LuaValue nameArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaString nameString = nameArg.checkstring();
 
-            return networkTable.removeNode(nameString);
+            return network.removeNode(nameString);
         }
     }
 
     static class ClearNodesFunction extends OneArgFunction {
         @Override
         public LuaNil call(final LuaValue networkArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
 
-            return networkTable.clearNodes();
+            return network.clearNodes();
         }
     }
 
@@ -407,9 +364,9 @@ public class NetworkTable extends LuaTable {
     static class GetLinksFunction extends OneArgFunction {
         @Override
         public LuaTable call(final LuaValue networkArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
 
-            return networkTable.getLinks();
+            return network.getLinks();
         }
     }
 
@@ -418,11 +375,11 @@ public class NetworkTable extends LuaTable {
         public LuaValue call(final LuaValue networkArg,
                              final LuaValue node1Arg,
                              final LuaValue node2Arg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaString node1String = node1Arg.checkstring();
             final LuaString node2String = node2Arg.checkstring();
 
-            return networkTable.getLink(node1String, node2String);
+            return network.getLink(node1String, node2String);
         }
     }
 
@@ -432,19 +389,19 @@ public class NetworkTable extends LuaTable {
                                final LuaValue node1Arg,
                                final LuaValue node2Arg,
                                final LuaValue paramsArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaString node1String = node1Arg.checkstring();
             final LuaString node2String = node2Arg.checkstring();
             final LuaTable paramsTable = paramsArg.checktable();
 
-            if (networkTable.getNode(node1String) == NIL) {
+            if (network.getNode(node1String) == NIL) {
                 throw new LuaError("Node `" + node1String + "` does not exist.");
             }
-            if (networkTable.getNode(node2String) == NIL) {
+            if (network.getNode(node2String) == NIL) {
                 throw new LuaError("Node `" + node2String + "` does not exist.");
             }
 
-            return networkTable.addLink(node1String, node2String, paramsTable);
+            return network.addLink(node1String, node2String, paramsTable);
         }
 
         @Override
@@ -460,30 +417,30 @@ public class NetworkTable extends LuaTable {
         public LuaNil call(final LuaValue networkArg,
                            final LuaValue node1Arg,
                            final LuaValue node2Arg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaString node1String = node1Arg.checkstring();
             final LuaString node2String = node2Arg.checkstring();
 
-            return networkTable.removeLink(node1String, node2String);
+            return network.removeLink(node1String, node2String);
         }
     }
 
     static class ClearLinksFunction extends OneArgFunction {
         @Override
         public LuaNil call(final LuaValue networkArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
 
-            return networkTable.clearLinks();
+            return network.clearLinks();
         }
     }
 
     static class SetCallbackFunction extends TwoArgFunction {
         @Override
         public LuaValue call(final LuaValue networkArg, final LuaValue callbackArg) {
-            final NetworkTable networkTable = (NetworkTable) networkArg.checktable();
+            final Network network = (Network) networkArg.checktable();
             final LuaFunction callbackFunction = callbackArg.checkfunction();
 
-            networkTable.setCallback(callbackFunction);
+            network.setCallback(callbackFunction);
 
             return NIL;
         }

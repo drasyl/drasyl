@@ -10,7 +10,7 @@ import org.luaj.vm2.lib.TwoArgFunction;
  * Lua API provided by the controller.
  */
 public class ControllerLib extends TwoArgFunction {
-    public static NetworkTable NETWORK;
+    public static Network NETWORK;
 
     @Override
     public LuaValue call(final LuaValue modname, final LuaValue env) {
@@ -24,7 +24,7 @@ public class ControllerLib extends TwoArgFunction {
     static class CreateNetworkFunction extends OneArgFunction {
         @Override
         public LuaValue call(final LuaValue paramsArg) {
-            return new NetworkTable(paramsArg);
+            return new Network(paramsArg);
         }
     }
 
@@ -37,7 +37,7 @@ public class ControllerLib extends TwoArgFunction {
                 throw new LuaError("Only one network can be registered.");
             }
 
-            NETWORK = (NetworkTable) networkTable;
+            NETWORK = (Network) networkTable;
 
             return NIL;
         }

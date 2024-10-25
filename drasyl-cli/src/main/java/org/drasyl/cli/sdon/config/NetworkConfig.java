@@ -14,9 +14,9 @@ import static java.util.Objects.requireNonNull;
 
 public class NetworkConfig {
     private static final Logger LOG = LoggerFactory.getLogger(NetworkConfig.class);
-    private final NetworkTable network;
+    private final Network network;
 
-    public NetworkConfig(final NetworkTable network) {
+    public NetworkConfig(final Network network) {
         this.network = requireNonNull(network);
     }
 
@@ -41,7 +41,7 @@ public class NetworkConfig {
         return globals;
     }
 
-    public NetworkTable network() {
+    public Network network() {
         return network;
     }
 }

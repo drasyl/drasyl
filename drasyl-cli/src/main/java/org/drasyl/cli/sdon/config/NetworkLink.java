@@ -27,13 +27,13 @@ import org.luaj.vm2.LuaTable;
 
 import static java.util.Objects.requireNonNull;
 
-public class LinkTable extends LuaTable {
-    private final NetworkTable network;
+public class NetworkLink extends LuaTable {
+    private final Network network;
 
-    public LinkTable(final NetworkTable network,
-                     final LuaString node1,
-                     final LuaString node2,
-                     final LuaTable params) {
+    public NetworkLink(final Network network,
+                       final LuaString node1,
+                       final LuaString node2,
+                       final LuaTable params) {
         this.network = requireNonNull(network);
 //        for (final LuaValue key : network.linkDefaults.keys()) {
 //            final LuaValue defaultValue = network.linkDefaults.get(key);

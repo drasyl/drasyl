@@ -47,11 +47,11 @@ public class Device extends LuaTable {
 
     @Override
     public String toString() {
-        final LuaTable publicTable = tableOf();
-        publicTable.set("address", get("address"));
-        publicTable.set("online", get("online"));
-        publicTable.set("tags", get("tags"));
-        return "Device" + LuaStrings.toString(publicTable);
+        final LuaTable stringTable = tableOf();
+        stringTable.set("address", get("address"));
+        stringTable.set("online", get("online"));
+        stringTable.set("tags", get("tags"));
+        return "Device" + LuaStrings.toString(stringTable);
     }
 
     public void setOnline() {

@@ -30,7 +30,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
-public class DevicesTable extends LuaTable {
+public class Devices extends LuaTable {
     private final Map<DrasylAddress, Device> devices = new HashMap<>();
 
     @Override

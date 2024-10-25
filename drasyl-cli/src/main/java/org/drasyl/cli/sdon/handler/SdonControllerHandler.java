@@ -83,17 +83,17 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
 
             ctx.executor().scheduleAtFixedRate(() -> {
                 try {
-                    final NetworkTable network = config.network();
+                    final Network network = config.network();
 
                     // call callback
                     network.callCallback();
 
                     // do matchmaking
                     final Set<Device> assignedDevices = new HashSet<>();
-                    final Map<LuaString, NodeTable> nodes = network.getNodes();
-                    for (final Entry<LuaString, NodeTable> entry : nodes.entrySet()) {
+                    final Map<LuaString, NetworkNode> nodes = network.getNodes();
+                    for (final Entry<LuaString, NetworkNode> entry : nodes.entrySet()) {
                         final LuaString name = entry.getKey();
-                        final NodeTable node = entry.getValue();
+                        final NetworkNode node = entry.getValue();
 
                         Device bestMatch = null;
                         int minDistance = Integer.MAX_VALUE;
@@ -116,8 +116,8 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                     // disseminate policies
                     for (final Device device : network.getDevices()) {
                         LuaString name = null;
-                        NodeTable node = null;
-                        for (final Entry<LuaString, NodeTable> entry : nodes.entrySet()) {
+                        NetworkNode node = null;
+                        for (final Entry<LuaString, NetworkNode> entry : nodes.entrySet()) {
                             if (Objects.equals(entry.getValue().device(), device.address())) {
                                 name = entry.getKey();
                                 node = entry.getValue();
@@ -150,7 +150,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                 final DeviceHello deviceHello = (DeviceHello) msg;
 
                 // add devices
-                final NetworkTable network = config.network();
+                final Network network = config.network();
                 final Device device = network.getOrCreateDevice(sender, deviceHello.tags());
 
                 final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(sender);
@@ -222,7 +222,7 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     private void scheduleNotifyListener(final ChannelHandlerContext ctx) {
         if (notifyListenerPromise == null) {
             notifyListenerPromise = ctx.executor().schedule(() -> {
-                final NetworkTable network = config.network();
+                final Network network = config.network();
                 final long startTime = System.currentTimeMillis();
                 try {
 //                    LOG.error("scheduleNotifyListener start");
