@@ -131,6 +131,7 @@ public class SdonNodeHandler extends ChannelInboundHandlerAdapter {
                     }
                 }
 
+                policies.clear();
                 policies.addAll(newPolicies);
             }
             else if (sender.equals(controller) && msg instanceof AccessDenied) {
