@@ -68,7 +68,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
-import static org.drasyl.cli.sdon.handler.NetworkConfigHandler.TUN_CHANNEL_KEY;
+import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
 import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 public class IpPolicyHandler extends ChannelInboundHandlerAdapter {

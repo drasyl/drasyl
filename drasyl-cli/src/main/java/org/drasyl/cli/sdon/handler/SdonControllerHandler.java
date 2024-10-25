@@ -75,7 +75,6 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     private void ensureHandlerInitialized(final ChannelHandlerContext ctx) {
         if (state == null) {
             state = INITIALIZED;
-            ctx.pipeline().addLast(new NetworkConfigHandler(config));
 
             System.out.println("------------------------------------------------------------------------------------------------");
             System.out.println("Controller listening on address " + ctx.channel().localAddress());

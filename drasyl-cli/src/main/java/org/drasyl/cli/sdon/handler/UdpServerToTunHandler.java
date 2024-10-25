@@ -36,7 +36,7 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
-import static org.drasyl.cli.sdon.handler.NetworkConfigHandler.TUN_CHANNEL_KEY;
+import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
 import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 /**

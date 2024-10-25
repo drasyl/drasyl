@@ -26,7 +26,9 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.netty.channel.ChannelPipeline;
+import io.netty.util.AttributeKey;
 import io.netty.util.internal.StringUtil;
+import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.cli.sdon.handler.policy.IpPolicyHandler;
 import org.drasyl.cli.util.InetAddressDeserializer;
 import org.drasyl.identity.DrasylAddress;
@@ -43,6 +45,7 @@ import static org.drasyl.util.Preconditions.requirePositive;
  */
 public class TunPolicy extends Policy {
     public static final String HANDLER_NAME = StringUtil.simpleClassName(TunPolicy.class);
+    public static final AttributeKey<TunChannel> TUN_CHANNEL_KEY = AttributeKey.valueOf("TUN_CHANNEL_KEY");
     private final InetAddress address;
     private final short netmask;
     private final Map<InetAddress, DrasylAddress> mapping;
