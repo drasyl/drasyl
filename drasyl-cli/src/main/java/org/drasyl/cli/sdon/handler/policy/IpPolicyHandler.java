@@ -187,7 +187,7 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx, final Tun4Packet packet) {
             final InetAddress dst = packet.destinationAddress();
-            LOG.info("Got packet `{}`", () -> packet);
+            LOG.info("Got packet from TUN interface `{}`.", () -> packet);
             LOG.info("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
 
             // mapping
