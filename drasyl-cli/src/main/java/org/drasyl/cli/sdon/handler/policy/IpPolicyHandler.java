@@ -37,7 +37,6 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -50,7 +49,6 @@ import org.drasyl.crypto.HexUtil;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -214,30 +212,6 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
             else {
                 LOG.error("Drop packet `{}` with unroutable destination.", () -> packet);
                 packet.release();
-            }
-        }
-    }
-
-    public static class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        @SuppressWarnings("java:S1905")
-        @Override
-        protected void channelRead0(final ChannelHandlerContext ctx,
-                                    final Tun4Packet packet) {
-            final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel().parent();
-            final ChannelHandlerContext tunPolicyHandlerCtx = parent.pipeline().context(IpPolicy.HANDLER_NAME);
-            if (tunPolicyHandlerCtx != null) {
-                LOG.error("Got `{}` from drasyl `{}`", packet, ctx.channel().remoteAddress());
-                LOG.error("https://hpd.gasmi.net/?data={}&force=ipv4", () -> HexUtil.bytesToHex(ByteBufUtil.getBytes(packet.content())));
-                final IpPolicyHandler ipPolicyHandler = (IpPolicyHandler) tunPolicyHandlerCtx.handler();
-                if (ipPolicyHandler.tunChannel != null) {
-                    if (!ipPolicyHandler.policy.address().equals(packet.destinationAddress())) {
-                        LOG.error("Packet `{}` is not for me. Relay it.", packet);
-                        ipPolicyHandler.tunChannel.pipeline().fireChannelRead(packet.retain());
-                    }
-                    else {
-                       ipPolicyHandler.tunChannel.writeAndFlush(packet.retain()).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                    }
-                }
             }
         }
     }
