@@ -29,7 +29,6 @@ import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.event.SdonMessageReceived;
-import org.drasyl.cli.sdon.message.AccessDenied;
 import org.drasyl.cli.sdon.message.ControllerHello;
 import org.drasyl.cli.sdon.message.DeviceHello;
 import org.drasyl.cli.sdon.message.SdonMessage;
@@ -130,10 +129,6 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
 
                 policies.clear();
                 policies.addAll(newPolicies);
-            } else if (sender.equals(controller) && msg instanceof AccessDenied) {
-                LOG.error("Controller declined our join request. Shutdown.");
-                state = CLOSING;
-                ctx.channel().close();
             }
         } else {
             ctx.fireUserEventTriggered(evt);

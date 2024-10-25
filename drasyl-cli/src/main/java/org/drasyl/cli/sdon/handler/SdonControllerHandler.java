@@ -24,7 +24,6 @@ package org.drasyl.cli.sdon.handler;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdon.config.*;
@@ -53,7 +52,6 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdonControllerHandler.class);
     private final NetworkConfig config;
     private State state = null;
-    private ScheduledFuture<?> notifyListenerPromise;
 
     public SdonControllerHandler(final NetworkConfig config) {
         this.config = requireNonNull(config);
@@ -91,7 +89,6 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                     final Set<Device> assignedDevices = new HashSet<>();
                     final Map<LuaString, NetworkNode> nodes = network.getNodes();
                     for (final Entry<LuaString, NetworkNode> entry : nodes.entrySet()) {
-                        final LuaString name = entry.getKey();
                         final NetworkNode node = entry.getValue();
 
                         Device bestMatch = null;
@@ -114,11 +111,9 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
 
                     // disseminate policies
                     for (final Device device : network.getDevices()) {
-                        LuaString name = null;
                         NetworkNode node = null;
                         for (final Entry<LuaString, NetworkNode> entry : nodes.entrySet()) {
                             if (Objects.equals(entry.getValue().device(), device.address())) {
-                                name = entry.getKey();
                                 node = entry.getValue();
                             }
                         }
@@ -166,76 +161,10 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                     LOG.debug("Send {} to {}.", controllerHello, sender);
                     channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
                 }
-
-                //
-//                final NodeTable networkNode = network.getNode(sender);
-//                if (channel == null) {
-//                    LOG.error("Got {} from node `{}`. But have no channel for it. Discard!?", StringUtil.simpleClassName(msg), sender);
-//                }
-//                else if (networkNode != null) {
-//                    if (networkNode.state().isOffline()) {
-//                        channel.closeFuture().addListener((ChannelFutureListener) future -> {
-//                            networkNode.state().setOffline();
-//                            LOG.info("`{}` left network.", sender);
-//                            //scheduleNotifyListener(ctx);
-//                        });
-//
-//                        networkNode.state().setOnline();
-//                        LOG.info("`{}` joined network.", sender);
-//
-//                        final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
-//                        for (final DrasylAddress address : Set.copyOf(peers.keySet())) {
-//                            if (network.getNode(address) == null) {
-//                                peers.remove(address);
-//                            }
-//                        }
-//                        networkNode.state().setState(((NodeHello) msg).policies(), peers, ((NodeHello) msg).store());
-//                        //scheduleNotifyListener(ctx);
-//
-//                        //final ControllerHello controllerHello = new ControllerHello(networkNode.policies());
-//                        //LOG.debug("Send {} to {}.", controllerHello, sender);
-//                        //channel.writeAndFlush(controllerHello).addListener(FIRE_EXCEPTION_ON_FAILURE);
-//                    }
-//                    else {
-//                        final Map<DrasylAddress, Peer> peers = ((NodeHello) msg).peersList().peers();
-//                        for (final DrasylAddress address : Set.copyOf(peers.keySet())) {
-//                            if (network.getNode(address) == null) {
-//                                peers.remove(address);
-//                            }
-//                        }
-//                        networkNode.state().setState(((NodeHello) msg).policies(), peers, ((NodeHello) msg).store());
-//                        //scheduleNotifyListener(ctx);
-//                    }
-//                }
-//                else {
-//                    LOG.error("Got {} from non-network node `{}`. Deny.", StringUtil.simpleClassName(msg), sender);
-//                    channel.writeAndFlush(new AccessDenied());
-//                }
             }
         }
         else {
             ctx.fireUserEventTriggered(evt);
-        }
-    }
-
-    private void scheduleNotifyListener(final ChannelHandlerContext ctx) {
-        if (notifyListenerPromise == null) {
-            notifyListenerPromise = ctx.executor().schedule(() -> {
-                final Network network = config.network();
-                final long startTime = System.currentTimeMillis();
-                try {
-//                    LOG.error("scheduleNotifyListener start");
-                    network.notifyListener(ctx);
-                }
-                catch (final IOException e) {
-                    ctx.fireExceptionCaught(e);
-                }
-                finally {
-                    final long endTime = System.currentTimeMillis();
-//                    LOG.error("scheduleNotifyListener stop: {}ms", endTime - startTime);
-                    notifyListenerPromise = null;
-                }
-            }, 1000, MILLISECONDS);
         }
     }
 
