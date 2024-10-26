@@ -58,10 +58,9 @@ public class SdonDeviceChannelInitializer extends AbstractChannelInitializer {
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
-
         super.initChannel(ch);
 
+        final ChannelPipeline p = ch.pipeline();
         p.addLast(new SdonDeviceHandler(controller, tags));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
