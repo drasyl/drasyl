@@ -27,7 +27,13 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
 import org.drasyl.util.network.Subnet;
-import org.luaj.vm2.*;
+import org.luaj.vm2.LuaBoolean;
+import org.luaj.vm2.LuaError;
+import org.luaj.vm2.LuaFunction;
+import org.luaj.vm2.LuaNil;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.LibFunction;
 import org.luaj.vm2.lib.OneArgFunction;
 import org.luaj.vm2.lib.ThreeArgFunction;
@@ -35,7 +41,13 @@ import org.luaj.vm2.lib.TwoArgFunction;
 
 import java.io.IOException;
 import java.net.UnknownHostException;
-import java.util.*;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Map;
+import java.util.Objects;
+import java.util.Set;
 
 @SuppressWarnings("java:S110")
 public class Network extends LuaTable {

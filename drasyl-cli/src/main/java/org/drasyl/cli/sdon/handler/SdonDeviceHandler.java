@@ -42,7 +42,9 @@ import java.util.Set;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.*;
+import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.INITIALIZED;
+import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.JOINED;
+import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.JOINING;
 
 public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdonDeviceHandler.class);
