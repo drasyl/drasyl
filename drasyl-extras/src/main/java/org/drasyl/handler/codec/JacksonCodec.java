@@ -60,10 +60,12 @@ import static java.util.Objects.requireNonNull;
  */
 public class JacksonCodec<T> extends MessageToMessageCodec<ByteBuf, T> {
     public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     static {
         OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
         OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
     }
+
     private static final Logger LOG = LoggerFactory.getLogger(JacksonCodec.class);
     public static final int MAGIC_NUMBER = 286331153;
     private final ThrowingBiConsumer<OutputStream, Object, IOException> jacksonWriter;

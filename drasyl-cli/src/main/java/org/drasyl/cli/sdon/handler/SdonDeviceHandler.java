@@ -130,7 +130,8 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
                 policies.clear();
                 policies.addAll(newPolicies);
             }
-        } else {
+        }
+        else {
             ctx.fireUserEventTriggered(evt);
         }
     }

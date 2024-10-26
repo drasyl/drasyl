@@ -74,10 +74,6 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
     private static final Logger LOG = LoggerFactory.getLogger(DrasylServerChannel.class);
     static Map<DrasylAddress, DrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
 
-    public boolean isDirectPathPresent(final DrasylAddress drasylAddress) {
-        return false; // FIXME:
-    }
-
     enum State {OPEN, ACTIVE, CLOSED}
 
     private final DrasylServerChannelConfig config = new DrasylServerChannelConfig(this);

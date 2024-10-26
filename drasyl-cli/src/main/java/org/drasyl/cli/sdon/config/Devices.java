@@ -22,7 +22,6 @@
 package org.drasyl.cli.sdon.config;
 
 import org.drasyl.cli.util.LuaHelper;
-import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.luaj.vm2.LuaTable;
 
@@ -38,7 +37,7 @@ public class Devices extends LuaTable {
 
     @Override
     public String toString() {
-        return "Devices" + LuaStrings.toString(LuaHelper.createTable(devices.values()));
+        return "Devices" + LuaHelper.toString(LuaHelper.createTable(devices.values()));
     }
 
     public Device getOrCreateDevice(final DrasylAddress address, final String[] tags) {

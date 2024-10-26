@@ -37,12 +37,12 @@ import org.drasyl.util.logging.LoggerFactory;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
-import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
 
 /**
  * Passes TUN messages from the {@link io.netty.channel.socket.DatagramChannel} to {@link TunChannel}.
  */
 public class UdpServerToTunHandler extends ChannelDuplexHandler {
+    public static final int MAGIC_NUMBER = 899_812_335;
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToTunHandler.class);
     private final DrasylServerChannel parent;
 
@@ -72,13 +72,16 @@ public class UdpServerToTunHandler extends ChannelDuplexHandler {
                 if (tunChannel != null) {
                     final ChannelFuture channelFuture = tunChannel.writeAndFlush(packet);
                     channelFuture.addListener(FIRE_EXCEPTION_ON_FAILURE);
-                } else {
+                }
+                else {
                     appMsg.release();
                 }
-            } else {
+            }
+            else {
                 ctx.fireChannelRead(msg);
             }
-        } else {
+        }
+        else {
             ctx.fireChannelRead(msg);
         }
     }

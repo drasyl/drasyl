@@ -21,8 +21,7 @@
  */
 package org.drasyl.cli.sdon.config;
 
-import org.drasyl.cli.util.LuaHashCodes;
-import org.drasyl.cli.util.LuaStrings;
+import org.drasyl.cli.util.LuaHelper;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.luaj.vm2.LuaString;
@@ -31,10 +30,7 @@ import org.luaj.vm2.LuaValue;
 
 import java.net.InetAddress;
 import java.net.UnknownHostException;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
@@ -44,9 +40,7 @@ import static java.util.Objects.requireNonNull;
 public class NetworkNode extends LuaTable {
     private final Network network;
 
-    NetworkNode(final Network network,
-                final LuaString name,
-                final LuaTable params) {
+    NetworkNode(final Network network, final LuaString name, final LuaTable params) {
         this.network = requireNonNull(network);
 
         // name
@@ -65,12 +59,24 @@ public class NetworkNode extends LuaTable {
         final LuaTable stringTable = tableOf();
         stringTable.set("name", get("name"));
         stringTable.set("ip", get("ip"));
-        return "Node" + LuaStrings.toString(stringTable);
+        return "Node" + LuaHelper.toString(stringTable);
     }
 
     @Override
     public int hashCode() {
-        return LuaHashCodes.hash(this);
+        return LuaHelper.hash(this);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final NetworkNode that = (NetworkNode) o;
+        return Objects.equals(network, that.network);
     }
 
     public DrasylAddress name() {

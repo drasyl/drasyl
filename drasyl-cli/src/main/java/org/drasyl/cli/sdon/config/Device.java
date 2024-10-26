@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,6 @@
 package org.drasyl.cli.sdon.config;
 
 import org.drasyl.cli.util.LuaHelper;
-import org.drasyl.cli.util.LuaStrings;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.luaj.vm2.LuaTable;
@@ -47,7 +46,7 @@ public class Device extends LuaTable {
         stringTable.set("address", get("address"));
         stringTable.set("online", get("online"));
         stringTable.set("tags", get("tags"));
-        return "Device" + LuaStrings.toString(stringTable);
+        return "Device" + LuaHelper.toString(stringTable);
     }
 
     public void setOnline() {

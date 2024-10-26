@@ -21,10 +21,12 @@
  */
 package org.drasyl.cli.util;
 
-import org.luaj.vm2.LuaTable;
-import org.luaj.vm2.LuaValue;
+import io.netty.util.internal.StringUtil;
+import org.luaj.vm2.*;
+import org.luaj.vm2.lib.LibFunction;
 
 import java.util.Collection;
+import java.util.Objects;
 
 import static org.luaj.vm2.LuaValue.tableOf;
 
@@ -40,5 +42,71 @@ public class LuaHelper {
             table.set(index++, item);
         }
         return table;
+    }
+
+    public static String toString(final LuaValue value) {
+        if (value instanceof LuaTable) {
+            final LuaTable table = (LuaTable) value;
+            final StringBuilder result = new StringBuilder();
+            result.append("{");
+            for (final LuaValue key : table.keys()) {
+                if (result.length() != 1) {
+                    result.append(", ");
+                }
+                result.append(toString(key));
+                result.append("=");
+                result.append(toString(table.get(key)));
+            }
+            result.append("}");
+            return result.toString();
+        }
+        else if (value instanceof LuaBoolean) {
+            return value.tojstring();
+        }
+        else if (value instanceof LuaString) {
+            return value.tojstring();
+        }
+        else if (value instanceof LuaInteger) {
+            return value.tojstring();
+        }
+        else if (value instanceof LuaDouble) {
+            return value.tojstring();
+        }
+        else if (value instanceof LibFunction) {
+            return value.toString();
+        }
+        else {
+            throw new RuntimeException("LuaStrings#toString not implemented for " + StringUtil.simpleClassName(value));
+        }
+    }
+
+    public static int hash(final LuaValue value) {
+        if (value instanceof LuaTable) {
+            final LuaTable table = (LuaTable) value;
+            int result = 1;
+            for (final LuaValue key : table.keys()) {
+                result = 31 * result + hash(key);
+                result = 31 * result + hash(table.get(key));
+            }
+            return result;
+        }
+        else if (value instanceof LuaBoolean) {
+            return Objects.hash(value.toboolean());
+        }
+        else if (value instanceof LuaString) {
+            return Objects.hash(value.tojstring());
+        }
+        else if (value instanceof LuaInteger) {
+            return Objects.hash(value.toint());
+        }
+        else if (value instanceof LuaDouble) {
+            return Objects.hash(value.todouble());
+        }
+        else if (value instanceof LibFunction) {
+            return 1;
+        }
+        else {
+            throw new RuntimeException("LuaHashCodes#hash not implemented for " + StringUtil.simpleClassName(value));
+        }
     }
 }

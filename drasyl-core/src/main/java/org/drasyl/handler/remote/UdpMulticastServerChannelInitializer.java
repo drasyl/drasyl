@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -42,7 +42,6 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
     @Override
     protected void initChannel(final DatagramChannel ch) {
         ch.pipeline().addLast(new DatagramCodec());
-        ch.pipeline().addLast(new ByteToRemoteMessageCodec());
         ch.pipeline().addLast(new InvalidProofOfWorkFilter());
         lastStage(ch);
     }

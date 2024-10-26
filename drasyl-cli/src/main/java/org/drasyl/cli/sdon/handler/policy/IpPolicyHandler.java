@@ -27,14 +27,7 @@ import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.util.internal.PlatformDependent;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
@@ -69,7 +62,7 @@ import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
 import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
-import static org.drasyl.cli.tun.handler.TunPacketCodec.MAGIC_NUMBER;
+import static org.drasyl.cli.sdon.handler.UdpServerToTunHandler.MAGIC_NUMBER;
 
 public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(IpPolicyHandler.class);
@@ -108,7 +101,8 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
                     exec("/sbin/ifconfig", name, "add", addressStr, addressStr);
                     exec("/sbin/ifconfig", name, "up");
                     exec("/sbin/route", "add", "-net", subnet.toString(), "-iface", name);
-                } else if (PlatformDependent.isWindows()) {
+                }
+                else if (PlatformDependent.isWindows()) {
                     // Windows
                     final WINTUN_ADAPTER_HANDLE adapter = ((WindowsTunDevice) ((TunChannel) future.channel()).device()).adapter();
 
@@ -166,7 +160,8 @@ public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
 
                 throw new IOException("Executing `" + String.join(" ", command) + "` returned non-zero exit code (" + exitCode + ").");
             }
-        } catch (final InterruptedException e) {
+        }
+        catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
     }

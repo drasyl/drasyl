@@ -51,7 +51,7 @@ import static org.drasyl.cli.sdon.handler.SdonControllerHandler.State.INITIALIZE
 public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdonControllerHandler.class);
     private final NetworkConfig config;
-    private State state = null;
+    private State state;
 
     public SdonControllerHandler(final NetworkConfig config) {
         this.config = requireNonNull(config);

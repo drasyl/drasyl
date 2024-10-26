@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,7 @@
  */
 package org.drasyl.cli.sdon.config;
 
-import org.drasyl.cli.util.LuaStrings;
+import org.drasyl.cli.util.LuaHelper;
 import org.luaj.vm2.LuaString;
 import org.luaj.vm2.LuaTable;
 
@@ -46,7 +46,7 @@ public class NetworkLink extends LuaTable {
 
     @Override
     public String toString() {
-        return "Link" + LuaStrings.toString(this);
+        return "Link" + LuaHelper.toString(this);
     }
 
     public LuaString node1() {

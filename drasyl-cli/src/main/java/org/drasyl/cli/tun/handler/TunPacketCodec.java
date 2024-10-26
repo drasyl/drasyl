@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,30 +33,17 @@ import java.util.List;
  * This codec converts {@link TunPacket}s to {@link ByteBuf}s and vice versa.
  */
 public class TunPacketCodec extends MessageToMessageCodec<ByteBuf, TunPacket> {
-    public static final int MAGIC_NUMBER = 899_812_335;
     @Override
     protected void encode(final ChannelHandlerContext ctx,
                           final TunPacket packet,
-                          final List<Object> out) {
-        out.add(ctx.alloc().compositeBuffer(2).addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER)).addComponent(true, packet.content().retain()));
+                          final List<Object> out) throws Exception {
+        out.add(packet.content().retain());
     }
 
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final ByteBuf byteBuf,
-                          final List<Object> out) {
-        if (byteBuf.readableBytes() >= Integer.BYTES) {
-            byteBuf.markReaderIndex();
-            if (byteBuf.readInt() != MAGIC_NUMBER) {
-                byteBuf.resetReaderIndex();
-                ctx.fireChannelRead(byteBuf.retain());
-                return;
-            }
-
-            out.add(new Tun4Packet(byteBuf.retainedSlice()));
-        }
-        else {
-            out.add(byteBuf.retain());
-        }
+                          final List<Object> out) throws Exception {
+        out.add(new Tun4Packet(byteBuf).retain());
     }
 }
