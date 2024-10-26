@@ -308,7 +308,7 @@ public class TunCommand extends ChannelOptions {
     /**
      * Assign IP address and subnet to the tun device.
      */
-    public class AddressAndSubnetHandler extends ChannelInboundHandlerAdapter {
+    private class AddressAndSubnetHandler extends ChannelInboundHandlerAdapter {
         private final Identity identity;
         private final Map<InetAddress, DrasylAddress> routes;
 
