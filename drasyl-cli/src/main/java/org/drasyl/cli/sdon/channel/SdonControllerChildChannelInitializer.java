@@ -68,12 +68,9 @@ public class SdonControllerChildChannelInitializer extends ConnectionChannelInit
 
     @Override
     protected void initChannel(final DrasylChannel ch) throws Exception {
-        final ChannelPipeline p = ch.pipeline();
-
-//        p.addLast(new TunPacketCodec());
-//        p.addLast(new DrasylToTunHandler());
-
         super.initChannel(ch);
+
+        final ChannelPipeline p = ch.pipeline();
 
         p.addLast(new JacksonCodec<>(SdonMessage.class));
         p.addLast(new SdonMessageChildHandler());
