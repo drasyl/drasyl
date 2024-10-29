@@ -21,6 +21,8 @@
  */
 package org.drasyl.cli.sdon.handler;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.Future;
@@ -37,6 +39,7 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -48,14 +51,17 @@ import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.JOINING;
 
 public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdonDeviceHandler.class);
+    private final PrintStream out;
     private final IdentityPublicKey controller;
     private final String[] tags;
     State state;
     private DrasylChannel controllerChannel;
     public final Set<Policy> policies = new HashSet<>();
 
-    public SdonDeviceHandler(final IdentityPublicKey controller,
+    public SdonDeviceHandler(final PrintStream out,
+                             final IdentityPublicKey controller,
                              final String[] tags) {
+        this.out = requireNonNull(out);
         this.controller = requireNonNull(controller);
         this.tags = requireNonNull(tags);
     }
@@ -77,19 +83,26 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
         if (state == null) {
             state = INITIALIZED;
 
-            System.out.println("----------------------------------------------------------------------------------------------");
-            System.out.println("Node listening on address " + ctx.channel().localAddress());
-            System.out.println("----------------------------------------------------------------------------------------------");
+            out.println("----------------------------------------------------------------------------------------------");
+            out.println("Device listening on address " + ctx.channel().localAddress());
+            out.println("----------------------------------------------------------------------------------------------");
 
-            LOG.debug("Connecting to controller `{}`", controller);
+            out.print("Connecting to controller `" + controller + "`...");
             ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 controllerChannel = future.getNow();
 
                 if (state == INITIALIZED) {
-                    LOG.debug("Connected to controller. Try to join network.");
+                    out.println("connected!");
+                    out.print("Register at controller...");
                     state = JOINING;
+                    // intraVM geht nicht!
                     controllerChannel.eventLoop().execute(() -> {
-                        controllerChannel.writeAndFlush(new DeviceHello(tags)).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        controllerChannel.writeAndFlush(new DeviceHello(tags)).addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(final ChannelFuture future) throws Exception {
+                                System.out.println();
+                            }
+                        }).addListener(FIRE_EXCEPTION_ON_FAILURE);
                     });
                 }
             });
@@ -106,7 +119,7 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
 
             if (sender.equals(controller) && msg instanceof ControllerHello) {
                 if (state != JOINED) {
-                    LOG.debug("Joined network.");
+                    out.println("registered!");
                 }
                 state = JOINED;
 

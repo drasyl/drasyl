@@ -19,13 +19,11 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.perf;
+package org.drasyl.cli.sdon;
 
 import ch.qos.logback.classic.Level;
 import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
-import org.drasyl.cli.converter.IdentityPublicKeyConverter;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.identity.IdentityManager;
@@ -34,42 +32,33 @@ import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
-import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.net.InetSocketAddress;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
+import static java.nio.file.StandardOpenOption.CREATE;
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.regex.Pattern.CASE_INSENSITIVE;
-import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.notNullValue;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
 
-class PerfCommandIT {
-    private static final Logger LOG = LoggerFactory.getLogger(PerfCommandIT.class);
-    private static final Pattern ADDRESS_PATTERN = Pattern.compile("([0-9A-F]{64})", CASE_INSENSITIVE);
+class SdonCommandIT {
+    private static final Logger LOG = LoggerFactory.getLogger(SdonCommandIT.class);
     private EmbeddedNode superPeer;
-    private ByteArrayOutputStream serverOut;
-    private ByteArrayOutputStream clientOut;
-    private Thread serverThread;
-    private Thread clientThread;
+    private ByteArrayOutputStream controllerOut;
+    private ByteArrayOutputStream deviceOut;
+    private Thread controllerThread;
+    private Thread deviceThread;
 
     @BeforeAll
     static void beforeAll() {
@@ -88,17 +77,17 @@ class PerfCommandIT {
                 .remoteBindHost(createInetAddress("127.0.0.1"))
                 .remoteBindPort(0)
                 .remoteSuperPeerEnabled(false)
+                .intraVmDiscoveryEnabled(false)
                 .remoteLocalHostDiscoveryEnabled(false)
                 .remoteLocalNetworkDiscoveryEnabled(false)
                 .remoteExposeEnabled(false)
                 .remoteTcpFallbackEnabled(false)
-                .intraVmDiscoveryEnabled(false)
                 .build();
         superPeer = new EmbeddedNode(superPeerConfig).awaitStarted();
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
-        serverOut = new ByteArrayOutputStream();
-        clientOut = new ByteArrayOutputStream();
+        controllerOut = new ByteArrayOutputStream();
+        deviceOut = new ByteArrayOutputStream();
     }
 
     @AfterEach
@@ -106,75 +95,59 @@ class PerfCommandIT {
         if (superPeer != null) {
             superPeer.close();
         }
-        if (serverThread != null) {
-            serverThread.interrupt();
+        if (controllerThread != null) {
+            controllerThread.interrupt();
         }
-        if (clientThread != null) {
-            clientThread.interrupt();
+        if (deviceThread != null) {
+            deviceThread.interrupt();
         }
 
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "FINISHED " + info.getDisplayName()));
     }
 
-    @Disabled(value = "Test does stuck sometimes after \"Connected to...\"")
     @Test
-    @Timeout(value = 30_000, unit = MILLISECONDS)
+    //@Timeout(value = 30_000, unit = MILLISECONDS)
     void shouldTransferText(@TempDir final Path path) throws IOException, InterruptedException {
-        // create server
-        final Path serverPath = path.resolve("server.identity");
-        IdentityManager.writeIdentityFile(serverPath, ID_2);
-        serverThread = new Thread(() -> new PerfServerCommand(
-                new PrintStream(serverOut, true),
-                System.err,
-                Level.WARN,
-                serverPath.toFile(),
-                new InetSocketAddress("127.0.0.1", 0),
-                10_000,
-                0,
-                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort()))
-        ).call());
-        serverThread.start();
+        // create controller
+        final Path networkFile = path.resolve("network.conf");
+        Files.writeString(networkFile, "net = create_network()\n" +
+                "register_network(net)", CREATE);
 
-        // get server address
-        final IdentityPublicKey serverAddress = await("server address").atMost(ofSeconds(30)).until(() -> {
-            final Matcher matcher = ADDRESS_PATTERN.matcher(serverOut.toString());
-            if (matcher.find()) {
-                return new IdentityPublicKeyConverter().convert(matcher.group(1));
-            }
-            else {
-                return null;
-            }
-        }, notNullValue());
-
-        // create client
-        final Path clientPath = path.resolve("client.identity");
-        IdentityManager.writeIdentityFile(serverPath, ID_3);
-        clientThread = new Thread(() -> new PerfClientCommand(
-                new PrintStream(clientOut, true),
+        final Path controllerPath = path.resolve("controller.identity");
+        IdentityManager.writeIdentityFile(controllerPath, ID_2);
+        controllerThread = new Thread(() -> new SdonControllerCommand(
+                new PrintStream(controllerOut, true),
                 System.err,
-                Level.WARN,
-                clientPath.toFile(),
+                null,
+                controllerPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
-                serverAddress,
-                true,
-                false,
-                2,
-                100,
-                850
-        ).call());
-        clientThread.start();
+                networkFile.toFile()).call());
+        controllerThread.start();
 
-        // receive text
-        await("receive text").atMost(ofSeconds(30)).untilAsserted(() -> {
-            assertThat(clientOut.toString(), containsString("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"));
-            assertThat(clientOut.toString(), containsString("Sender:"));
-            assertThat(clientOut.toString(), containsString("Receiver:"));
-        });
+        // create device
+        final Path devicePath = path.resolve("device.identity");
+        IdentityManager.writeIdentityFile(devicePath, ID_3);
+        deviceThread = new Thread(() -> new SdonDeviceCommand(
+                new PrintStream(deviceOut, true),
+                System.err,
+                Level.TRACE,//null,
+                devicePath.toFile(),
+                new InetSocketAddress("127.0.0.1", 0),
+                10_000,
+                0,
+                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                ID_2.getIdentityPublicKey(),
+                new String[]{ "foo", "bar" }).call());
+        deviceThread.start();
 
-        serverThread.join();
-        clientThread.join();
+        while (true) {
+            Thread.sleep(1000);
+        }
+
+//        controllerThread.join();
+//        deviceThread.join();
     }
 }

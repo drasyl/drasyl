@@ -21,6 +21,7 @@
  */
 package org.drasyl.cli.sdon;
 
+import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
@@ -38,6 +39,13 @@ import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
+
+import java.io.File;
+import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.util.Map;
+
+import static java.util.Objects.requireNonNull;
 
 @Command(
         name = "device",
@@ -58,6 +66,25 @@ public class SdonDeviceCommand extends ChannelOptions {
             description = "Associate device with given tags, used by controller to assign specific tasks."
     )
     private String[] tags;
+
+    public SdonDeviceCommand(final PrintStream out,
+                             final PrintStream err,
+                             final Level logLevel,
+                             final File identityFile,
+                             final InetSocketAddress bindAddress,
+                             final int onlineTimeoutMillis,
+                             final int networkId,
+                             final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                             final IdentityPublicKey controller,
+                             final String[] tags) {
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        this.controller = requireNonNull(controller);
+        this.tags = requireNonNull(tags);
+    }
+
+    @SuppressWarnings("unused")
+    public SdonDeviceCommand() {
+    }
 
     @Override
     protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {

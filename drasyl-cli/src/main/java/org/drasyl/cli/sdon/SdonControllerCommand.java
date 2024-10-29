@@ -21,12 +21,14 @@
  */
 package org.drasyl.cli.sdon;
 
+import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdonControllerChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdonControllerChildChannelInitializer;
 import org.drasyl.cli.sdon.config.NetworkConfig;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -35,6 +37,11 @@ import picocli.CommandLine.Option;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.PrintStream;
+import java.net.InetSocketAddress;
+import java.util.Map;
+
+import static java.util.Objects.requireNonNull;
 
 @Command(
         name = "controller",
@@ -44,13 +51,30 @@ import java.io.IOException;
 public class SdonControllerCommand extends ChannelOptions {
     private static final Logger LOG = LoggerFactory.getLogger(SdonControllerCommand.class);
     @Option(
-            names = { "-c", "--config" },
+            names = {"-c", "--config"},
             description = "Loads the node configuration from specified file.",
             paramLabel = "<file>",
             defaultValue = "network.conf"
     )
     private File configFile;
     private NetworkConfig config;
+
+    SdonControllerCommand(final PrintStream out,
+                          final PrintStream err,
+                          final Level logLevel,
+                          final File identityFile,
+                          final InetSocketAddress bindAddress,
+                          final int onlineTimeoutMillis,
+                          final int networkId,
+                          final Map<IdentityPublicKey, InetSocketAddress> superPeers,
+                          final File configFile) {
+        super(out, err, logLevel, identityFile, bindAddress, onlineTimeoutMillis, networkId, superPeers);
+        this.configFile = requireNonNull(configFile);
+    }
+
+    @SuppressWarnings("unused")
+    public SdonControllerCommand() {
+    }
 
     @Override
     public Integer call() {

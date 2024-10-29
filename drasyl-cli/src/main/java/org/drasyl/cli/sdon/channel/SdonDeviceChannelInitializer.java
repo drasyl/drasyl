@@ -61,7 +61,7 @@ public class SdonDeviceChannelInitializer extends AbstractChannelInitializer {
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SdonDeviceHandler(controller, tags));
+        p.addLast(new SdonDeviceHandler(out, controller, tags));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
     }
 }

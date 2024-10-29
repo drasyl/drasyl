@@ -41,6 +41,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import org.luaj.vm2.LuaString;
 
 import java.io.IOException;
+import java.io.PrintStream;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Map.Entry;
@@ -54,10 +55,12 @@ import static org.drasyl.cli.sdon.handler.SdonControllerHandler.State.INITIALIZE
 
 public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(SdonControllerHandler.class);
+    private final PrintStream out;
     private final NetworkConfig config;
     private State state;
 
-    public SdonControllerHandler(final NetworkConfig config) {
+    public SdonControllerHandler(final PrintStream out, final NetworkConfig config) {
+        this.out = requireNonNull(out);
         this.config = requireNonNull(config);
     }
 
@@ -78,9 +81,9 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
         if (state == null) {
             state = INITIALIZED;
 
-            System.out.println("------------------------------------------------------------------------------------------------");
-            System.out.println("Controller listening on address " + ctx.channel().localAddress());
-            System.out.println("------------------------------------------------------------------------------------------------");
+            out.println("------------------------------------------------------------------------------------------------");
+            out.println("Controller listening on address " + ctx.channel().localAddress());
+            out.println("------------------------------------------------------------------------------------------------");
 
             ctx.executor().scheduleAtFixedRate(() -> {
                 try {
