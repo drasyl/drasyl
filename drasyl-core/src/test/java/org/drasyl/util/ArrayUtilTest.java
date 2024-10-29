@@ -32,7 +32,7 @@ class ArrayUtilTest {
     class Concat {
         @Test
         void shouldConcatGivenArrays() {
-            assertArrayEquals(new String[]{}, concat());
+            assertArrayEquals(new String[]{}, null);
             assertArrayEquals(
                     new String[]{ "Dog", "Cat", "Bird", "Cow" },
                     concat(new String[]{ "Dog", "Cat" }, new String[]{ "Bird", "Cow" })

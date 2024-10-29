@@ -46,6 +46,7 @@ jobs:
           name: Test report
           path: drasyl-core/target/surefire-reports/**.xml
           reporter: java-junit
+          list-tests: failed
 
 
 
