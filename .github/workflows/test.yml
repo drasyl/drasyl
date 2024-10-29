@@ -43,7 +43,6 @@ jobs:
         with:
           name: Test report
           path: drasyl-core/target/surefire-reports/**.xml
-          path: reports/jest-*.xml    # Path to test results
           reporter: java-junit
 
 
