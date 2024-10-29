@@ -1,0 +1,63 @@
+# .github/workflows/markdown-report.yml
+name: CI Workflow with Markdown Reports
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  test-and-lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Check out code
+        uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16'
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Run tests
+        run: |
+          echo "## Test Results\n" > test-report.md
+          if npm test; then
+            echo "- Tests successful ✅" >> test-report.md
+          else
+            echo "- Tests failed ❌" >> test-report.md
+            exit 1
+          fi
+
+      - name: Run linter
+        run: |
+          echo "## Linting Results\n" > lint-report.md
+          if npm run lint; then
+            echo "- Linting successful ✅" >> lint-report.md
+          else
+            echo "- Linting issues found ❌" >> lint-report.md
+          fi
+
+      - name: Combine reports
+        run: |
+          echo "# CI Report\n" > ci-report.md
+          cat test-report.md >> ci-report.md
+          cat lint-report.md >> ci-report.md
+
+      - name: Upload report as artifact
+        uses: actions/upload-artifact@v2
+        with:
+          name: ci-report
+          path: ci-report.md
+
+      - name: Post report in pull request
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          path: ci-report.md
