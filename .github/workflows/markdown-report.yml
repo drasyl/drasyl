@@ -22,33 +22,10 @@ jobs:
         with:
           node-version: '16'
 
-      - name: Install dependencies
-        run: npm install
-
       - name: Run tests
         run: |
-          echo "## Test Results\n" > test-report.md
-          if npm test; then
-            echo "- Tests successful ✅" >> test-report.md
-          else
-            echo "- Tests failed ❌" >> test-report.md
+            echo "- Tests failed ❌" > ci-report.md
             exit 1
-          fi
-
-      - name: Run linter
-        run: |
-          echo "## Linting Results\n" > lint-report.md
-          if npm run lint; then
-            echo "- Linting successful ✅" >> lint-report.md
-          else
-            echo "- Linting issues found ❌" >> lint-report.md
-          fi
-
-      - name: Combine reports
-        run: |
-          echo "# CI Report\n" > ci-report.md
-          cat test-report.md >> ci-report.md
-          cat lint-report.md >> ci-report.md
 
       - name: Upload report as artifact
         uses: actions/upload-artifact@v3
