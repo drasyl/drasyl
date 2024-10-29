@@ -45,7 +45,7 @@ jobs:
         if: success() || failure()
         with:
           name: Test Report
-          path: drasyl-core/target/surefire-reports/**.xml
+          path: */target/surefire-reports/**.xml
           reporter: java-junit
           list-tests: failed
 
