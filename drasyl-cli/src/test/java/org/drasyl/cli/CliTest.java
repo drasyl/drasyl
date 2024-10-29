@@ -52,7 +52,7 @@ class CliTest {
             cli.run(args);
 
             verify(commandLine).execute(args);
-            verify(exitSupplier).accept(124);
+            verify(exitSupplier).accept(123);
         }
     }
 }
