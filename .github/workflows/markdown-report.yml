@@ -25,7 +25,6 @@ jobs:
       - name: Run tests
         run: |
             echo "- Tests failed ❌" > ci-report.md
-            exit 1
 
       - name: Upload report as artifact
         uses: actions/upload-artifact@v3
