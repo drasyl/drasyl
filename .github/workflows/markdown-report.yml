@@ -51,7 +51,7 @@ jobs:
           cat lint-report.md >> ci-report.md
 
       - name: Upload report as artifact
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: ci-report
           path: ci-report.md
