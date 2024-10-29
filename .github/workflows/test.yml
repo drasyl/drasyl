@@ -38,12 +38,13 @@ jobs:
       - name: Checking for detected leak
         run: ./.github/scripts/check_leak.sh build.output
       - name: xxx
+        if: success() || failure()
         run: tree .
       - name: Test Report
         uses: dorny/test-reporter@v1
         if: success() || failure()
         with:
-          name: Test report
+          name: Test Report
           path: drasyl-core/target/surefire-reports/**.xml
           reporter: java-junit
           list-tests: failed
