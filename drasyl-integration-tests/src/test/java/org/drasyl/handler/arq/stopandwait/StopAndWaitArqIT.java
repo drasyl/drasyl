@@ -131,7 +131,7 @@ class StopAndWaitArqIT {
 
             // wait for completion
             assertTrue(latch.await(5, TimeUnit.SECONDS));
-            assertEquals(List.of((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 5), received);
+            assertEquals(List.of((byte) 0, (byte) 1, (byte) 2, (byte) 3, (byte) 4), received);
         }
         finally {
             clientChannel.close().sync();
