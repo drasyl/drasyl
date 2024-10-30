@@ -43,7 +43,3 @@ jobs:
         with:
           check_name: Java ${{ matrix.java }} Test Report
           report_paths: '**/surefire-reports/*.xml, **/failsafe-reports/*.xml'
-
-
-
-
