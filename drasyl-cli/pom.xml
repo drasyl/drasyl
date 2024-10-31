@@ -117,6 +117,15 @@
                 <filtering>true</filtering>
             </resource>
         </resources>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <release>${java.version}</release>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <profiles>
@@ -258,6 +267,7 @@
                         <artifactId>maven-compiler-plugin</artifactId>
                         <!-- annotationProcessorPaths requires maven-compiler-plugin version 3.5 or higher -->
                         <configuration>
+                            <release>${java.version}</release>
                             <annotationProcessorPaths>
                                 <path>
                                     <groupId>info.picocli</groupId>
