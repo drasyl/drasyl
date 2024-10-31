@@ -317,10 +317,11 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 if (peerServerChannel != null) {
                     final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
                     if (drasylChannel != null) {
-                        LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
+                        LOG.trace("{} Pass message via IntraVm to peer `{}`.", this, remoteAddress);
                         drasylChannel.queueRead(buf.retain());
                         if (in.size() == 1) {
                             // we passed last entry
+                            LOG.trace("{} finishRead.", this);
                             drasylChannel.finishRead();
                         }
                     }
@@ -329,9 +330,10 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         final boolean lastMsg = in.size() == 1;
                         peerServerChannel.serve(identity.getAddress()).addListener(future -> {
                             final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
-                            LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
+                            LOG.trace("{} Pass message via IntraVm to peer `{}`.", this, remoteAddress);
                             drasylChannel1.queueRead(buf);
                             if (lastMsg) {
+                                LOG.trace("{} finishRead.", this);
                                 drasylChannel1.finishRead();
                             }
                         });
@@ -345,7 +347,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         final ApplicationMessage appMsg = ApplicationMessage.of(parent().config().getNetworkId(), (IdentityPublicKey) remoteAddress, identity.getIdentityPublicKey(), identity.getProofOfWork(), buf.retain());
                         final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
 
-                        LOG.trace("Resolve message to endpoint `{}`.", endpoint);
+                        LOG.trace("{} Resolve message to endpoint `{}`.", this, endpoint);
                         if (parent().udpChannel().isWritable()) {
                             doUdpFlush = true;
                             parent().udpChannel().write(inetMsg);
@@ -356,7 +358,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                         }
                     }
                     else {
-                        LOG.warn("Discard messages as no path exist to peer `{}`.", remoteAddress);
+                        LOG.warn("{} Discard messages as no path exist to peer `{}`.", this, remoteAddress);
                     }
                 }
 
