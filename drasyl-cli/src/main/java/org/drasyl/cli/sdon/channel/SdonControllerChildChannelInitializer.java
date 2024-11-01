@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import org.drasyl.util.Worm;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.sdon.SdonCommand.OBJECT_MAPPER;
 
 public class SdonControllerChildChannelInitializer extends ConnectionChannelInitializer {
     private final PrintStream out;
@@ -55,7 +56,7 @@ public class SdonControllerChildChannelInitializer extends ConnectionChannelInit
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
         final ChannelPipeline p = ctx.pipeline();
-        p.addLast(new JacksonCodec<>(SdonMessage.class));
+        p.addLast(new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class));
         p.addLast(new SdonMessageChildHandler());
     }
 

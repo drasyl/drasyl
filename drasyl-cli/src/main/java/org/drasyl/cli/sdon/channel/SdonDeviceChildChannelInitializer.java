@@ -36,6 +36,7 @@ import org.drasyl.util.Worm;
 import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.cli.sdon.SdonCommand.OBJECT_MAPPER;
 
 public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitializer {
     private final PrintStream out;
@@ -57,7 +58,7 @@ public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitiali
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
         final ChannelPipeline p = ctx.pipeline();
-        p.addLast(new JacksonCodec<>(SdonMessage.class));
+        p.addLast(new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class));
         p.addLast(new SdonMessageChildHandler());
     }
 

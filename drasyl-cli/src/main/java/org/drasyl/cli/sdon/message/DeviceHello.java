@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.util.Arrays;
+import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
@@ -47,8 +48,25 @@ public class DeviceHello implements SdonMessage {
 
     @Override
     public String toString() {
-        return "NodeHello{" +
+        return "DeviceHello{" +
                 "tags=" + Arrays.toString(tags) +
                 '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final DeviceHello that = (DeviceHello) o;
+        return Objects.deepEquals(tags, that.tags);
+    }
+
+    @Override
+    public int hashCode() {
+        return Arrays.hashCode(tags);
     }
 }

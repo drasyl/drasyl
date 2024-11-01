@@ -21,6 +21,11 @@
  */
 package org.drasyl.cli.sdon;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.serialization.DrasylAddressMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 import picocli.CommandLine.HelpCommand;
 
 import static picocli.CommandLine.Command;
@@ -39,4 +44,10 @@ import static picocli.CommandLine.Command;
         }
 )
 public class SdonCommand {
+    public static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
+    static {
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
+    }
 }

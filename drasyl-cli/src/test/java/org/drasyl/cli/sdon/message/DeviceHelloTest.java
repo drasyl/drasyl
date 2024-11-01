@@ -23,11 +23,12 @@ package org.drasyl.cli.sdon.message;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.cli.sdon.SdonCommand.OBJECT_MAPPER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 
 class DeviceHelloTest {
@@ -35,18 +36,23 @@ class DeviceHelloTest {
     class Serialization {
         @Test
         void shouldBeSerializable() {
-            final JacksonCodec<SdonMessage> handler = new JacksonCodec<>(SdonMessage.class);
+            final JacksonCodec<SdonMessage> handler = new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final DeviceHello msg = new DeviceHello(new String[]{ "foo", "bar", "baz" });
+
+            // serialize
             channel.writeOutbound(msg);
+            final Object serializedMsg = channel.readOutbound();
+            assertInstanceOf(ByteBuf.class, serializedMsg);
+
+            // deserialize
+            channel.writeInbound(serializedMsg);
+            final Object deserializedMsg = channel.readInbound();
+            assertEquals(msg, deserializedMsg);
 
             channel.checkException();
-
-            final Object readMsg = channel.readOutbound();
-            assertInstanceOf(ByteBuf.class, readMsg);
-
-            ReferenceCountUtil.release(readMsg);
+            channel.close();
         }
     }
 }

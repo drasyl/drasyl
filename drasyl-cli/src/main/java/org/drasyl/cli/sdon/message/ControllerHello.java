@@ -26,6 +26,7 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.cli.sdon.config.Policy;
 
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
@@ -55,5 +56,22 @@ public class ControllerHello implements SdonMessage {
         return "ControllerHello{" +
                 "policies='" + policies + '\'' +
                 '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final ControllerHello that = (ControllerHello) o;
+        return Objects.equals(policies, that.policies);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hashCode(policies);
     }
 }

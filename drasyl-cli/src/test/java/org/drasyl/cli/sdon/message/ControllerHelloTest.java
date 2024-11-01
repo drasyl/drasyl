@@ -23,7 +23,6 @@ package org.drasyl.cli.sdon.message;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.cli.sdon.config.LinkPolicy;
 import org.drasyl.cli.sdon.config.TunPolicy;
 import org.drasyl.handler.codec.JacksonCodec;
@@ -35,6 +34,8 @@ import java.net.UnknownHostException;
 import java.util.Map;
 import java.util.Set;
 
+import static org.drasyl.cli.sdon.SdonCommand.OBJECT_MAPPER;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertInstanceOf;
 import static test.util.IdentityTestUtil.ID_1;
 
@@ -42,8 +43,8 @@ class ControllerHelloTest {
     @Nested
     class Serialization {
         @Test
-        void shouldBeSerializable() throws UnknownHostException {
-            final JacksonCodec<SdonMessage> handler = new JacksonCodec<>(SdonMessage.class);
+        void shouldBeSerializableAndDeserializable() throws UnknownHostException {
+            final JacksonCodec<SdonMessage> handler = new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             final ControllerHello msg = new ControllerHello(Set.of(
@@ -60,14 +61,19 @@ class ControllerHelloTest {
                             ID_1.getAddress()
                     )
             ));
+
+            // serialize
             channel.writeOutbound(msg);
+            final Object serializedMsg = channel.readOutbound();
+            assertInstanceOf(ByteBuf.class, serializedMsg);
+
+            // deserialize
+            channel.writeInbound(serializedMsg);
+            final Object deserializedMsg = channel.readInbound();
+            assertEquals(msg, deserializedMsg);
 
             channel.checkException();
-
-            final Object readMsg = channel.readOutbound();
-            assertInstanceOf(ByteBuf.class, readMsg);
-
-            ReferenceCountUtil.release(readMsg);
+            channel.close();
         }
     }
 }
