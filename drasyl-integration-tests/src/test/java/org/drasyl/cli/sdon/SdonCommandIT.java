@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
  */
 package org.drasyl.cli.sdon;
 
-import ch.qos.logback.classic.Level;
 import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.node.DrasylConfig;
@@ -133,7 +132,7 @@ class SdonCommandIT {
         deviceThread = new Thread(() -> new SdonDeviceCommand(
                 new PrintStream(deviceOut, true),
                 System.err,
-                Level.TRACE,//null,
+                null,
                 devicePath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
