@@ -27,7 +27,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.identity.DrasylAddress;
 
-import java.net.InetAddress;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -38,16 +37,13 @@ import static java.util.Objects.requireNonNull;
 public class LinkPolicy extends Policy {
     private final String peer;
     private final DrasylAddress peerAddress;
-    private final InetAddress peerIpAddress;
 
     @JsonCreator
     public LinkPolicy(@JsonProperty("peer") final String peer,
-                      @JsonProperty("peerAddress") final DrasylAddress peerAddress,
-                      @JsonProperty("peerIpAddress") final InetAddress peerIpAddress) {
+                      @JsonProperty("peerAddress") final DrasylAddress peerAddress) {
         super(PolicyState.PRESENT, PolicyState.PRESENT);
         this.peer = requireNonNull(peer);
         this.peerAddress = requireNonNull(peerAddress);
-        this.peerIpAddress = requireNonNull(peerIpAddress);
     }
 
     @JsonGetter("peer")
@@ -60,11 +56,6 @@ public class LinkPolicy extends Policy {
         return peerAddress;
     }
 
-    @JsonGetter("peerIpAddress")
-    public InetAddress peerIpAddress() {
-        return peerIpAddress;
-    }
-
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -74,12 +65,12 @@ public class LinkPolicy extends Policy {
             return false;
         }
         final LinkPolicy that = (LinkPolicy) o;
-        return Objects.equals(peer, that.peer) && Objects.equals(peerAddress, that.peerAddress) && Objects.equals(peerIpAddress, that.peerIpAddress);
+        return Objects.equals(peer, that.peer) && Objects.equals(peerAddress, that.peerAddress);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(peer, peerAddress, peerIpAddress);
+        return Objects.hash(peer, peerAddress);
     }
 
     @Override
@@ -87,7 +78,6 @@ public class LinkPolicy extends Policy {
         return "LinkPolicy{" +
                 "peer=" + peer +
                 ", peerAddress=" + peerAddress +
-                ", peerIpAddress=" + peerIpAddress +
                 ", currentState=" + currentState +
                 ", desiredState=" + desiredState +
                 '}';

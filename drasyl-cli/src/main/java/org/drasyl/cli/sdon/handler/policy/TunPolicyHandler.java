@@ -71,12 +71,12 @@ import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
 import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
 import static org.drasyl.cli.sdon.handler.UdpServerToTunHandler.MAGIC_NUMBER;
 
-public class IpPolicyHandler extends ChannelInboundHandlerAdapter {
-    private static final Logger LOG = LoggerFactory.getLogger(IpPolicyHandler.class);
+public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
+    private static final Logger LOG = LoggerFactory.getLogger(TunPolicyHandler.class);
     private final TunPolicy policy;
     private Channel tunChannel;
 
-    public IpPolicyHandler(final TunPolicy policy) {
+    public TunPolicyHandler(final TunPolicy policy) {
         this.policy = requireNonNull(policy);
     }
 

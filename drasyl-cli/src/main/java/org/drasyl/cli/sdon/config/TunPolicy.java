@@ -29,7 +29,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.tun.TunChannel;
-import org.drasyl.cli.sdon.handler.policy.IpPolicyHandler;
+import org.drasyl.cli.sdon.handler.policy.TunPolicyHandler;
 import org.drasyl.cli.util.InetAddressDeserializer;
 import org.drasyl.identity.DrasylAddress;
 
@@ -75,7 +75,7 @@ public class TunPolicy extends Policy {
     }
 
     public void addPolicy(final ChannelPipeline pipeline) {
-        pipeline.addLast(HANDLER_NAME, new IpPolicyHandler(this));
+        pipeline.addLast(HANDLER_NAME, new TunPolicyHandler(this));
     }
 
     @Override
