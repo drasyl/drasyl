@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.cli.util;
+package org.drasyl.serialization;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import org.drasyl.identity.DrasylAddress;
@@ -27,7 +27,9 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
+import org.drasyl.util.internal.UnstableApi;
 
+@UnstableApi
 public interface IdentityMixin {
     @JsonIgnore
     DrasylAddress getAddress();
