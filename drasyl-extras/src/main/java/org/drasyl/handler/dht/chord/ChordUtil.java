@@ -23,6 +23,8 @@ package org.drasyl.handler.dht.chord;
 
 import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.serialization.DrasylAddressMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 
@@ -37,8 +39,8 @@ import static org.drasyl.util.Preconditions.requireInRange;
 @SuppressWarnings("java:S109")
 public final class ChordUtil {
     static {
-        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);
-        OBJECT_MAPPER.addMixIn(DrasylAddress.class, LocalChordNode.DrasylAddressMixin.class);
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
     }
 
     private static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];

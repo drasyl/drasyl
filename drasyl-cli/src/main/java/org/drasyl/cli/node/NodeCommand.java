@@ -29,7 +29,7 @@ import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.cli.util.IdentityPublicKeyMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
