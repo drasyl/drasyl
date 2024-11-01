@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,8 +21,6 @@
  */
 package org.drasyl.cli.wormhole;
 
-import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.EventLoopGroup;
 import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.wormhole.WormholeSendCommand.Payload;
@@ -155,7 +153,6 @@ class WormholeCommandIT {
         // create receiving node
         final Path receiverPath = path.resolve("receiver.identity");
         IdentityManager.writeIdentityFile(receiverPath, ID_3);
-        final EventLoopGroup receiverGroup = new DefaultEventLoopGroup(1);
         receiverThread = new Thread(() -> new WormholeReceiveCommand(
                 new PrintStream(receiverOut, true),
                 System.err,
@@ -218,7 +215,6 @@ class WormholeCommandIT {
             // create receiving node
             final Path receiverPath = path.resolve("receiver.identity");
             IdentityManager.writeIdentityFile(receiverPath, ID_3);
-            final EventLoopGroup receiverGroup = new DefaultEventLoopGroup(1);
             receiverThread = new Thread(() -> new WormholeReceiveCommand(
                     new PrintStream(receiverOut, true),
                     System.err,
