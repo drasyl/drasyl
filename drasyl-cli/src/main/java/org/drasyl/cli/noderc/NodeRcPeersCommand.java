@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,11 @@ import org.drasyl.serialization.DrasylAddressMixin;
 import org.drasyl.serialization.IdentityPublicKeyMixin;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.serialization.DrasylAddressMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
+import org.drasyl.serialization.PeerMixin;
+import org.drasyl.serialization.PeersListMixin;
+import org.drasyl.serialization.RoleMixin;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
@@ -70,7 +75,7 @@ public class NodeRcPeersCommand extends AbstractRcSubcommand {
     }
 
     @Override
-    protected void printResult(Object result) throws JsonProcessingException {
+    protected void printResult(final Object result) throws JsonProcessingException {
         if (!pretty) {
             super.printResult(result);
         }

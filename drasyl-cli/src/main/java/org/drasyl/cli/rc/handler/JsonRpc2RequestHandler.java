@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,15 +26,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.cli.node.message.JsonRpc2Error;
 import org.drasyl.cli.node.message.JsonRpc2Request;
 import org.drasyl.cli.node.message.JsonRpc2Response;
-import org.drasyl.serialization.IdentityMixin;
-import org.drasyl.serialization.IdentityPublicKeyMixin;
-import org.drasyl.serialization.IdentitySecretKeyMixin;
-import org.drasyl.serialization.KeyAgreementPublicKeyMixin;
-import org.drasyl.serialization.KeyAgreementSecretKeyMixin;
-import org.drasyl.serialization.PeerMixin;
-import org.drasyl.serialization.PeersListMixin;
-import org.drasyl.serialization.ProofOfWorkMixin;
-import org.drasyl.serialization.RoleMixin;
 import org.drasyl.handler.peers.Peer;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.peers.Role;
@@ -44,6 +35,15 @@ import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.serialization.IdentityMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
+import org.drasyl.serialization.IdentitySecretKeyMixin;
+import org.drasyl.serialization.KeyAgreementPublicKeyMixin;
+import org.drasyl.serialization.KeyAgreementSecretKeyMixin;
+import org.drasyl.serialization.PeerMixin;
+import org.drasyl.serialization.PeersListMixin;
+import org.drasyl.serialization.ProofOfWorkMixin;
+import org.drasyl.serialization.RoleMixin;
 
 import java.util.Map;
 
