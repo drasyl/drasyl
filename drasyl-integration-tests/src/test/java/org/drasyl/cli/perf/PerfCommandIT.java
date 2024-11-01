@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,6 @@
 package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
-import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.EventLoopGroup;
 import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
@@ -31,7 +29,6 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
@@ -126,9 +123,6 @@ class PerfCommandIT {
         // create server
         final Path serverPath = path.resolve("server.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_2);
-        final EventLoopGroup serverParentGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup serverChildGroup = new DefaultEventLoopGroup();
-        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,
@@ -155,8 +149,6 @@ class PerfCommandIT {
         // create client
         final Path clientPath = path.resolve("client.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_3);
-        final EventLoopGroup clientParentGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup clientChildGroup = clientParentGroup;
         clientThread = new Thread(() -> new PerfClientCommand(
                 new PrintStream(clientOut, true),
                 System.err,
