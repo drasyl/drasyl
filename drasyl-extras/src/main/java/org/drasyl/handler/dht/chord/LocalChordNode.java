@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,6 @@
  */
 package org.drasyl.handler.dht.chord;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
@@ -33,7 +30,6 @@ import io.netty.util.concurrent.SucceededFuture;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.annotation.RmiCaller;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.FutureComposer;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -653,21 +649,5 @@ public class LocalChordNode implements RemoteChordNode {
                 return composeSucceededFuture();
             }
         }).finish(group.next());
-    }
-
-    @JsonDeserialize(as = IdentityPublicKey.class)
-    public interface DrasylAddressMixin {
-    }
-
-    public interface IdentityPublicKeyMixin {
-        @JsonValue
-        String toString();
-
-        @SuppressWarnings("unused")
-        @JsonCreator
-        static DrasylAddress of(final String bytes) {
-            // won't be called
-            return null;
-        }
     }
 }

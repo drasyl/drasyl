@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@ import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.serialization.DrasylAddressMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 
 import java.nio.ByteBuffer;
 
@@ -37,8 +39,8 @@ import static org.drasyl.util.Preconditions.requireInRange;
 @SuppressWarnings("java:S109")
 public final class ChordUtil {
     static {
-        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, LocalChordNode.IdentityPublicKeyMixin.class);
-        OBJECT_MAPPER.addMixIn(DrasylAddress.class, LocalChordNode.DrasylAddressMixin.class);
+        OBJECT_MAPPER.addMixIn(IdentityPublicKey.class, IdentityPublicKeyMixin.class);
+        OBJECT_MAPPER.addMixIn(DrasylAddress.class, DrasylAddressMixin.class);
     }
 
     private static final long[] POWER_OF_TWO = new long[1 + Integer.SIZE];
