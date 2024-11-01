@@ -924,6 +924,18 @@
           "new": "class org.drasyl.identity.IdentityPublicKey",
           "annotation": "@com.google.auto.value.AutoValue",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.dht.chord.LocalChordNode.DrasylAddressMixin",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.dht.chord.LocalChordNode.IdentityPublicKeyMixin",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
