@@ -51,7 +51,9 @@ import java.net.SocketAddress;
 import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
+import java.util.HashSet;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
@@ -298,6 +300,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
         writeInProgress = true;
         boolean doUdpFlush = false;
+        final Set<DrasylChannel> intraVmChannelsWrittenTo = new HashSet<>();
         final PeersManager peersManager = parent().config().getPeersManager();
         try {
             while (true) {
@@ -313,17 +316,13 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 }
 
                 // Intra VM
-                final DrasylServerChannel peerServerChannel = parent().serverChannels.get(remoteAddress);
+                final DrasylServerChannel peerServerChannel = DrasylServerChannel.serverChannels.get(remoteAddress);
                 if (peerServerChannel != null) {
                     final DrasylChannel drasylChannel = peerServerChannel.getChannel(identity.getAddress());
                     if (drasylChannel != null) {
                         LOG.trace("{} Pass message via IntraVm to peer `{}`.", this, remoteAddress);
                         drasylChannel.queueRead(buf.retain());
-                        if (in.size() == 1) {
-                            // we passed last entry
-                            LOG.trace("{} finishRead.", this);
-                            drasylChannel.finishRead();
-                        }
+                        intraVmChannelsWrittenTo.add(drasylChannel);
                     }
                     else {
                         buf.retain();
@@ -371,6 +370,10 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
         if (doUdpFlush) {
             parent().udpChannel().flush();
+        }
+
+        for (final DrasylChannel channel : intraVmChannelsWrittenTo) {
+            channel.finishRead();
         }
     }
 
