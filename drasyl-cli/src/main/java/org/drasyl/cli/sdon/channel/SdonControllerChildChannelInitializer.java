@@ -55,9 +55,7 @@ public class SdonControllerChildChannelInitializer extends ConnectionChannelInit
 
     @Override
     protected void handshakeCompleted(final ChannelHandlerContext ctx) {
-        final ChannelPipeline p = ctx.pipeline();
-        p.addLast(new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class));
-        p.addLast(new SdonMessageChildHandler());
+        // do nothing
     }
 
     @Override
@@ -71,7 +69,7 @@ public class SdonControllerChildChannelInitializer extends ConnectionChannelInit
         super.initChannel(ch);
 
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new JacksonCodec<>(SdonMessage.class));
+        p.addLast(new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class));
         p.addLast(new SdonMessageChildHandler());
     }
 }

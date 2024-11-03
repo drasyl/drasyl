@@ -69,10 +69,10 @@ public class NetworkLink extends LuaTable {
     @Override
     public int hashCode() {
         if (node1().hashCode() > node2().hashCode()) {
-            return Objects.hash(network, node1(), node2());
+            return Objects.hash(node1(), node2());
         }
         else {
-            return Objects.hash(network, node2(), node1());
+            return Objects.hash(node2(), node1());
         }
     }
 

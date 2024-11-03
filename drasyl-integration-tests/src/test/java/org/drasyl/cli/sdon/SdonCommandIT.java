@@ -37,7 +37,6 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +49,7 @@ import static org.drasyl.util.network.NetworkUtil.createInetAddress;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
+import static test.util.IdentityTestUtil.ID_4;
 
 class SdonCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(SdonCommandIT.class);
@@ -57,7 +57,8 @@ class SdonCommandIT {
     private ByteArrayOutputStream controllerOut;
     private ByteArrayOutputStream deviceOut;
     private Thread controllerThread;
-    private Thread deviceThread;
+    private Thread deviceThread1;
+    private Thread deviceThread2;
 
     @BeforeAll
     static void beforeAll() {
@@ -97,8 +98,8 @@ class SdonCommandIT {
         if (controllerThread != null) {
             controllerThread.interrupt();
         }
-        if (deviceThread != null) {
-            deviceThread.interrupt();
+        if (deviceThread1 != null) {
+            deviceThread1.interrupt();
         }
 
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "FINISHED " + info.getDisplayName()));
@@ -110,12 +111,15 @@ class SdonCommandIT {
         // create controller
         final Path networkFile = path.resolve("network.conf");
         Files.writeString(networkFile, "net = create_network()\n" +
+                "net:add_node('n1')\n" +
+                "net:add_node('n2')\n" +
+                "net:add_link('n1', 'n2')\n" +
                 "register_network(net)", CREATE);
 
         final Path controllerPath = path.resolve("controller.identity");
         IdentityManager.writeIdentityFile(controllerPath, ID_2);
         controllerThread = new Thread(() -> new SdonControllerCommand(
-                new PrintStream(controllerOut, true),
+                System.out,//new PrintStream(controllerOut, true),
                 System.err,
                 null,
                 controllerPath.toFile(),
@@ -126,27 +130,46 @@ class SdonCommandIT {
                 networkFile.toFile()).call());
         controllerThread.start();
 
-        // create device
-        final Path devicePath = path.resolve("device.identity");
-        IdentityManager.writeIdentityFile(devicePath, ID_3);
-        deviceThread = new Thread(() -> new SdonDeviceCommand(
-                new PrintStream(deviceOut, true),
+        // create device1
+        final Path devicePath1 = path.resolve("device1.identity");
+        IdentityManager.writeIdentityFile(devicePath1, ID_3);
+        deviceThread1 = new Thread(() -> new SdonDeviceCommand(
+                System.err,//new PrintStream(deviceOut, true),
                 System.err,
                 null,
-                devicePath.toFile(),
+                devicePath1.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
                 0,
                 Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
                 ID_2.getIdentityPublicKey(),
                 new String[]{ "foo", "bar" }).call());
-        deviceThread.start();
+        deviceThread1.start();
+
+        // create device1
+        final Path devicePath2 = path.resolve("device2.identity");
+        IdentityManager.writeIdentityFile(devicePath2, ID_4);
+        deviceThread2 = new Thread(() -> new SdonDeviceCommand(
+                System.err,//new PrintStream(deviceOut, true),
+                System.err,
+                null,
+                devicePath2.toFile(),
+                new InetSocketAddress("127.0.0.1", 0),
+                10_000,
+                0,
+                Map.of(superPeer.identity().getIdentityPublicKey(), new InetSocketAddress("127.0.0.1", superPeer.getPort())),
+                ID_2.getIdentityPublicKey(),
+                new String[]{ "bar", "baz" }).call());
+        deviceThread2.start();
+
+
 
         while (true) {
             Thread.sleep(1000);
         }
 
 //        controllerThread.join();
-//        deviceThread.join();
+//        deviceThread1.join();
+//        deviceThread2.join();
     }
 }

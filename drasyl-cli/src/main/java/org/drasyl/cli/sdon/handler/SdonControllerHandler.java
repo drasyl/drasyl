@@ -124,7 +124,13 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                                 node = entry.getValue();
                             }
                         }
-                        final Set<Policy> policies = node.createPolicies();
+                        final Set<Policy> policies;
+                        if (node != null) {
+                            policies = node.createPolicies();
+                        }
+                        else {
+                            policies = Set.of();
+                        }
 
                         final ControllerHello controllerHello = new ControllerHello(policies);
                         LOG.debug("Send {} to {}.", controllerHello, device.address());
@@ -158,11 +164,11 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
                 if (device.isOffline()) {
                     channel.closeFuture().addListener((ChannelFutureListener) future -> {
                         device.setOffline();
-                        LOG.debug("`{}` now offline.", sender);
+                        out.println("Device " + sender + " deregistered.");
                     });
 
                     device.setOnline();
-                    LOG.debug("`{}` now online.", sender);
+                    out.println("Device " + sender + " registered.");
 
                     final ControllerHello controllerHello = new ControllerHello();
                     LOG.debug("Send {} to {}.", controllerHello, sender);

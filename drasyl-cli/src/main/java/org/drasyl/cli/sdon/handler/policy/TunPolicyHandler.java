@@ -28,6 +28,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -74,7 +75,7 @@ import static org.drasyl.cli.sdon.handler.UdpServerToTunHandler.MAGIC_NUMBER;
 public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TunPolicyHandler.class);
     private final TunPolicy policy;
-    private Channel tunChannel;
+    private ChannelFuture tunChannelFuture;
 
     public TunPolicyHandler(final TunPolicy policy) {
         this.policy = requireNonNull(policy);
@@ -98,7 +99,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                         p.addLast(new TunToDrasylHandler(parent, policy));
                     }
                 });
-        tunChannel = b.bind(new TunAddress()).addListener((ChannelFutureListener) future -> {
+        tunChannelFuture = b.bind(new TunAddress()).addListener((ChannelFutureListener) future -> {
             if (future.isSuccess()) {
                 final String name = future.channel().localAddress().toString();
                 final String addressStr = policy.address().getHostAddress();
@@ -127,15 +128,15 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
 
                 policy.setCurrentState(policy.desiredState());
             }
-        }).syncUninterruptibly().channel();
+        });
 
     }
 
     @Override
     public void handlerRemoved(final ChannelHandlerContext ctx) {
-        if (tunChannel != null) {
-            final SocketAddress ifName = tunChannel.localAddress();
-            tunChannel.close().syncUninterruptibly().addListener(FIRE_EXCEPTION_ON_FAILURE);
+        if (tunChannelFuture != null) {
+            final SocketAddress ifName = tunChannelFuture.channel().localAddress();
+            tunChannelFuture.channel().close().syncUninterruptibly().addListener(FIRE_EXCEPTION_ON_FAILURE);
             // FIXME: for some reason the interface is not removed properly. Should be fixed. Here's my workaround
             try {
                 exec("/usr/sbin/ip", "link", "delete", ifName.toString());

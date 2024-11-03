@@ -80,11 +80,11 @@ public class SdonControllerCommand extends ChannelOptions {
     public Integer call() {
         try {
             config = NetworkConfig.parseFile(configFile);
+            return super.call();
         }
         catch (final IOException e) {
             throw new RuntimeException(e);
         }
-        return super.call();
     }
 
     @Override

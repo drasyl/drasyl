@@ -80,7 +80,7 @@ public class NetworkNode extends LuaTable {
             return false;
         }
         final NetworkNode that = (NetworkNode) o;
-        return Objects.equals(network, that.network);
+        return Objects.equals(get("name"), that.get("name"));
     }
 
     public DrasylAddress name() {
