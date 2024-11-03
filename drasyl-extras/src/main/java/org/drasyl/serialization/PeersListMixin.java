@@ -28,9 +28,11 @@ import org.drasyl.handler.peers.Peer;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.Map;
 
+@UnstableApi
 public abstract class PeersListMixin extends PeersList {
     @JsonCreator
     public PeersListMixin(@JsonDeserialize(keyAs = IdentityPublicKey.class) final Map<DrasylAddress, Peer> peers) {

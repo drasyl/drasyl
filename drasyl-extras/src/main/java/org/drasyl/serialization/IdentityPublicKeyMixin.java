@@ -24,7 +24,9 @@ package org.drasyl.serialization;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.util.internal.UnstableApi;
 
+@UnstableApi
 public interface IdentityPublicKeyMixin {
     @JsonValue
     String toString();

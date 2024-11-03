@@ -26,9 +26,11 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.handler.peers.Peer;
 import org.drasyl.handler.peers.Role;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.net.InetSocketAddress;
 
+@UnstableApi
 public abstract class PeerMixin extends Peer {
     @JsonCreator
     public PeerMixin(@JsonProperty("role") final Role role,

@@ -27,7 +27,9 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.IdentitySecretKey;
 import org.drasyl.identity.KeyAgreementPublicKey;
 import org.drasyl.identity.KeyAgreementSecretKey;
+import org.drasyl.util.internal.UnstableApi;
 
+@UnstableApi
 public interface IdentityMixin {
     @JsonIgnore
     DrasylAddress getAddress();

@@ -22,7 +22,9 @@
 package org.drasyl.serialization;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.drasyl.util.internal.UnstableApi;
 
+@UnstableApi
 public interface KeyAgreementSecretKeyMixin {
     @JsonValue
     String toUnmaskedString();
