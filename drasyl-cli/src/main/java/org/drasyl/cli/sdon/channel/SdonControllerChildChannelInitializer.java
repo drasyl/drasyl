@@ -46,7 +46,7 @@ public class SdonControllerChildChannelInitializer extends ConnectionChannelInit
                                                  final PrintStream err,
                                                  final Worm<Integer> exitCode,
                                                  final NetworkConfig networkConfig) {
-        super(false, DEFAULT_SERVER_PORT);
+        super(true, DEFAULT_SERVER_PORT);
         this.out = requireNonNull(out);
         this.err = requireNonNull(err);
         this.exitCode = requireNonNull(exitCode);

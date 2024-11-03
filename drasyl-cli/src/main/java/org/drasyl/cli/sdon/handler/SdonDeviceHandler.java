@@ -87,7 +87,7 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
             out.println("Device listening on address " + ctx.channel().localAddress());
             out.println("----------------------------------------------------------------------------------------------");
 
-            out.print("Connecting to controller `" + controller + "`...");
+            out.print("Connecting to controller " + controller + "...");
             ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
                 controllerChannel = future.getNow();
 

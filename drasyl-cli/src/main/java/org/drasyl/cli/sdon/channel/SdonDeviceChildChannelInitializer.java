@@ -27,9 +27,7 @@ import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.cli.sdon.handler.SdonMessageChildHandler;
 import org.drasyl.cli.sdon.message.SdonMessage;
-import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.handler.connection.SegmentCodec;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
@@ -81,7 +79,6 @@ public class SdonDeviceChildChannelInitializer extends ConnectionChannelInitiali
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new JacksonCodec<>(SdonMessage.class));
-        p.addBefore(p.context(SegmentCodec.class).name(), null, new TunPacketCodec());
         p.addLast(new SdonMessageChildHandler());
     }
 }
