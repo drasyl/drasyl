@@ -22,6 +22,7 @@
 package org.drasyl.identity;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
@@ -42,6 +43,7 @@ import static org.drasyl.crypto.Crypto.PK_LONG_TIME_KEY_LENGTH;
  */
 @SuppressWarnings({ "java:S118", "java:S1213" })
 public class IdentityPublicKey extends DrasylAddress implements PublicKey {
+    public static final boolean INTERNING_PUB_KEYS = SystemPropertyUtil.getBoolean("org.drasyl.pub-key.interning", true);
     public static final short KEY_LENGTH_AS_BYTES = PK_LONG_TIME_KEY_LENGTH;
     public static final short KEY_LENGTH_AS_STRING = KEY_LENGTH_AS_BYTES * 2;
     private static final InternPool<IdentityPublicKey> POOL = new InternPool<>();
@@ -73,7 +75,12 @@ public class IdentityPublicKey extends DrasylAddress implements PublicKey {
      * See {@link InternPool#intern(Object)}
      */
     public IdentityPublicKey intern() {
-        return POOL.intern(this);
+        if (INTERNING_PUB_KEYS) {
+            return POOL.intern(this);
+        }
+        else {
+            return this;
+        }
     }
 
     @Override
