@@ -17,6 +17,11 @@ jobs:
     name: Java ${{ matrix.java }}
     runs-on: ubuntu-latest
     timeout-minutes: 15
+    permissions:
+      checks: write
+      contents: read
+      issues: read
+      pull-requests: write
 
     steps:
       - uses: actions/checkout@v4.1.2
