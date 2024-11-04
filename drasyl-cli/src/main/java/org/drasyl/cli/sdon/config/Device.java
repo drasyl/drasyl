@@ -27,17 +27,18 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.luaj.vm2.LuaTable;
 import org.luaj.vm2.LuaValue;
 
-import java.util.Arrays;
-import java.util.stream.Collectors;
+import java.util.Map;
+import java.util.Set;
 
 /**
  * Represents a device.
  */
 public class Device extends LuaTable {
-    Device(final DrasylAddress address, final String[] tags) {
+    Device(final DrasylAddress address) {
         set("address", LuaValue.valueOf(address.toString()));
         set("online", FALSE);
-        set("tags", LuaHelper.createTable(Arrays.asList(tags).stream().map(LuaValue::valueOf).collect(Collectors.toList())));
+        set("facts", tableOf());
+        set("policies", tableOf());
     }
 
     @Override
@@ -45,7 +46,8 @@ public class Device extends LuaTable {
         final LuaTable stringTable = tableOf();
         stringTable.set("address", get("address"));
         stringTable.set("online", get("online"));
-        stringTable.set("tags", get("tags"));
+        stringTable.set("facts", get("facts"));
+        stringTable.set("policies", get("policies"));
         return "Device" + LuaHelper.toString(stringTable);
     }
 
@@ -67,5 +69,18 @@ public class Device extends LuaTable {
 
     public DrasylAddress address() {
         return IdentityPublicKey.of(get("address").tojstring());
+    }
+
+    public void setFacts(final Map<String, Object> facts) {
+        set("facts", LuaHelper.createTable(facts));
+    }
+
+    public void setPolicies(final Set<Policy> policies) {
+        final LuaTable table = tableOf();
+        int index = 1;
+        for (final Policy policy : policies) {
+            table.set(index++, policy.luaValue());
+        }
+        set("policies", table);
     }
 }

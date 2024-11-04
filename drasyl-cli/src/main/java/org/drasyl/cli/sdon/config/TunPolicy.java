@@ -31,11 +31,16 @@ import io.netty.util.internal.StringUtil;
 import org.drasyl.channel.tun.TunChannel;
 import org.drasyl.cli.sdon.handler.policy.TunPolicyHandler;
 import org.drasyl.cli.util.InetAddressDeserializer;
+import org.drasyl.cli.util.LuaHelper;
 import org.drasyl.identity.DrasylAddress;
+import org.luaj.vm2.LuaNumber;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaValue;
 
 import java.net.InetAddress;
 import java.util.Map;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -84,6 +89,16 @@ public class TunPolicy extends Policy {
     }
 
     @Override
+    public LuaValue luaValue() {
+        final LuaValue table = super.luaValue();
+        table.set("address", LuaString.valueOf(address().getHostAddress()));
+        table.set("netmask", LuaNumber.valueOf(netmask));
+        final Map<String, Object> stringMapping = mapping.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().getHostAddress(), e -> e.getValue().toString()));
+        table.set("mapping", LuaHelper.createTable(stringMapping));
+        return table;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -106,6 +121,7 @@ public class TunPolicy extends Policy {
                 "address=" + address +
                 ", netmask=" + netmask +
                 ", mapping=" + mapping +
+                ", state=" + state +
                 '}';
     }
 }

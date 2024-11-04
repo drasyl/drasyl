@@ -40,8 +40,8 @@ public class Devices extends LuaTable {
         return "Devices" + LuaHelper.toString(LuaHelper.createTable(devices.values()));
     }
 
-    public Device getOrCreateDevice(final DrasylAddress address, final String[] tags) {
-        return devices.computeIfAbsent(address, k -> new Device(k, tags));
+    public Device getOrCreateDevice(final DrasylAddress address) {
+        return devices.computeIfAbsent(address, k -> new Device(k));
     }
 
     public Collection<Device> getDevices() {

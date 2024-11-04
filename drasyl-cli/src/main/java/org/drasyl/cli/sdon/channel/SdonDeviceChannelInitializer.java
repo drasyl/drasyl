@@ -30,6 +30,8 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
+import java.util.HashMap;
+import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
 
@@ -60,8 +62,24 @@ public class SdonDeviceChannelInitializer extends AbstractChannelInitializer {
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
+        final Map<String, Object> facts = gatherFacts();
+
         final ChannelPipeline p = ch.pipeline();
-        p.addLast(new SdonDeviceHandler(out, controller, tags));
+        p.addLast(new SdonDeviceHandler(out, controller, facts));
         p.addLast(new PrintAndExitOnExceptionHandler(err, exitCode));
+    }
+
+    private Map<String, Object> gatherFacts() {
+        final Map<String, Object> facts = new HashMap<>();
+
+        facts.put("tags", tags);
+
+        final Map<String, Object> osFacts = new HashMap<>();
+        osFacts.put("arch", System.getProperty("os.arch"));
+        osFacts.put("name", System.getProperty("os.name"));
+        osFacts.put("version", System.getProperty("os.version"));
+        facts.put("os", osFacts);
+
+        return Map.of("sdon", facts);
     }
 }

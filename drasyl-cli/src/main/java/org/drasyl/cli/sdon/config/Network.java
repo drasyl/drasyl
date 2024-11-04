@@ -165,10 +165,7 @@ public class Network extends LuaTable {
     }
 
     private LuaValue getLink(final LuaString node1String, final LuaString node2String) {
-        final Iterator<NetworkLink> iterator = links.iterator();
-        while (iterator.hasNext()) {
-            final NetworkLink link = iterator.next();
-
+        for (NetworkLink link : links) {
             if ((link.node1().equals(node1String) && link.node2().equals(node1String)) || (link.node1().equals(node2String) && link.node2().equals(node2String))) {
                 return link;
             }
@@ -296,8 +293,8 @@ public class Network extends LuaTable {
         return devices;
     }
 
-    public Device getOrCreateDevice(final DrasylAddress address, final String[] tags) {
-        return devices.getOrCreateDevice(address, tags);
+    public Device getOrCreateDevice(final DrasylAddress address) {
+        return devices.getOrCreateDevice(address);
     }
 
     /*

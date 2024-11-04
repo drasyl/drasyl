@@ -26,12 +26,16 @@ import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonSubTypes.Type;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.netty.channel.ChannelPipeline;
+import io.netty.util.internal.StringUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 
-import static java.util.Objects.requireNonNull;
-import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
+import static org.drasyl.cli.sdon.config.Policy.PolicyState.FAILED;
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.PRESENT;
+import static org.luaj.vm2.LuaValue.tableOf;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
@@ -40,40 +44,44 @@ import static org.drasyl.cli.sdon.config.Policy.PolicyState.PRESENT;
 })
 public abstract class Policy {
     private static final Logger LOG = LoggerFactory.getLogger(Policy.class);
-    public PolicyState currentState;
-    public PolicyState desiredState;
+    public PolicyState state;
 
-    protected Policy(final PolicyState currentState, final PolicyState desiredState) {
-        this.currentState = currentState;
-        this.desiredState = desiredState;
+    protected Policy(final PolicyState state) {
+        this.state = state;
     }
 
     protected Policy() {
-        this(ABSENT, PRESENT);
+        this(null);
     }
 
     @JsonIgnore
-    public void setCurrentState(final PolicyState state) {
-        if (currentState != state) {
-            LOG.debug("Policy `{}` went to state `{}`.", this, state);
+    public void setPresent() {
+        if (state != null) {
+            throw new IllegalStateException("Policy state is already set.");
         }
-        this.currentState = requireNonNull(state);
+        this.state = PRESENT;
+    }
+
+    @JsonIgnore
+    public void setFailed() {
+        if (state != null) {
+            throw new IllegalStateException("Policy state is already set.");
+        }
+        this.state = FAILED;
     }
 
     public abstract void addPolicy(final ChannelPipeline pipeline);
 
     public abstract void removePolicy(final ChannelPipeline pipeline);
 
-    public PolicyState currentState() {
-        return currentState;
-    }
-
-    public PolicyState desiredState() {
-        return desiredState;
+    public LuaValue luaValue() {
+        final LuaTable table = tableOf();
+        table.set("type", StringUtil.simpleClassName(this));
+        table.set("state", LuaString.valueOf(state.toString()));
+        return table;
     }
 
     public enum PolicyState {
-        ABSENT,
-        PRESENT,
+        PRESENT, FAILED
     }
 }

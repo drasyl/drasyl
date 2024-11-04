@@ -26,13 +26,15 @@ import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.identity.DrasylAddress;
+import org.luaj.vm2.LuaString;
+import org.luaj.vm2.LuaValue;
 
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
 /**
- * Policy for a link to an other device.
+ * Policy for a link to another device.
  */
 public class LinkPolicy extends Policy {
     private final String peer;
@@ -41,7 +43,7 @@ public class LinkPolicy extends Policy {
     @JsonCreator
     public LinkPolicy(@JsonProperty("peer") final String peer,
                       @JsonProperty("peerAddress") final DrasylAddress peerAddress) {
-        super(PolicyState.PRESENT, PolicyState.PRESENT);
+        super();
         this.peer = requireNonNull(peer);
         this.peerAddress = requireNonNull(peerAddress);
     }
@@ -78,8 +80,7 @@ public class LinkPolicy extends Policy {
         return "LinkPolicy{" +
                 "peer=" + peer +
                 ", peerAddress=" + peerAddress +
-                ", currentState=" + currentState +
-                ", desiredState=" + desiredState +
+                ", state=" + state +
                 '}';
     }
 
@@ -90,5 +91,13 @@ public class LinkPolicy extends Policy {
     @Override
     public void removePolicy(final ChannelPipeline pipeline) {
         // NOOP
+    }
+
+    @Override
+    public LuaValue luaValue() {
+        final LuaValue table = super.luaValue();
+        table.set("peer", LuaString.valueOf(peer));
+        table.set("peerAddress", LuaString.valueOf(peerAddress.toString()));
+        return table;
     }
 }

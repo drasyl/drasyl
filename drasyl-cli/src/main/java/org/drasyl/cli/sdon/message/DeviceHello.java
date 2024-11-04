@@ -24,9 +24,11 @@ package org.drasyl.cli.sdon.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonGetter;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.cli.sdon.config.Policy;
 
-import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,22 +36,35 @@ import static java.util.Objects.requireNonNull;
  * Message sent from device to controller.
  */
 public class DeviceHello implements SdonMessage {
-    private final String[] tags;
+    private final Map<String, Object> facts;
+    private final Set<Policy> policies;
 
     @JsonCreator
-    public DeviceHello(@JsonProperty("tags") final String[] tags) {
-        this.tags = requireNonNull(tags);
+    public DeviceHello(@JsonProperty("facts") final Map<String, Object> facts,
+                       @JsonProperty("policies") final Set<Policy> policies) {
+        this.facts = requireNonNull(facts);
+        this.policies = requireNonNull(policies);
     }
 
-    @JsonGetter("tags")
-    public String[] tags() {
-        return tags;
+    public DeviceHello(final Map<String, Object> facts) {
+        this(facts, Set.of());
+    }
+
+    @JsonGetter
+    public Map<String, Object> facts() {
+        return facts;
+    }
+
+    @JsonGetter
+    public Set<Policy> policies() {
+        return policies;
     }
 
     @Override
     public String toString() {
         return "DeviceHello{" +
-                "tags=" + Arrays.toString(tags) +
+                "facts='" + facts + '\'' +
+                ", policies='" + policies + '\'' +
                 '}';
     }
 
@@ -62,11 +77,11 @@ public class DeviceHello implements SdonMessage {
             return false;
         }
         final DeviceHello that = (DeviceHello) o;
-        return Objects.deepEquals(tags, that.tags);
+        return facts.equals(that.facts) && policies.equals(that.policies);
     }
 
     @Override
     public int hashCode() {
-        return Arrays.hashCode(tags);
+        return Objects.hash(facts, policies);
     }
 }

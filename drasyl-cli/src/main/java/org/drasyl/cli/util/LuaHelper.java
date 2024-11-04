@@ -31,6 +31,8 @@ import org.luaj.vm2.LuaValue;
 import org.luaj.vm2.lib.LibFunction;
 
 import java.util.Collection;
+import java.util.Map;
+import java.util.Map.Entry;
 import java.util.Objects;
 
 import static org.luaj.vm2.LuaValue.tableOf;
@@ -45,6 +47,20 @@ public class LuaHelper {
         int index = 1;
         for (final LuaValue item : collection) {
             table.set(index++, item);
+        }
+        return table;
+    }
+
+    public static LuaTable createTable(final Map<String, Object> map) {
+        final LuaTable table = tableOf();
+        for (final Entry<String, Object> entry : map.entrySet()) {
+            if (entry.getValue() instanceof String) {
+                table.set(LuaString.valueOf(entry.getKey()), LuaString.valueOf((String) entry.getValue()));
+            }
+            else if (entry.getValue() instanceof Map) {
+                table.set(LuaString.valueOf(entry.getKey()), createTable((Map<String, Object>) entry.getValue()));
+            }
+
         }
         return table;
     }

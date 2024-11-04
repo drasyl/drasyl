@@ -158,7 +158,9 @@ public class SdonControllerHandler extends ChannelInboundHandlerAdapter {
 
                 // add devices
                 final Network network = config.network();
-                final Device device = network.getOrCreateDevice(sender, deviceHello.tags());
+                final Device device = network.getOrCreateDevice(sender);
+                device.setFacts(deviceHello.facts());
+                device.setPolicies(deviceHello.policies());
 
                 final DrasylChannel channel = ((DrasylServerChannel) ctx.channel()).getChannels().get(sender);
                 if (device.isOffline()) {

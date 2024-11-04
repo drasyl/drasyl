@@ -68,7 +68,6 @@ import static io.netty.channel.ChannelOption.AUTO_READ;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
-import static org.drasyl.cli.sdon.config.Policy.PolicyState.ABSENT;
 import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
 import static org.drasyl.cli.sdon.handler.UdpServerToTunHandler.MAGIC_NUMBER;
 
@@ -126,7 +125,12 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     exec("/sbin/ip", "link", "set", "dev", name, "up");
                 }
 
-                policy.setCurrentState(policy.desiredState());
+                LOG.debug("Policy `{}` went present.", policy);
+                policy.setPresent();
+            }
+            else {
+                LOG.debug("Policy `{}` failed:", policy, future.cause());
+                policy.setFailed();
             }
         });
 
@@ -144,7 +148,6 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
             catch (final IOException e) {
                 // ignore
             }
-            policy.setCurrentState(ABSENT);
         }
     }
 

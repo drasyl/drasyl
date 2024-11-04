@@ -114,6 +114,11 @@ class SdonCommandIT {
                 "net:add_node('n1')\n" +
                 "net:add_node('n2')\n" +
                 "net:add_link('n1', 'n2')\n" +
+                "net:set_callback(function(net, dev)\n" +
+                "  print('callback called:')\n" +
+                "  print(inspect(net))\n" +
+                "  print(inspect(dev))\n" +
+                "end)\n" +
                 "register_network(net)", CREATE);
 
         final Path controllerPath = path.resolve("controller.identity");
@@ -121,7 +126,7 @@ class SdonCommandIT {
         controllerThread = new Thread(() -> new SdonControllerCommand(
                 System.out,//new PrintStream(controllerOut, true),
                 System.err,
-                null,
+                null,//Level.TRACE,
                 controllerPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
@@ -136,7 +141,7 @@ class SdonCommandIT {
         deviceThread1 = new Thread(() -> new SdonDeviceCommand(
                 System.err,//new PrintStream(deviceOut, true),
                 System.err,
-                null,
+                null,//Level.TRACE,
                 devicePath1.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
@@ -152,7 +157,7 @@ class SdonCommandIT {
         deviceThread2 = new Thread(() -> new SdonDeviceCommand(
                 System.err,//new PrintStream(deviceOut, true),
                 System.err,
-                null,
+                null,//Level.TRACE,
                 devicePath2.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
                 10_000,
