@@ -33,7 +33,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.DatagramChannel;
-import io.netty.util.concurrent.DefaultPromise;
 import io.netty.util.concurrent.Promise;
 import io.netty.util.concurrent.PromiseCombiner;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -227,30 +226,26 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         return channels.get(peer);
     }
 
-    public Promise<DrasylChannel> serve(final DrasylAddress peer, final Promise<DrasylChannel> promise) {
-        if (eventLoop().inEventLoop()) {
-            promise.trySuccess(serve0(peer));
+    public ChannelFuture serve(final DrasylAddress peer) {
+        final DrasylChannel channel;
+        if (isOpen()) {
+            channel = channels.computeIfAbsent(peer, k -> {
+                final DrasylChannel ch = newDrasylChannel(k);
+                pipeline().fireChannelRead(ch);
+                pipeline().fireChannelReadComplete();
+                return ch;
+            });
         }
         else {
-            eventLoop().execute(() -> promise.trySuccess(serve0(peer)));
+            channel = channels.get(peer);
         }
 
-        return promise;
-    }
-
-    public DrasylChannel serve0(final DrasylAddress peer) {
-        assert eventLoop().inEventLoop();
-        DrasylChannel channel = channels.get(peer);
-        if (channel == null && isOpen()) {
-            channel = newDrasylChannel(peer);
-            pipeline().fireChannelRead(channel);
-            pipeline().fireChannelReadComplete();
+        if (channel != null) {
+            return channel.registeredPromise;
         }
-        return channel;
-    }
-
-    public Promise<DrasylChannel> serve(final DrasylAddress peer) {
-        return serve(peer, new DefaultPromise<>(eventLoop()));
+        else {
+            return null;
+        }
     }
 
     public DatagramChannel udpChannel() {
@@ -375,20 +370,8 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
         @Override
         protected void channelRead0(final ChannelHandlerContext ctx,
                                     final DrasylChannel msg) {
-            final DrasylChannel oldValue = ((DrasylServerChannel) ctx.channel()).channels.put((DrasylAddress) msg.remoteAddress(), msg);
             msg.closeFuture().addListener(f -> ((DrasylServerChannel) ctx.channel()).channels.remove(msg.remoteAddress()));
-            if (oldValue != null) {
-                // wait for close to complete!
-                oldValue.close().addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(final ChannelFuture future) throws Exception {
-                        ctx.fireChannelRead(msg);
-                    }
-                });
-            }
-            else {
-                ctx.fireChannelRead(msg);
-            }
+            ctx.fireChannelRead(msg);
         }
     }
 }

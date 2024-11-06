@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.plugin.groups.client.event.GroupJoinedEvent;
@@ -120,7 +121,8 @@ class GroupsManagerHandlerTest {
 
             handler.staleTask(ctx);
 
-            verify(serverChannel.serve0(any()), times(2)).writeAndFlush(argThat((ArgumentMatcher<MemberLeftMessage>) m -> m instanceof MemberLeftMessage &&
+            final DrasylAddress peer = any();
+            verify(serverChannel.serve(peer).channel(), times(2)).writeAndFlush(argThat((ArgumentMatcher<MemberLeftMessage>) m -> m instanceof MemberLeftMessage &&
                     ((MemberLeftMessage) m).getMember().equals(publicKey) &&
                     ((MemberLeftMessage) m).getGroup().equals(org.drasyl.node.plugin.groups.client.Group.of(group.getName()))));
         }

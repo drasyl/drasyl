@@ -94,6 +94,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     private volatile boolean writeInProgress;
     private volatile Future<?> finishReadFuture;
     private volatile long lastApplicationMessageSentTime = -1;
+    volatile ChannelPromise registeredPromise;
 
     @UnstableApi
     DrasylChannel(final Channel parent,
@@ -104,6 +105,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         this.state = state;
         this.identity = requireNonNull(identity);
         this.remoteAddress = remoteAddress;
+        this.registeredPromise = pipeline().newPromise();
     }
 
     DrasylChannel(final DrasylServerChannel parent,
@@ -142,6 +144,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     @Override
     protected void doRegister() {
         state = State.CONNECTED;
+        eventLoop().execute(() -> registeredPromise.setSuccess());
     }
 
     @Override

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,10 +21,10 @@
  */
 package org.drasyl.node.plugin.groups.client;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -125,7 +125,9 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
             final GroupUri groupURI = entry.getValue();
-            ((DrasylServerChannel) ctx.channel()).serve0(groupURI.getManager()).writeAndFlush(GroupLeaveMessage.of(group)).addListener(future -> {
+            final DrasylServerChannel drasylServerChannel = ((DrasylServerChannel) ctx.channel());
+            final DrasylAddress peer = groupURI.getManager();
+            drasylServerChannel.serve(peer).channel().writeAndFlush(GroupLeaveMessage.of(group)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn("Unable to send GroupLeaveMessage", future::cause);
                 }
@@ -230,11 +232,14 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         ctx.fireUserEventTriggered(GroupJoinedEvent.of(
                 group,
                 msg.getMembers(),
-                () -> ((DrasylServerChannel) ctx.channel()).serve0((DrasylAddress) sender).writeAndFlush(GroupLeaveMessage.of(group)).addListener(future -> {
-                    if (!future.isSuccess()) {
-                        LOG.warn("Unable to send GroupLeaveMessage", future::cause);
-                    }
-                })));
+                () -> {
+                    final DrasylServerChannel drasylServerChannel = ((DrasylServerChannel) ctx.channel());
+                    drasylServerChannel.serve((DrasylAddress) sender).channel().writeAndFlush(GroupLeaveMessage.of(group)).addListener(future -> {
+                        if (!future.isSuccess()) {
+                            LOG.warn("Unable to send GroupLeaveMessage", future::cause);
+                        }
+                    });
+                }));
     }
 
     /**
@@ -250,7 +255,8 @@ public class GroupsClientHandler extends SimpleChannelInboundHandler<OverlayAddr
         final ProofOfWork proofOfWork = identity.getProofOfWork();
         final IdentityPublicKey groupManager = group.getManager();
 
-        final DrasylChannel drasylChannel = ((DrasylServerChannel) ctx.channel()).serve0(groupManager);
+        final DrasylServerChannel drasylServerChannel = ((DrasylServerChannel) ctx.channel());
+        final Channel drasylChannel = drasylServerChannel.serve(groupManager).channel();
         drasylChannel.writeAndFlush(GroupJoinMessage.of(group.getGroup(), group.getCredentials(), proofOfWork, renew)).addListener(future -> {
             if (!future.isSuccess()) {
                 LOG.warn("Unable to send GroupJoinMessage", future::cause);
