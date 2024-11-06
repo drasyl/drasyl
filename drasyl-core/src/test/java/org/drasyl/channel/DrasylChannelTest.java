@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -55,9 +55,12 @@ class DrasylChannelTest {
     class DoRegister {
         @Test
         void shouldActivateChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
-                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress) {
+                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
+                                   @Mock final EventLoop eventLoop,
+                                   @Mock final ChannelPromise promise) {
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
 
+            channel.unsafe().register(eventLoop, promise);
             channel.doRegister();
 
             assertTrue(channel.isActive());
@@ -126,11 +129,13 @@ class DrasylChannelTest {
         void shouldWriteMessageToParentChannel(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel parent,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final IdentityPublicKey remoteAddress,
                                                @Mock final Object msg,
-                                               @Mock final ChannelPromise promise) throws Exception {
+                                               @Mock final ChannelPromise promise,
+                                               @Mock final EventLoop eventLoop) throws Exception {
             when(parent.config().getNetworkId()).thenReturn(0);
             when(parent.udpChannel().isWritable()).thenReturn(true);
 
             final DrasylChannel channel = new DrasylChannel(parent, remoteAddress);
+            channel.unsafe().register(eventLoop, promise);
             channel.doRegister();
 
             final ChannelOutboundBuffer in = channel.unsafe().outboundBuffer();

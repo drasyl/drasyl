@@ -27,6 +27,8 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -37,10 +39,7 @@ import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -442,14 +441,17 @@ public class TunCommand extends ChannelOptions {
                 if (routes.containsKey(dst)) {
                     LOG.debug("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
                     msg.retain();
-                    channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                        if (future.isSuccess()) {
-                            final Channel peerChannel = future.getNow();
-                            peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
-                            peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                        }
-                        else {
-                            msg.release();
+                    channel.serve(publicKey).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(final ChannelFuture future) throws Exception {
+                            if (future.isSuccess()) {
+                                final Channel peerChannel = future.channel();
+                                peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
+                                peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                            }
+                            else {
+                                msg.release();
+                            }
                         }
                     });
                 }
@@ -478,9 +480,12 @@ public class TunCommand extends ChannelOptions {
                 channel.serve(((AddRoute) evt).publicKey);
             }
             else if (evt instanceof RemoveRoute) {
-                channel.serve(((RemoveRoute) evt).publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                    if (future.isSuccess()) {
-                        future.getNow().close();
+                channel.serve(((RemoveRoute) evt).publicKey).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        if (future.isSuccess()) {
+                            future.channel().close();
+                        }
                     }
                 });
             }

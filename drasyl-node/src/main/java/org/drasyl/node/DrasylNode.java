@@ -25,13 +25,13 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
@@ -385,14 +385,15 @@ public abstract class DrasylNode {
         if (channelFuture != null && channelFuture.channel().isOpen()) {
             final DrasylServerChannel drasylServerChannel = (DrasylServerChannel) channelFuture.channel();
             final CompletableFuture<Channel> future = new CompletableFuture<>();
-            drasylServerChannel.serve(address).addListener((GenericFutureListener<Future<DrasylChannel>>) future2 -> {
-                if (future2.isSuccess()) {
-                    final DrasylChannel channel = future2.getNow();
-                    // delay future completion to make sure Channel's childHandler is done
-                    channel.eventLoop().execute(() -> future.complete(channel));
-                }
-                else {
-                    future.completeExceptionally(new Exception());
+            drasylServerChannel.serve(address).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future2) throws Exception {
+                    if (future2.isSuccess()) {
+                        future.complete((DrasylChannel) future2.channel());
+                    }
+                    else {
+                        future.completeExceptionally(future2.cause());
+                    }
                 }
             });
             return future;

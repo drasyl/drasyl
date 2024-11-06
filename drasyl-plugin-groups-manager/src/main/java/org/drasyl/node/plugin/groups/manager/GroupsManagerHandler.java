@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -77,7 +77,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                         member.getMember().getPublicKey(),
                         org.drasyl.node.plugin.groups.client.Group.of(member.getGroup().getName()));
 
-                ((DrasylServerChannel) ctx.channel()).serve0(member.getMember().getPublicKey()).writeAndFlush(leftMessage).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(member.getMember().getPublicKey()).channel().writeAndFlush(leftMessage).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                     }
@@ -104,11 +104,13 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
         try {
             final Set<Membership> recipients = database.getGroupMembers(group);
 
-            recipients.forEach(member -> ((DrasylServerChannel) ctx.channel()).serve0(member.getMember().getPublicKey()).writeAndFlush(msg).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn(UNABLE_TO_SEND, msg.getClass()::getSimpleName, future::cause);
-                }
-            }));
+            recipients.forEach(member -> {
+                ((DrasylServerChannel) ctx.channel()).serve(member.getMember().getPublicKey()).channel().writeAndFlush(msg).addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn(UNABLE_TO_SEND, msg.getClass()::getSimpleName, future::cause);
+                    }
+                });
+            });
         }
         catch (final DatabaseException e) {
             LOG.debug("Error occurred on getting members of group `{}`: ", group, e);
@@ -166,7 +168,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                     doJoin(ctx, sender, group, msg.isRenew());
                 }
                 else {
-                    ((DrasylServerChannel) ctx.channel()).serve0(sender).writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK)).addListener(future -> {
+                    ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK)).addListener(future -> {
                         if (!future.isSuccess()) {
                             LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                         }
@@ -175,7 +177,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                 }
             }
             else {
-                ((DrasylServerChannel) ctx.channel()).serve0(sender).writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND)).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                     }
@@ -203,7 +205,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
             final MemberLeftMessage leftMessage = MemberLeftMessage.of(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
-            ((DrasylServerChannel) ctx.channel()).serve0(sender).writeAndFlush(leftMessage).addListener(future -> {
+            ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(leftMessage).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                 }
@@ -239,7 +241,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
-                ((DrasylServerChannel) ctx.channel()).serve0(sender).writeAndFlush(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships)).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupWelcomeMessage.class::getSimpleName, future::cause);
                     }
@@ -254,7 +256,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
             }
         }
         catch (final DatabaseException e) {
-            ((DrasylServerChannel) ctx.channel()).serve0(sender).writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN)).addListener(future -> {
+            ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                 }
