@@ -25,13 +25,15 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
-import io.netty.channel.RecvByteBufAllocator;
+import io.netty.channel.RecvByteBufAllocator.Handle;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.InternalThreadLocalMap;
@@ -57,6 +59,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylChannel.State.CONNECTED;
 
 /**
  * A virtual {@link Channel} for peer communication.
@@ -143,7 +146,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
     @Override
     protected void doRegister() {
-        state = State.CONNECTED;
+        state = CONNECTED;
         eventLoop().execute(() -> registeredPromise.setSuccess());
     }
 
@@ -169,7 +172,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
     }
 
     void readInbound() {
-        final RecvByteBufAllocator.Handle handle = unsafe().recvBufAllocHandle();
+        final Handle handle = unsafe().recvBufAllocHandle();
         handle.reset(config());
         final ChannelPipeline pipeline = pipeline();
         do {
@@ -330,12 +333,15 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                     else {
                         buf.retain();
                         final boolean lastMsg = in.size() == 1;
-                        peerServerChannel.serve(identity.getAddress()).addListener(future -> {
-                            final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
-                            LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
-                            drasylChannel1.queueRead(buf);
-                            if (lastMsg) {
-                                drasylChannel1.finishRead();
+                        peerServerChannel.serve(identity.getAddress()).addListener(new ChannelFutureListener() {
+                            @Override
+                            public void operationComplete(final ChannelFuture future) throws Exception {
+                                final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
+                                LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
+                                drasylChannel1.queueRead(buf);
+                                if (lastMsg) {
+                                    drasylChannel1.finishRead();
+                                }
                             }
                         });
                     }
@@ -409,7 +415,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
     @Override
     public boolean isActive() {
-        return state == State.CONNECTED;
+        return state == CONNECTED;
     }
 
     @Override
