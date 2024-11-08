@@ -21,11 +21,11 @@
  */
 package org.drasyl.cli.sdon.handler;
 
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.cli.sdon.config.Policy;
 import org.drasyl.cli.sdon.event.SdonMessageReceived;
@@ -42,7 +42,6 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
-import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.cli.sdon.handler.SdonDeviceHandler.State.INITIALIZED;
@@ -89,25 +88,31 @@ public class SdonDeviceHandler extends ChannelInboundHandlerAdapter {
             out.println("----------------------------------------------------------------------------------------------");
 
             out.print("Connecting to controller " + controller + "...");
-            ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                if (state == INITIALIZED) {
-                    final DrasylChannel channel = future.getNow();
-                    out.println("connected!");
-                    out.print("Register at controller...");
-                    state = JOINING;
-                    final DeviceHello hello = new DeviceHello(facts, policies);
-                    LOG.debug("Send `{}`", hello);
-                    channel.writeAndFlush(hello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            ((DrasylServerChannel) ctx.channel()).serve(controller).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (state == INITIALIZED) {
+                        final Channel channel = future.channel();
+                        out.println("connected!");
+                        out.print("Register at controller...");
+                        state = JOINING;
+                        final DeviceHello hello = new DeviceHello(facts, policies);
+                        LOG.debug("Send `{}`", hello);
+                        channel.writeAndFlush(hello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
                 }
             });
 
             ctx.executor().scheduleAtFixedRate(() -> {
-                ((DrasylServerChannel) ctx.channel()).serve(controller).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                    if (state == JOINED) {
-                        final DrasylChannel channel = future.getNow();
-                        final DeviceHello hello = new DeviceHello(facts, policies);
-                        LOG.debug("Send `{}`", hello);
-                        channel.writeAndFlush(hello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                ((DrasylServerChannel) ctx.channel()).serve(controller).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        if (state == JOINED) {
+                            final Channel channel = future.channel();
+                            final DeviceHello hello = new DeviceHello(facts, policies);
+                            LOG.debug("Send `{}`", hello);
+                            channel.writeAndFlush(hello).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                        }
                     }
                 });
             }, randomInt(0, DEVICE_HELLO_INTERVAL), DEVICE_HELLO_INTERVAL, MILLISECONDS);

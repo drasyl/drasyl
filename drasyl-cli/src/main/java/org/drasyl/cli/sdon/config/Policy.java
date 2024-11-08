@@ -35,6 +35,7 @@ import org.luaj.vm2.LuaValue;
 
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.FAILED;
 import static org.drasyl.cli.sdon.config.Policy.PolicyState.PRESENT;
+import static org.luaj.vm2.LuaValue.NIL;
 import static org.luaj.vm2.LuaValue.tableOf;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
@@ -77,7 +78,7 @@ public abstract class Policy {
     public LuaValue luaValue() {
         final LuaTable table = tableOf();
         table.set("type", StringUtil.simpleClassName(this));
-        table.set("state", LuaString.valueOf(state.toString()));
+        table.set("state", state != null ? LuaString.valueOf(state.toString()) : NIL);
         return table;
     }
 
