@@ -23,10 +23,10 @@ package org.drasyl.handler.dht.chord;
 
 import org.drasyl.crypto.Hashing;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.serialization.DrasylAddressMixin;
-import org.drasyl.serialization.IdentityPublicKeyMixin;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
+import org.drasyl.serialization.DrasylAddressMixin;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 
 import java.nio.ByteBuffer;
 
