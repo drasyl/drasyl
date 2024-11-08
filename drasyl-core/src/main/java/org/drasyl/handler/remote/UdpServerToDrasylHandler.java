@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,8 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.channel.DrasylChannel;
@@ -83,10 +85,13 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             }
             else {
                 readCompletePending.add(appMsg.getSender());
-                parent.serve(appMsg.getSender()).addListener(future -> {
-                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
-                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
-                    drasylChannel1.queueRead(appMsg.getPayload());
+                parent.serve(appMsg.getSender()).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
+                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                        drasylChannel1.queueRead(appMsg.getPayload());
+                    }
                 });
             }
         }
@@ -109,10 +114,13 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             }
         }
         for (final DrasylAddress address : readCompletePending) {
-            parent.serve(address).addListener(future -> {
-                final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
-                LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel1);
-                drasylChannel1.finishRead();
+            parent.serve(address).addListener(new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
+                    LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel1);
+                    drasylChannel1.finishRead();
+                }
             });
         }
         readCompletePending.clear();

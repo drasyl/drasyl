@@ -30,11 +30,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.concurrent.Future;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
@@ -100,8 +98,7 @@ public class WriteThroughputDrasylChannelBenchmark {
                     .sync()
                     .channel();
 
-            final Future<DrasylChannel> serve2 = ((DrasylServerChannel) channel).serve(recipient);
-            final DrasylChannel drasylChannel = serve2.get();
+            final Channel drasylChannel = ((DrasylServerChannel) channel).serve(recipient).channel();
 
             // Start a thread to send packets as fast as possible
             new Thread(() -> {
