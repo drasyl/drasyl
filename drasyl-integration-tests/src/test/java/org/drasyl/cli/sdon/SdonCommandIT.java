@@ -33,10 +33,12 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.PrintStream;
 import java.net.InetSocketAddress;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -44,8 +46,13 @@ import java.util.Map;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.util.Ansi.ansi;
 import static org.drasyl.util.network.NetworkUtil.createInetAddress;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.allOf;
+import static org.hamcrest.Matchers.containsString;
 import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
@@ -55,7 +62,8 @@ class SdonCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(SdonCommandIT.class);
     private EmbeddedNode superPeer;
     private ByteArrayOutputStream controllerOut;
-    private ByteArrayOutputStream deviceOut;
+    private ByteArrayOutputStream device1Out;
+    private ByteArrayOutputStream device2Out;
     private Thread controllerThread;
     private Thread deviceThread1;
     private Thread deviceThread2;
@@ -87,7 +95,8 @@ class SdonCommandIT {
         LOG.debug(ansi().cyan().swap().format("# %-140s #", "CREATED superPeer"));
 
         controllerOut = new ByteArrayOutputStream();
-        deviceOut = new ByteArrayOutputStream();
+        device1Out = new ByteArrayOutputStream();
+        device2Out = new ByteArrayOutputStream();
     }
 
     @AfterEach
@@ -106,8 +115,8 @@ class SdonCommandIT {
     }
 
     @Test
-    //@Timeout(value = 30_000, unit = MILLISECONDS)
-    void shouldTransferText(@TempDir final Path path) throws IOException, InterruptedException {
+    @Timeout(value = 30_000, unit = MILLISECONDS)
+    void shouldWork(@TempDir final Path path) throws IOException, InterruptedException {
         // create controller
         final Path networkFile = path.resolve("network.conf");
         Files.writeString(networkFile, "net = create_network()\n" +
@@ -124,7 +133,7 @@ class SdonCommandIT {
         final Path controllerPath = path.resolve("controller.identity");
         IdentityManager.writeIdentityFile(controllerPath, ID_2);
         controllerThread = new Thread(() -> new SdonControllerCommand(
-                System.out,//new PrintStream(controllerOut, true),
+                new PrintStream(controllerOut, true),
                 System.err,
                 null,//Level.TRACE,
                 controllerPath.toFile(),
@@ -139,7 +148,7 @@ class SdonCommandIT {
         final Path devicePath1 = path.resolve("device1.identity");
         IdentityManager.writeIdentityFile(devicePath1, ID_3);
         deviceThread1 = new Thread(() -> new SdonDeviceCommand(
-                System.err,//new PrintStream(deviceOut, true),
+                new PrintStream(device1Out, true),
                 System.err,
                 null,//Level.TRACE,
                 devicePath1.toFile(),
@@ -155,7 +164,7 @@ class SdonCommandIT {
         final Path devicePath2 = path.resolve("device2.identity");
         IdentityManager.writeIdentityFile(devicePath2, ID_4);
         deviceThread2 = new Thread(() -> new SdonDeviceCommand(
-                System.err,//new PrintStream(deviceOut, true),
+                new PrintStream(device2Out, true),
                 System.err,
                 null,//Level.TRACE,
                 devicePath2.toFile(),
@@ -167,14 +176,21 @@ class SdonCommandIT {
                 new String[]{ "bar", "baz" }).call());
         deviceThread2.start();
 
+        // start
+        await("controller start").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(controllerOut.toString(), containsString("Controller listening on address " + ID_2.getAddress())));
+        await("device 1 start").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(device1Out.toString(), containsString("Device listening on address " + ID_3.getAddress())));
+        await("device 2 start").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(device2Out.toString(), containsString("Device listening on address " + ID_4.getAddress())));
 
-
-        while (true) {
-            Thread.sleep(1000);
-        }
-
-//        controllerThread.join();
-//        deviceThread1.join();
-//        deviceThread2.join();
+        // device registration
+        await("controller registration").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(controllerOut.toString(), allOf(
+                containsString("Device " + ID_3.getAddress() + " registered."),
+                containsString("Device " + ID_4.getAddress() + " registered.")
+        )));
+        await("device 1 registration").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(device1Out.toString(), containsString("registered")));
+        await("device 2 registration").atMost(ofSeconds(30)).untilAsserted(() -> assertThat(device2Out.toString(), containsString("registered")));
+        
+        controllerThread.join();
+        deviceThread1.join();
+        deviceThread2.join();
     }
 }
