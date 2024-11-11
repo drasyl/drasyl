@@ -27,6 +27,7 @@ import org.drasyl.handler.codec.JacksonCodec;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.drasyl.cli.sdon.SdonCommand.OBJECT_MAPPER;
@@ -41,7 +42,7 @@ class DeviceHelloTest {
             final JacksonCodec<SdonMessage> handler = new JacksonCodec<>(OBJECT_MAPPER, SdonMessage.class);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            final DeviceHello msg = new DeviceHello(Map.of("sdon.tags", new String[]{ "foo", "bar", "baz" }));
+            final DeviceHello msg = new DeviceHello(Map.of("sdon.tags", List.of("foo", "bar", "baz")));
 
             // serialize
             channel.writeOutbound(msg);
