@@ -130,7 +130,7 @@
         <slf4j.version>2.0.16</slf4j.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
-        <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
+        <json-unit-assertj.version>4.1.0</json-unit-assertj.version>
         <protobuf.version>4.28.3</protobuf.version>
         <auto-value.version>1.11.0</auto-value.version>
         <jna.version>5.15.0</jna.version>
