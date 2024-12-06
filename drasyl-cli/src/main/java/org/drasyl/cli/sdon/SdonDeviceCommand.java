@@ -65,7 +65,7 @@ public class SdonDeviceCommand extends ChannelOptions {
             names = {"--tag"},
             description = "Associate device with given tags, used by controller to assign specific tasks."
     )
-    private String[] tags;
+    private String[] tags = new String[0];
 
     public SdonDeviceCommand(final PrintStream out,
                              final PrintStream err,
