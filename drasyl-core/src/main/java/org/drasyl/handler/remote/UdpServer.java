@@ -64,10 +64,11 @@ public class UdpServer extends ChannelDuplexHandler {
     public void channelActive(final ChannelHandlerContext ctx) throws UdpServerBindFailedException {
         LOG.debug("Start server...");
 
+        final InetSocketAddress localAddress = config(ctx).getUdpBind();
         final ChannelFuture future = config(ctx).getUdpBootstrap().apply((DrasylServerChannel) ctx.channel())
-                .bind(config(ctx).getUdpBind());
+                .bind(localAddress);
         udpChannel = (DatagramChannel) future.channel();
-        future.addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel()));
+        future.addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel(), localAddress));
     }
 
     @Override
@@ -99,11 +100,14 @@ public class UdpServer extends ChannelDuplexHandler {
     /**
      * Listener that gets called once the channel is bound.
      */
-    private class UdpServerBindListener implements ChannelFutureListener {
+    private static class UdpServerBindListener implements ChannelFutureListener {
         private final DrasylServerChannel parent;
+        private final InetSocketAddress localAddress;
 
-        UdpServerBindListener(final DrasylServerChannel parent) {
+        UdpServerBindListener(final DrasylServerChannel parent,
+                              final InetSocketAddress localAddress) {
             this.parent = requireNonNull(parent);
+            this.localAddress = requireNonNull(localAddress);
         }
 
         @Override
@@ -122,7 +126,7 @@ public class UdpServer extends ChannelDuplexHandler {
             }
             else {
                 // server start failed
-                parent.pipeline().fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + future.channel().localAddress(), future.cause()));
+                parent.pipeline().fireExceptionCaught(new UdpServerBindFailedException("Unable to bind server to address udp:/" + localAddress, future.cause()));
             }
         }
     }
