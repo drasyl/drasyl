@@ -139,18 +139,22 @@ jobs:
         job_name:
           - linux-amd64
           # actions/setup-python does not support arm64 (yet): https://github.com/actions/setup-python
-          # - linux-arm64
+          - linux-arm64
           - macos-amd64
+          - macos-arm64
           - windows-amd64
 
         include:
           - job_name: linux-amd64
             os: ubuntu-latest
 
-          # - job_name: linux-arm64
-          #   os: [ self-hosted, linux, ARM64 ]
+          - job_name: linux-arm64
+            os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
+            os: macOS-13
+
+          - job_name: macos-arm64
             os: macOS-latest
 
           - job_name: windows-amd64
