@@ -27,6 +27,7 @@ jobs:
         with:
           name: Java API
           path: target/site/apidocs/*
+          if-no-files-found: error
 
   deploy:
     name: Deploy
