@@ -936,6 +936,150 @@
           "code": "java.class.removed",
           "old": "interface org.drasyl.handler.dht.chord.LocalChordNode.IdentityPublicKeyMixin",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.ByteToRemoteMessageCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.ByteToRemoteMessageCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.ProtocolArmHandler",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.ProtocolArmHandler",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.UnarmedMessageDecoder",
+          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.UnarmedMessageDecoder",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.GoBackNArqCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.GoBackNArqCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.connection.ConnectionHandshakeCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.connection.ConnectionHandshakeCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.membership.cyclon.CyclonCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.membership.cyclon.CyclonCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.pubsub.PubSubCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.pubsub.PubSubCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.rmi.RmiCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.rmi.RmiCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunkDecoder",
+          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunkDecoder",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunksBuffer",
+          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunksBuffer",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.ReassembledMessageDecoder",
+          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.ReassembledMessageDecoder",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.ArmHeaderCodec",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.ArmHeaderCodec",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.PFSArmHandler",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.PFSArmHandler",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.removed",
+          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.serialization.MessageSerializer",
+          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.serialization.MessageSerializer",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
