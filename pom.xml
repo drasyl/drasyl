@@ -120,7 +120,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
         <logback.version>1.5.12</logback.version>
-        <junit.version>5.11.3</junit.version>
+        <junit.version>5.11.4</junit.version>
         <mockito.version>5.14.2</mockito.version>
         <jackson.version>2.18.2</jackson.version>
         <hamcrest.version>3.0</hamcrest.version>
