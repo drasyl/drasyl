@@ -133,7 +133,7 @@
         <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
         <protobuf.version>4.29.2</protobuf.version>
         <auto-value.version>1.11.0</auto-value.version>
-        <jna.version>5.15.0</jna.version>
+        <jna.version>5.16.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <sonar.coverage.exclusions>
