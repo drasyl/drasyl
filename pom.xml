@@ -119,7 +119,7 @@
     <properties>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <java.version>11</java.version>
-        <logback.version>1.5.13</logback.version>
+        <logback.version>1.5.15</logback.version>
         <junit.version>5.11.4</junit.version>
         <mockito.version>5.14.2</mockito.version>
         <jackson.version>2.18.2</jackson.version>
