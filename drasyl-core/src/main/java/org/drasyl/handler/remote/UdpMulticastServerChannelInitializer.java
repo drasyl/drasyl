@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -50,8 +50,10 @@ public class UdpMulticastServerChannelInitializer extends ChannelInitializer<Dat
         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
             @Override
             public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-                final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
-                multicastServer.multicastRead((InetAddressedMessage<UnarmedProtocolMessage>) msg);
+                if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof UnarmedProtocolMessage) {
+                    final UdpMulticastServer multicastServer = (UdpMulticastServer) drasylCtx.handler();
+                    multicastServer.multicastRead((InetAddressedMessage<UnarmedProtocolMessage>) msg);
+                }
             }
 
             @Override
