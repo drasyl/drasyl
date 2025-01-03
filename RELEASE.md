@@ -9,7 +9,7 @@ This file describes how to make the various kinds of releases.
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json) and [CITATION.cff](CITATION.cff).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Commit changes.
-* Build software and push to maven repository:
+* Build software and push to maven repository (use [GraalVM for JDK 17 Community 17.0.9](https://github.com/graalvm/graalvm-ce-builds/releases/tag/jdk-17.0.9)):
 ```bash
 rm -f release.properties
 mvn clean release:prepare -Prelease-prepare
