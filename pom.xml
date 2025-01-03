@@ -121,7 +121,7 @@
         <java.version>11</java.version>
         <logback.version>1.5.15</logback.version>
         <junit.version>5.11.4</junit.version>
-        <mockito.version>5.14.2</mockito.version>
+        <mockito.version>5.15.2</mockito.version>
         <jackson.version>2.18.2</jackson.version>
         <hamcrest.version>3.0</hamcrest.version>
         <awaitility.version>4.2.2</awaitility.version>
