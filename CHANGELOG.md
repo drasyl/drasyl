@@ -42,7 +42,7 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - [`EventTypeDrasylNode`](drasyl-examples/src/main/java/org/drasyl/example/EventTypeDrasylNodeExample.java) added.
 - `DrasylNode` will now check local time is correct on start as this is mandatory for drasyl protocol to work.
 - [`InboundExceptionEvent`](drasyl-node/src/main/java/org/drasyl/node/event/InboundExceptionEvent.java) now contains exception in string presentation.
-- `DrasylConfig`: Option `drasyl.remove.tcp-fallback.connect-port` added.
+- `DrasylConfig`: Option `drasyl.remote.tcp-fallback.connect-port` added.
 - Boolean system property `org.drasyl.pub-key.interning` added to disable interning of IdentityPublicKeys, as this could have a negative impact on performance..
 
 
@@ -53,8 +53,8 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Application messages are not longer passed through the `DrasylServerChannel` (this was a performance bottleneck).
 - CLI: Option `--ack-interval` from sub-command `wormhole receive` removed (the new reliability layer determines this value automatically).
 - CLI: Options `--window-size` and `--window-timeout` from sub-command `wormhole send` removed (the new reliability layer determines this value automatically).
-- `DrasylConfig`: Options `drasyl.remove.message.mtu`, `drasyl.remove.message.max-content-length`, `drasyl.remove.message.composed-message-transfer-timeout`, `drasyl.remove.message.arq` removed (the new reliability layer determines this value automatically).
-- `DrasylConfig`: Options `drasyl.remove.tcp-fallback.timeout`, `drasyl.remove.tcp-fallback.address` removed.
+- `DrasylConfig`: Options `drasyl.remote.message.mtu`, `drasyl.remote.message.max-content-length`, `drasyl.remote.message.composed-message-transfer-timeout`, `drasyl.remote.message.arq` removed (the new reliability layer determines this value automatically).
+- `DrasylConfig`: Options `drasyl.remote.tcp-fallback.timeout`, `drasyl.remote.tcp-fallback.address` removed.
 - Improved performance in inbound and outbound message processing by reducing task scheduling overhead. Instead of creating a separate task for each message, a single task now processes entire batches of reads and writes. Additionally, fewer Java objects are created, and zero-copy techniques are applied more frequently where possible.
 
 ### Fixed
