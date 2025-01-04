@@ -36,7 +36,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: ensure wormhole sender/receiver handlers gracefully stop when connection is lost.
 - CLI: fix `tunnel` sub-command.
 - Receiving multiple `UNITE` messages will now trigger new `HELLO` messages only if new endpoints have been reported.
-- 
 
 ## [0.10.0] - 2023-01-31
 
