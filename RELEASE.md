@@ -32,7 +32,7 @@ The assets below contain the drasyl command-line tool and shared native library.
 ```
 * Wait for GitHub Action to complete [Release](https://github.com/drasyl/drasyl/actions/workflows/release.yml) workflow.
 * Update back to next SNAPSHOT version
-  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json).
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json) and [CITATION.cff](CITATION.cff).
 * Create/update version branch (e.g., `v1.2` if you release `v1.2.0`) and push.
 
 ## Making a manual build of docker

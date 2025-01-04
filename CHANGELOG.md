@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project
 adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.12.0] - 2025-XX-XX
+
+### Added
+
+-
+-
+-
+-
+-
+
+### Changed
+
+-
+-
+-
+-
+-
+
+### Fixed
+
+-
+-
+-
+-
+-
+
 ## [0.11.0] - 2025-01-04
 
 ### Added
@@ -36,7 +62,6 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - CLI: ensure wormhole sender/receiver handlers gracefully stop when connection is lost.
 - CLI: fix `tunnel` sub-command.
 - Receiving multiple `UNITE` messages will now trigger new `HELLO` messages only if new endpoints have been reported.
-- 
 
 ## [0.10.0] - 2023-01-31
 
