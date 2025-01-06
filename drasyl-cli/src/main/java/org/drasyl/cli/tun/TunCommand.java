@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,18 +27,19 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
+import io.netty.channel.EventLoop;
+import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.netty.util.concurrent.Future;
-import io.netty.util.concurrent.GenericFutureListener;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
@@ -55,11 +56,13 @@ import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
+import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
+import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -81,7 +84,14 @@ import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
+import static io.netty.channel.ChannelOption.IP_TOS;
+import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
@@ -155,7 +165,6 @@ public class TunCommand extends ChannelOptions {
     private RemoteControl rc;
 
     protected TunCommand() {
-        super(new DefaultEventLoopGroup(1), new DefaultEventLoopGroup());
     }
 
     @Override
@@ -168,6 +177,10 @@ public class TunCommand extends ChannelOptions {
         else {
             routes = new ArrayList<>();
         }
+
+        final EventLoop serverChannelLoop = getServerChannelLoop();
+        final EventLoopGroup childChannelLoopGroup = getChildChannelLoopGroup();
+        final EventLoop udpChannelLoop = getUdpChannelLoop();
 
         Channel rcChannel = null;
         try {
@@ -200,7 +213,7 @@ public class TunCommand extends ChannelOptions {
                             final ChannelPipeline p = ch.pipeline();
 
                             p.addLast(new AddressAndSubnetHandler(identity, routesMap));
-                            p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap));
+                            p.addLast(new TunToDrasylHandler(identity, exitCode, routesMap, serverChannelLoop, childChannelLoopGroup, udpChannelLoop));
                         }
                     });
             final Channel ch = b.bind(new TunAddress(name)).syncUninterruptibly().channel();
@@ -232,21 +245,19 @@ public class TunCommand extends ChannelOptions {
             if (rcChannel != null) {
                 rcChannel.close().syncUninterruptibly();
             }
-            parentGroup.shutdownGracefully();
-            childGroup.shutdownGracefully();
+            serverChannelLoop.shutdownGracefully();
+            childChannelLoopGroup.shutdownGracefully();
         }
     }
 
     @Override
-    protected ChannelHandler getHandler(final Worm<Integer> exitCode,
-                                        final Identity identity) {
+    protected ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
 
     @Override
-    protected ChannelHandler getChildHandler(final Worm<Integer> exitCode,
-                                             final Identity identity) {
+    protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         // unused
         return null;
     }
@@ -361,13 +372,22 @@ public class TunCommand extends ChannelOptions {
         private final Worm<Integer> exitCode;
         private DrasylServerChannel channel;
         private final Map<InetAddress, DrasylAddress> routes;
+        private final EventLoop serverChannelLoop;
+        private final EventLoopGroup childChannelLoopGroup;
+        private final EventLoop udpChannelLoop;
 
         public TunToDrasylHandler(final Identity identity,
                                   final Worm<Integer> exitCode,
-                                  final Map<InetAddress, DrasylAddress> routes) {
+                                  final Map<InetAddress, DrasylAddress> routes,
+                                  final EventLoop serverChannelLoop,
+                                  final EventLoopGroup childChannelLoopGroup,
+                                  final EventLoop udpChannelLoop) {
             this.identity = requireNonNull(identity);
             this.exitCode = requireNonNull(exitCode);
             this.routes = requireNonNull(routes);
+            this.serverChannelLoop = requireNonNull(serverChannelLoop);
+            this.childChannelLoopGroup = requireNonNull(childChannelLoopGroup);
+            this.udpChannelLoop = requireNonNull(udpChannelLoop);
         }
 
         @Override
@@ -375,15 +395,26 @@ public class TunCommand extends ChannelOptions {
             ctx.fireChannelActive();
 
             // create drasyl channel
-            final ChannelHandler handler = new TunChannelInitializer(identity, udpServerGroup, bindAddress, networkId, onlineTimeoutMillis, superPeers, err, exitCode, ctx.channel(), new HashSet<>(routes.values()), !protocolArmDisabled);
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, identity, ctx.channel(), routes, !applicationArmDisabled);
+            final ChannelHandler handler = new TunChannelInitializer(onlineTimeoutMillis, err, exitCode, ctx.channel(), new HashSet<>(routes.values()));
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes, !applicationArmDisabled);
 
             final ServerBootstrap b = new ServerBootstrap()
-                    .group(parentGroup, childGroup)
+                    .group(serverChannelLoop, childChannelLoopGroup)
                     .channel(DrasylServerChannel.class)
+                    .option(NETWORK_ID, networkId)
+                    .option(ARMING_ENABLED, !protocolArmDisabled)
+                    .option(SUPER_PEERS, superPeers)
+                    .option(UDP_BIND, bindAddress)
+                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                            .option(SO_BROADCAST, false)
+                            .option(IP_TOS, 0xB8)
+                            .group(udpChannelLoop)
+                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                            .handler(new UdpServerChannelInitializer(parent))
+                    )
                     .handler(handler)
                     .childHandler(childHandler);
-            channel = (DrasylServerChannel) b.bind(identity.getAddress()).channel();
+            channel = (DrasylServerChannel) b.bind(identity).channel();
         }
 
         @Override
@@ -410,14 +441,17 @@ public class TunCommand extends ChannelOptions {
                 if (routes.containsKey(dst)) {
                     LOG.debug("Pass packet `{}` to peer `{}` via drasyl network", () -> msg, () -> publicKey);
                     msg.retain();
-                    channel.serve(publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                        if (future.isSuccess()) {
-                            final Channel peerChannel = future.getNow();
-                            peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
-                            peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
-                        }
-                        else {
-                            msg.release();
+                    channel.serve(publicKey).addListener(new ChannelFutureListener() {
+                        @Override
+                        public void operationComplete(final ChannelFuture future) throws Exception {
+                            if (future.isSuccess()) {
+                                final Channel peerChannel = future.channel();
+                                peerChannel.closeFuture().addListener(future2 -> channelsToFlush.remove(peerChannel));
+                                peerChannel.writeAndFlush(msg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                            }
+                            else {
+                                msg.release();
+                            }
                         }
                     });
                 }
@@ -446,9 +480,12 @@ public class TunCommand extends ChannelOptions {
                 channel.serve(((AddRoute) evt).publicKey);
             }
             else if (evt instanceof RemoveRoute) {
-                channel.serve(((RemoveRoute) evt).publicKey).addListener((GenericFutureListener<Future<DrasylChannel>>) future -> {
-                    if (future.isSuccess()) {
-                        future.getNow().close();
+                channel.serve(((RemoveRoute) evt).publicKey).addListener(new ChannelFutureListener() {
+                    @Override
+                    public void operationComplete(final ChannelFuture future) throws Exception {
+                        if (future.isSuccess()) {
+                            future.channel().close();
+                        }
                     }
                 });
             }

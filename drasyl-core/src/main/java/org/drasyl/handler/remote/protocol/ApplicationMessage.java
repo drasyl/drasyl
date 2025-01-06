@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -41,6 +41,8 @@ import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLI
 @AutoValue
 @SuppressWarnings("java:S118")
 public abstract class ApplicationMessage extends AbstractFullReadMessage<ApplicationMessage> implements ReferenceCounted, AutoCloseable {
+    public static final HopCount HOP_COUNT = HopCount.of();
+
     /**
      * Creates new application message.
      * <p>
@@ -101,8 +103,12 @@ public abstract class ApplicationMessage extends AbstractFullReadMessage<Applica
                                         final ProofOfWork proofOfWork,
                                         final ByteBuf payload) {
         return of(
-                HopCount.of(), false, networkId, Nonce.randomNonce(),
-                recipient, sender,
+                HOP_COUNT,
+                false,
+                networkId,
+                Nonce.randomNonce(),
+                recipient,
+                sender,
                 proofOfWork,
                 payload
         );

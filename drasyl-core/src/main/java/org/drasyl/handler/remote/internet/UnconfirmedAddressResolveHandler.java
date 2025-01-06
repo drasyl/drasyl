@@ -23,21 +23,15 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-import org.drasyl.channel.InetAddressedMessage;
-import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
+import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.handler.remote.PeersManager;
+import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.util.Pair;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
-import java.net.InetSocketAddress;
-import java.util.HashMap;
 import java.util.Iterator;
-import java.util.Map;
-import java.util.Map.Entry;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -48,24 +42,31 @@ import static org.drasyl.util.Preconditions.requirePositive;
 @UnstableApi
 public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(UnconfirmedAddressResolveHandler.class);
-    private final Map<DrasylAddress, Pair<InetSocketAddress, Long>> addressCache;
-    private final int maximumCacheSize;
+    public static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 200;
+        }
+    };
     private final long expireCacheAfter;
-    private long now;
+    private PeersManager peersManager;
 
-    public UnconfirmedAddressResolveHandler() {
-        this(100, 60_000L);
+    UnconfirmedAddressResolveHandler(final long expireCacheAfter,
+                                     final PeersManager peersManager) {
+        this.expireCacheAfter = requirePositive(expireCacheAfter);
+        this.peersManager = peersManager;
     }
 
-    public UnconfirmedAddressResolveHandler(final int maximumCacheSize,
-                                            final long expireCacheAfter) {
-        this.maximumCacheSize = requirePositive(maximumCacheSize);
-        this.expireCacheAfter = requirePositive(expireCacheAfter);
-        this.addressCache = new HashMap<>();
+    public UnconfirmedAddressResolveHandler() {
+        this(60_000L, null);
     }
 
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
+        if (peersManager == null) {
+            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+        }
+
         if (ctx.channel().isActive()) {
             scheduleHousekeepingTask(ctx);
         }
@@ -77,49 +78,20 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
         scheduleHousekeepingTask(ctx);
     }
 
-    @Override
-    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof RemoteMessage && addressCache.size() < maximumCacheSize) {
-            addressCache.put(((RemoteMessage) ((InetAddressedMessage<?>) msg).content()).getSender(), Pair.of(((InetAddressedMessage<?>) msg).sender(), now));
-        }
-
-        // pass through
-        ctx.fireChannelRead(msg);
-    }
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        if (msg instanceof OverlayAddressedMessage) {
-            final Pair<InetSocketAddress, Long> pair = addressCache.get(((OverlayAddressedMessage<?>) msg).recipient());
-
-            // route to the unconfirmed address
-            if (pair != null) {
-                final InetSocketAddress address = pair.first();
-                LOG.trace("Message `{}` was resolved to unconfirmed address `{}`.", () -> msg, () -> address);
-                ctx.write(((OverlayAddressedMessage<?>) msg).resolve(address), promise);
-                return;
-            }
-        }
-
-        // pass through
-        ctx.write(msg, promise);
-    }
-
     private void scheduleHousekeepingTask(final ChannelHandlerContext ctx) {
         // requesting the time triggers a system call and is therefore considered to be expensive.
         // This is why we cache the current time
-        now = System.currentTimeMillis();
 
         ctx.executor().schedule(() -> {
             // remove all entries from cache where we do not have received a message since "expireAfter"
-            final Iterator<Entry<DrasylAddress, Pair<InetSocketAddress, Long>>> iterator = addressCache.entrySet().iterator();
+            final Iterator<DrasylAddress> iterator = peersManager.getPeers(PATH_ID).iterator();
             while (iterator.hasNext()) {
-                final Entry<DrasylAddress, Pair<InetSocketAddress, Long>> entry = iterator.next();
-                final long lastTime = entry.getValue().second();
-                if (lastTime < now) {
-                    iterator.remove();
+                final DrasylAddress publicKey = iterator.next();
+                final boolean stale = peersManager.isStale(ctx, publicKey, PATH_ID);
+
+                if (stale) {
+                    LOG.debug("Path to peer {} is stale. Remove it.", publicKey);
+                    config(ctx).getPeersManager().removeChildrenPath(ctx, publicKey, PATH_ID);
                 }
             }
 
@@ -127,5 +99,9 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
                 scheduleHousekeepingTask(ctx);
             }
         }, expireCacheAfter, MILLISECONDS);
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

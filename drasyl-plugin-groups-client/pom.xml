@@ -26,7 +26,7 @@
     <parent>
         <artifactId>drasyl-parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>0.11.0-SNAPSHOT</version>
+        <version>0.12.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>drasyl-plugin-groups-client</artifactId>
@@ -92,8 +92,7 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <configuration>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.source}</target>
+                    <release>${java.version}</release>
                     <annotationProcessorPaths>
                         <path>
                             <groupId>com.google.auto.value</groupId>

@@ -49,6 +49,7 @@ class ByteToGoBackNArqDataCodecTest {
 
             final GoBackNArqData actual = channel.readOutbound();
             assertThat(actual, instanceOf(GoBackNArqData.class));
+            channel.checkException();
 
             actual.release();
         }
@@ -65,6 +66,7 @@ class ByteToGoBackNArqDataCodecTest {
             final GoBackNArqData data = new GoBackNArqData(UnsignedInteger.MIN_VALUE, buf);
             channel.writeInbound(data);
 
+            channel.checkException();
             assertEquals(channel.readInbound(), buf);
 
             buf.release();

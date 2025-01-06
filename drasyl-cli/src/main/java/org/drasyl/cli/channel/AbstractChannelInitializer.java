@@ -22,31 +22,18 @@
 package org.drasyl.cli.channel;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
+import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.TraversingDrasylServerChannelInitializer;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
-
-import java.net.InetSocketAddress;
-import java.util.Map;
 
 import static org.drasyl.util.Preconditions.requirePositive;
 
 @SuppressWarnings("java:S110")
-public abstract class AbstractChannelInitializer extends TraversingDrasylServerChannelInitializer {
+public abstract class AbstractChannelInitializer extends DefaultDrasylServerChannelInitializer {
     private final long onlineTimeoutMillis;
 
     @SuppressWarnings("java:S107")
-    protected AbstractChannelInitializer(final Identity identity,
-                                         final EventLoopGroup udpServerGroup,
-                                         final InetSocketAddress bindAddress,
-                                         final int networkId,
-                                         final long onlineTimeoutMillis,
-                                         final Map<IdentityPublicKey, InetSocketAddress> superPeers,
-                                         final boolean protocolArmEnabled) {
-        super(identity, udpServerGroup, bindAddress, networkId, superPeers, protocolArmEnabled);
+    protected AbstractChannelInitializer(final long onlineTimeoutMillis) {
         this.onlineTimeoutMillis = requirePositive(onlineTimeoutMillis);
     }
 

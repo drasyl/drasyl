@@ -58,13 +58,10 @@ public class IdentityFile {
 
     public static void writeTo(final OutputStream out,
                                final Identity identity) throws IOException {
-        try {
-            out.write("[Identity]\n".getBytes(CHARSET));
-            out.write(("SecretKey = " + identity.getIdentitySecretKey().toUnmaskedString() + "\n").getBytes(CHARSET));
-            out.write(("ProofOfWork = " + identity.getProofOfWork()).getBytes(CHARSET));
-        }
-        finally {
-            out.close();
+        try (out) {
+            out.write(("[" + SECTION_IDENTITY + "]\n").getBytes(CHARSET));
+            out.write((PROPERTY_SECRET_KEY + " = " + identity.getIdentitySecretKey().toUnmaskedString() + "\n").getBytes(CHARSET));
+            out.write((PROPERTY_POW_KEY + " = " + identity.getProofOfWork()).getBytes(CHARSET));
         }
     }
 
@@ -115,11 +112,11 @@ public class IdentityFile {
             }
         }
         catch (final IllegalArgumentException e) {
-            throw new IOException("INI file contain invalid 'SecretKey' or 'ProofOfWork' value.", e);
+            throw new IOException("INI file contain invalid '" + PROPERTY_SECRET_KEY + "' or '" + PROPERTY_POW_KEY + "' value.", e);
         }
 
         if (secretKey == null || proofOfWork == null) {
-            throw new IOException("INI file does not contain a section 'Identity' with the properties 'SecretKey' and 'ProofOfWork'.");
+            throw new IOException("INI file does not contain a section '" + SECTION_IDENTITY + "' with the properties '" + PROPERTY_SECRET_KEY + "' and '" + PROPERTY_POW_KEY + "'.");
         }
 
         return Identity.of(proofOfWork, secretKey);

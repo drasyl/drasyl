@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
@@ -28,7 +29,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionResetException extends ConnectionException {
-    public ConnectionResetException() {
-        super("connection reset");
+    public ConnectionResetException(final Channel channel) {
+        super(channel, "connection reset");
     }
 }

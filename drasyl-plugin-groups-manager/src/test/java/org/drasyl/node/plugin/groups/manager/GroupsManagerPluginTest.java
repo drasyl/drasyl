@@ -38,8 +38,6 @@ import java.time.Duration;
 import java.util.Map;
 
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -56,17 +54,15 @@ class GroupsManagerPluginTest {
     private DatabaseAdapter databaseAdapter;
 
     @Nested
-    class OnBeforeStart {
+    class OnServerChannelRegistered {
         @Test
         void shouldInitDB(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx) throws DatabaseException {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(groupsManagerConfig, databaseAdapter);
             final Group group = Group.of("group", "secret", (byte) 0, Duration.ofSeconds(60));
             when(groupsManagerConfig.getGroups()).thenReturn(Map.of(group.getName(), group));
             when(env.getPipeline()).thenReturn(pipeline);
-            when(pipeline.context(any(Class.class))).thenReturn(ctx);
-            when(ctx.name()).thenReturn("handler");
 
-            plugin.onBeforeStart(env);
+            plugin.onServerChannelRegistered(env);
 
             verify(databaseAdapter).addGroup(group);
         }
@@ -80,25 +76,22 @@ class GroupsManagerPluginTest {
                     GroupsManagerConfig.API_BIND_HOST, "0.0.0.0",
                     GroupsManagerConfig.API_BIND_PORT, 8080))), databaseAdapter);
             when(env.getPipeline()).thenReturn(pipeline);
-            when(pipeline.context(any(Class.class))).thenReturn(ctx);
-            when(ctx.name()).thenReturn("handler");
 
-            plugin.onBeforeStart(env);
+            plugin.onServerChannelRegistered(env);
 
-            verify(pipeline).addAfter(any(), eq(GroupsManagerPlugin.GROUPS_MANAGER_HANDLER), isA(GroupsManagerHandler.class));
+            verify(pipeline).addLast(isA(GroupsManagerHandler.class));
         }
     }
 
     @Nested
-    class OnBeforeShutdown {
+    class OnServerChannelInactive {
         @Test
         void shouldRemoveHandlerFromPipeline() throws DatabaseException {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(groupsManagerConfig, databaseAdapter);
             when(env.getPipeline()).thenReturn(pipeline);
 
-            plugin.onBeforeShutdown(env);
+            plugin.onServerChannelInactive(env);
 
-            verify(pipeline).remove(GroupsManagerPlugin.GROUPS_MANAGER_HANDLER);
             verify(databaseAdapter).close();
         }
     }

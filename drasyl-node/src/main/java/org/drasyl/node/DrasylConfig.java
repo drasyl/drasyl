@@ -37,6 +37,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.node.handler.plugin.DrasylPlugin;
 import org.drasyl.node.handler.serialization.Serializer;
 import org.drasyl.util.internal.Nullable;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.File;
 import java.lang.reflect.Constructor;
@@ -68,6 +69,7 @@ import static org.drasyl.util.InetSocketAddressUtil.socketAddressFromString;
  * <p>
  * This is an immutable object.
  */
+@UnstableApi
 @SuppressWarnings("java:S118")
 @AutoValue
 public abstract class DrasylConfig {
@@ -107,8 +109,7 @@ public abstract class DrasylConfig {
     public static final String REMOTE_TCP_FALLBACK_ENABLED = "drasyl.remote.tcp-fallback.enabled";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_HOST = "drasyl.remote.tcp-fallback.server.bind-host";
     public static final String REMOTE_TCP_FALLBACK_SERVER_BIND_PORT = "drasyl.remote.tcp-fallback.server.bind-port";
-    public static final String REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT = "drasyl.remote.tcp-fallback.client.timeout";
-    public static final String REMOTE_TCP_FALLBACK_CLIENT_ADDRESS = "drasyl.remote.tcp-fallback.client.address";
+    public static final String REMOTE_TCP_FALLBACK_CLIENT_CONNECT_PORT = "drasyl.remote.tcp-fallback.client.connect-port";
     public static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     public static final String CHANNEL_INACTIVITY_TIMEOUT = "drasyl.channel.inactivity-timeout";
     public static final String PLUGINS = "drasyl.plugins";
@@ -171,8 +172,7 @@ public abstract class DrasylConfig {
             builder.remoteTcpFallbackEnabled(config.getBoolean(REMOTE_TCP_FALLBACK_ENABLED));
             builder.remoteTcpFallbackServerBindHost(getInetAddress(config, REMOTE_TCP_FALLBACK_SERVER_BIND_HOST));
             builder.remoteTcpFallbackServerBindPort(config.getInt(REMOTE_TCP_FALLBACK_SERVER_BIND_PORT));
-            builder.remoteTcpFallbackClientTimeout(config.getDuration(REMOTE_TCP_FALLBACK_CLIENT_TIMEOUT));
-            builder.remoteTcpFallbackClientAddress(getInetSocketAddress(config, REMOTE_TCP_FALLBACK_CLIENT_ADDRESS));
+            builder.remoteTcpFallbackClientConnectPort(config.getInt(REMOTE_TCP_FALLBACK_CLIENT_CONNECT_PORT));
 
             // handshake
             builder.remoteHandshakeTimeout(config.getDuration(REMOTE_HANDSHAKE_TIMEOUT));
@@ -770,9 +770,7 @@ public abstract class DrasylConfig {
 
     public abstract int getRemoteTcpFallbackServerBindPort();
 
-    public abstract Duration getRemoteTcpFallbackClientTimeout();
-
-    public abstract InetSocketAddress getRemoteTcpFallbackClientAddress();
+    public abstract int getRemoteTcpFallbackClientConnectPort();
 
     public abstract boolean isIntraVmDiscoveryEnabled();
 
@@ -869,9 +867,7 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteTcpFallbackServerBindPort(final int remoteTcpFallbackServerBindPort);
 
-        public abstract Builder remoteTcpFallbackClientTimeout(final Duration remoteTcpFallbackClientTimeout);
-
-        public abstract Builder remoteTcpFallbackClientAddress(final InetSocketAddress remoteTcpFallbackClientAddress);
+        public abstract Builder remoteTcpFallbackClientConnectPort(final int remoteTcpFallbackClientConnectPort);
 
         public abstract Builder plugins(final Set<DrasylPlugin> plugins);
 

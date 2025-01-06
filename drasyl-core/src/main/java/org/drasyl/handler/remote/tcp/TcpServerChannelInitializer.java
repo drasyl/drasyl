@@ -21,13 +21,17 @@
  */
 package org.drasyl.handler.remote.tcp;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
+import org.drasyl.handler.remote.OtherNetworkFilter;
+import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
+import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
 import org.drasyl.util.internal.UnstableApi;
 
 import static java.util.Objects.requireNonNull;
@@ -35,30 +39,32 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @UnstableApi
 public class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final ChannelHandlerContext ctx;
+    private final DrasylServerChannel parent;
 
-    public TcpServerChannelInitializer(final ChannelHandlerContext ctx) {
-        this.ctx = requireNonNull(ctx);
+    public TcpServerChannelInitializer(final DrasylServerChannel parent) {
+        this.parent = requireNonNull(parent);
     }
 
     @Override
     protected void initChannel(final SocketChannel ch) {
         final ChannelPipeline p = ch.pipeline();
 
-        final TcpServer tcpServer = (TcpServer) ctx.handler();
-
-        p.addLast(new IdleStateHandler(tcpServer.pingTimeout().toMillis(), 0, 0, MILLISECONDS));
-        p.addLast(new ByteBufCodec());
+        p.addLast(new IdleStateHandler(parent.config().getHelloTimeout().toMillis(), 0, 0, MILLISECONDS));
         p.addLast(new TcpCloseIdleClientsHandler());
+        p.addLast(new ByteBufCodec());
         p.addLast(new TcpDrasylMessageHandler());
         p.addLast(new ByteToRemoteMessageCodec());
+        p.addLast(new OtherNetworkFilter(parent.config().getNetworkId()));
         p.addLast(new InvalidProofOfWorkFilter());
-        lastStage(ch);
-    }
-
-    protected void lastStage(final SocketChannel ch) {
-        final TcpServer tcpServer = (TcpServer) ctx.handler();
-
-        ch.pipeline().addLast(new TcpServerHandler(tcpServer.clientChannels(), ctx));
+        if (parent.config().isArmingEnabled()) {
+            ch.pipeline().addLast(new ProtocolArmHandler(
+                    parent.identity(),
+                    Crypto.INSTANCE,
+                    parent.config().getArmingSessionMaxCount(),
+                    parent.config().getArmingSessionExpireAfter()
+            ));
+        }
+        ch.pipeline().addLast(new UnarmedMessageDecoder());
+        p.addLast(new TcpServerToDrasylHandler(parent));
     }
 }

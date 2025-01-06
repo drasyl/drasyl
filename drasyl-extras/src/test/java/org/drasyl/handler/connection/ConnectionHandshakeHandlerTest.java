@@ -82,6 +82,7 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(301, handler.rcvNxt);
 
             assertTrue(channel.isOpen());
+            channel.checkException();
             channel.close();
         }
 
@@ -111,6 +112,7 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(101, handler.rcvNxt);
 
             assertTrue(channel.isOpen());
+            channel.checkException();
             channel.close();
         }
     }
@@ -148,6 +150,7 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(301, handler.rcvNxt);
 
         assertTrue(channel.isOpen());
+        channel.checkException();
         channel.close();
     }
 
@@ -174,6 +177,7 @@ class ConnectionHandshakeHandlerTest {
         assertEquals(ConnectionHandshakeSegment.pshAck(101, 301, data), channel.readOutbound());
         assertTrue(writeFuture.isDone());
 
+        channel.checkException();
         channel.close();
         data.release();
     }
@@ -205,6 +209,7 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(0, handler.rcvNxt);
 
             assertTrue(channel.isOpen());
+            channel.checkException();
             channel.close();
         }
 
@@ -230,6 +235,8 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(300, handler.sndUna);
             assertEquals(300, handler.sndNxt);
             assertEquals(100, handler.rcvNxt);
+
+            channel.checkException();
         }
     }
 
@@ -272,6 +279,8 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(101, handler.sndUna);
             assertEquals(101, handler.sndNxt);
             assertEquals(301, handler.rcvNxt);
+
+            channel.checkException();
         }
 
         @Test
@@ -299,6 +308,8 @@ class ConnectionHandshakeHandlerTest {
             assertEquals(300, handler.sndUna);
             assertEquals(301, handler.sndNxt);
             assertEquals(101, handler.rcvNxt);
+
+            channel.checkException();
         }
     }
 
@@ -333,6 +344,7 @@ class ConnectionHandshakeHandlerTest {
 
         await().untilAsserted(() -> {
             channel.runScheduledPendingTasks();
+            channel.checkException();
             assertEquals(CLOSED, handler.state);
         });
         assertTrue(future.isDone());
@@ -370,6 +382,7 @@ class ConnectionHandshakeHandlerTest {
             assertFalse(writeFuture.isSuccess());
             assertThat(writeFuture.cause(), instanceOf(ConnectionHandshakeException.class));
 
+            channel.checkException();
             channel.close();
         }
     }
@@ -385,6 +398,7 @@ class ConnectionHandshakeHandlerTest {
             channel.writeOutbound(data);
             assertEquals(ConnectionHandshakeSegment.pshAck(100, 300, data), channel.readOutbound());
 
+            channel.checkException();
             channel.close();
 
             data.release();
@@ -399,6 +413,7 @@ class ConnectionHandshakeHandlerTest {
             channel.writeInbound(ConnectionHandshakeSegment.pshAck(300, 100, data));
             assertEquals(data, channel.readInbound());
 
+            channel.checkException();
             channel.close();
 
             data.release();

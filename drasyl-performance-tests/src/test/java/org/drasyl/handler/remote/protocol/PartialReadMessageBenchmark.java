@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,6 +22,7 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
@@ -55,8 +56,8 @@ public class PartialReadMessageBenchmark extends AbstractBenchmark {
             message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), ID_2.getIdentityPublicKey(), ID_1.getIdentityPublicKey(), ID_1.getProofOfWork(), Unpooled.wrappedBuffer(randomBytes(1024)));
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(ID_1.getKeyAgreementKeyPair(), ID_2.getKeyAgreementPublicKey());
             final ArmedProtocolMessage armedMessage = message.arm(UnpooledByteBufAllocator.DEFAULT, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx())); // we must invert the session pair for encryption
-            byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-            armedMessage.writeTo(byteBuf);
+            final ByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+            byteBuf = armedMessage.encodeMessage(alloc);
         }
         catch (final CryptoException | IOException e) {
             handleUnexpectedException(e);
@@ -79,8 +80,8 @@ public class PartialReadMessageBenchmark extends AbstractBenchmark {
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
     public void writeTo(final Blackhole blackhole) {
-        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.directBuffer();
-        message.writeTo(byteBuf);
+        final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
+        final ByteBuf byteBuf = message.encodeMessage(alloc);
         blackhole.consume(byteBuf);
     }
 }

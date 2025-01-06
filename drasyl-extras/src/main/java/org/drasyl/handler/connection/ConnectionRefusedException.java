@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
@@ -28,7 +29,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionRefusedException extends ConnectionException {
-    public ConnectionRefusedException() {
-        super("connection refused");
+    public ConnectionRefusedException(final Channel channel) {
+        super(channel, "connection refused");
     }
 }

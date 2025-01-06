@@ -6,10 +6,10 @@ This file describes how to make the various kinds of releases.
 
 * Verify that all [Github Action workflows](https://github.com/drasyl/drasyl/actions) succeed on master.
 * Update version
-  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json).
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json) and [CITATION.cff](CITATION.cff).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
-* Commit changes.
-* Build software and push to maven repository:
+* Commit changes (commit message: `Prepare for next release`).
+* Build software and push to maven repository (use [GraalVM for JDK 17 Community 17.0.9](https://github.com/graalvm/graalvm-ce-builds/releases/tag/jdk-17.0.9)):
 ```bash
 rm -f release.properties
 mvn clean release:prepare -Prelease-prepare
@@ -32,8 +32,11 @@ The assets below contain the drasyl command-line tool and shared native library.
 ```
 * Wait for GitHub Action to complete [Release](https://github.com/drasyl/drasyl/actions/workflows/release.yml) workflow.
 * Update back to next SNAPSHOT version
-  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json).
+  in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json) and [CITATION.cff](CITATION.cff).
+* Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. template for next release is included).
+* Commit changes (commit message: `Prepare for next development iteration`).
 * Create/update version branch (e.g., `v1.2` if you release `v1.2.0`) and push.
+* Update [docs.drasyl.org](https://github.com/drasyl/docs.drasyl.org) if necessary.
 
 ## Making a manual build of docker
 

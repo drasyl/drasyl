@@ -23,6 +23,7 @@ package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -31,7 +32,6 @@ import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
 import org.drasyl.handler.discovery.RemovePathEvent;
 import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.Identity;
 import org.drasyl.node.event.Node;
 import org.drasyl.node.event.NodeOfflineEvent;
 import org.drasyl.node.event.NodeOnlineEvent;
@@ -40,6 +40,7 @@ import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.util.HashSetMultimap;
 import org.drasyl.util.SetMultimap;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.HashSet;
 import java.util.Set;
@@ -57,25 +58,23 @@ import static java.util.Objects.requireNonNull;
  * <li>...a {@link org.drasyl.node.event.NodeOnlineEvent} if this node is registered to at least one super peer.
  * <li>...a {@link org.drasyl.node.event.NodeOfflineEvent} when this node is not longer registered to any super peer.
  */
+@UnstableApi
 public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
     private final SetMultimap<DrasylAddress, Object> paths;
     private final Set<DrasylAddress> children;
     private final Set<DrasylAddress> superPeers;
-    private final Identity identity;
 
     @SuppressWarnings("java:S2384")
     PeersManagerHandler(final SetMultimap<DrasylAddress, Object> paths,
                         final Set<DrasylAddress> children,
-                        final Set<DrasylAddress> superPeers,
-                        final Identity identity) {
+                        final Set<DrasylAddress> superPeers) {
         this.paths = requireNonNull(paths);
         this.children = requireNonNull(children);
         this.superPeers = requireNonNull(superPeers);
-        this.identity = requireNonNull(identity);
     }
 
-    public PeersManagerHandler(final Identity identity) {
-        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>(), identity);
+    public PeersManagerHandler() {
+        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>());
     }
 
     @Override
@@ -143,7 +142,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         // role (super peer)
         final boolean firstSuperPeer = superPeers.isEmpty();
         if (superPeers.add(publicKey) && firstSuperPeer) {
-            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(identity)));
+            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
         }
     }
 
@@ -154,7 +153,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
 
         // role (super peer)
         if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(identity)));
+            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
         }
 
         // path

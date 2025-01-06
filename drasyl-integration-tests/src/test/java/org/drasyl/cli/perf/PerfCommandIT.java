@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,18 +22,17 @@
 package org.drasyl.cli.perf;
 
 import ch.qos.logback.classic.Level;
-import io.netty.channel.DefaultEventLoopGroup;
-import io.netty.channel.EventLoopGroup;
+import org.awaitility.Awaitility;
 import org.drasyl.EmbeddedNode;
 import org.drasyl.cli.converter.IdentityPublicKeyConverter;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -71,6 +70,11 @@ class PerfCommandIT {
     private ByteArrayOutputStream clientOut;
     private Thread serverThread;
     private Thread clientThread;
+
+    @BeforeAll
+    static void beforeAll() {
+        Awaitility.setDefaultTimeout(ofSeconds(20)); // MessageSerializer's inheritance graph construction take some time
+    }
 
     @BeforeEach
     void setUp(final TestInfo info) throws DrasylException {
@@ -119,15 +123,9 @@ class PerfCommandIT {
         // create server
         final Path serverPath = path.resolve("server.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_2);
-        final EventLoopGroup serverParentGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup serverChildGroup = new DefaultEventLoopGroup();
-        final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         serverThread = new Thread(() -> new PerfServerCommand(
                 new PrintStream(serverOut, true),
                 System.err,
-                serverParentGroup,
-                serverChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 serverPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -138,7 +136,7 @@ class PerfCommandIT {
         serverThread.start();
 
         // get server address
-        final IdentityPublicKey serverAddress = await().atMost(ofSeconds(30)).until(() -> {
+        final IdentityPublicKey serverAddress = await("server address").atMost(ofSeconds(30)).until(() -> {
             final Matcher matcher = ADDRESS_PATTERN.matcher(serverOut.toString());
             if (matcher.find()) {
                 return new IdentityPublicKeyConverter().convert(matcher.group(1));
@@ -151,14 +149,9 @@ class PerfCommandIT {
         // create client
         final Path clientPath = path.resolve("client.identity");
         IdentityManager.writeIdentityFile(serverPath, ID_3);
-        final EventLoopGroup clientParentGroup = new DefaultEventLoopGroup(1);
-        final EventLoopGroup clientChildGroup = clientParentGroup;
         clientThread = new Thread(() -> new PerfClientCommand(
                 new PrintStream(clientOut, true),
                 System.err,
-                clientParentGroup,
-                clientChildGroup,
-                udpServerGroup,
                 Level.WARN,
                 clientPath.toFile(),
                 new InetSocketAddress("127.0.0.1", 0),
@@ -175,7 +168,7 @@ class PerfCommandIT {
         clientThread.start();
 
         // receive text
-        await().atMost(ofSeconds(30)).untilAsserted(() -> {
+        await("receive text").atMost(ofSeconds(30)).untilAsserted(() -> {
             assertThat(clientOut.toString(), containsString("- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -"));
             assertThat(clientOut.toString(), containsString("Sender:"));
             assertThat(clientOut.toString(), containsString("Receiver:"));

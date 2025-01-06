@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,6 @@ import org.drasyl.cli.GlobalOptions;
 import org.drasyl.cli.node.ActivityPattern.Activity;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverHttpServerInitializer;
 import org.drasyl.cli.node.channel.NodeRcJsonRpc2OverTcpServerInitializer;
-import org.drasyl.cli.util.IdentityPublicKeyMixin;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -38,15 +37,18 @@ import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.NodeNormalTerminationEvent;
-import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.serialization.IdentityPublicKeyMixin;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.internal.NonNull;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.ArgGroup;
 import picocli.CommandLine.Command;
+import picocli.CommandLine.Model.CommandSpec;
 import picocli.CommandLine.Option;
+import picocli.CommandLine.ParameterException;
+import picocli.CommandLine.Spec;
 
 import java.io.File;
 import java.io.IOException;
@@ -65,7 +67,11 @@ import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
 @SuppressWarnings("common-java:DuplicatedBlocks")
 @Command(
         name = "node",
-        header = { "Run a drasyl node.", "Can, for example, be used to operate a super peer" }
+        header = { "Run a drasyl node.", "Can, for example, be used to operate a super peer" },
+        customSynopsis = "@|bold drasyl node|@ [@|yellow -c|@=@|italic <file>|@] [@|yellow -v|@=@|italic <level>|@] [@|yellow --activity-pattern|@=@|italic <file>|@]\n" +
+                "                   [[@|yellow --rc-jsonrpc-tcp|@ | @|yellow --rc-jsonrpc-http|@]\n" +
+                "                   [@|yellow --rc-bind|@=@|italic <host>[:<port>]|@] [@|yellow --rc-start-node|@]\n" +
+                "                   [@|yellow --rc-events-buffer-size|@=@|italic <count>|@]]"
 )
 public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     private static final Logger LOG = LoggerFactory.getLogger(NodeCommand.class);
@@ -86,7 +92,11 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     private RemoteControl rc;
     @Option(
             names = { "--rc-bind" },
-            description = "Binds remote control server to given IP and port. If no port is specified, a random free port will be used.",
+            description = {
+                    "Binds remote control server to given IP and port.",
+                    "If no port is specified, a random free port will be used.",
+                    "This option only works when the node is set to listen for remote requests."
+            },
             paramLabel = "<host>[:<port>]",
             defaultValue = "0.0.0.0:25421"
     )
@@ -96,7 +106,8 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
             description = {
                     "Maximum number of events that the buffer can hold.",
                     "On overflow, new events will push oldest events out of the buffer.",
-                    "A value of 0 disables the limit (can lead to out of memory error)."
+                    "A value of 0 disables the limit (can lead to out of memory error).",
+                    "This option only works when the node is set to listen for remote requests."
             },
             paramLabel = "<count>",
             defaultValue = "1000"
@@ -105,14 +116,29 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
     @Option(
             names = { "--rc-start-node" },
             description = {
-                    "Starts the node automatically."
+                    "Starts the node automatically.",
+                    "This option only works when the node is set to listen for remote requests."
             }
     )
     protected boolean rcStartNode;
+    @Spec
+    protected CommandSpec spec;
 
     @SuppressWarnings({ "java:S138", "java:S1188", "java:S3776" })
     @Override
     public Integer call() throws DrasylException {
+        if (rc == null) {
+            if (!spec.findOption("--rc-bind").originalStringValues().isEmpty()) {
+                throw new ParameterException(spec.commandLine(), "--rc-bind can only be used when the node is set to listen for remote requests.");
+            }
+            if (!spec.findOption("--rc-events-buffer-size").originalStringValues().isEmpty()) {
+                throw new ParameterException(spec.commandLine(), "--rc-events-buffer-size can only be used when the node is set to listen for remote requests.");
+            }
+            if (rcStartNode) {
+                throw new ParameterException(spec.commandLine(), "--rc-start-node can only be used when the node is set to listen for remote requests.");
+            }
+        }
+
         setLogLevel();
         final List<Activity> sendPatternActivities = getActivities();
 
@@ -142,9 +168,6 @@ public class NodeCommand extends GlobalOptions implements Callable<Integer> {
                         }
                         else if (event instanceof NodeUnrecoverableErrorEvent) {
                             running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
-                        }
-                        else if (event instanceof NodeOnlineEvent) {
-                            resolve(IdentityPublicKey.of("20dbdb6f281dbdef528baabd56ae48e616756e90ab791c2ee246cc5916505e7a"));
                         }
                     }
                 }

@@ -42,6 +42,7 @@ import org.drasyl.node.event.PeerEvent;
 import org.drasyl.node.event.PeerRelayEvent;
 import org.drasyl.node.event.PerfectForwardSecrecyEncryptionEvent;
 import org.drasyl.node.handler.serialization.Serialization;
+import org.drasyl.util.internal.UnstableApi;
 
 import javax.swing.JButton;
 import javax.swing.JFrame;
@@ -68,6 +69,7 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
+@UnstableApi
 @SuppressWarnings({
         "java:S109",
         "java:S126",
@@ -79,7 +81,6 @@ import static javax.swing.WindowConstants.EXIT_ON_CLOSE;
 public class ChatGui {
     private static final String IDENTITY = System.getProperty("identity", "chat-gui.identity");
     public static final Duration ONLINE_TIMEOUT = ofSeconds(10);
-    public static final int TIMEOUT_SECONDS = 5;
     private final JButton startShutdownButton = new JButton("Start");
     private final JFrame frame = new JFrame();
     private final JTextFieldWithPlaceholder recipientField = new JTextFieldWithPlaceholder(10, "Enter Recipient");

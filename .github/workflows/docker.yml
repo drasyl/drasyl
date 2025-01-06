@@ -13,7 +13,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4.1.2
       - name: Set up JDK
-        uses: actions/setup-java@v4.2.1
+        uses: actions/setup-java@v4.6.0
         with:
           java-version: 11
           distribution: 'adopt'
@@ -38,7 +38,7 @@ jobs:
         id: buildx
         uses: docker/setup-buildx-action@v3
       - name: Build and push
-        uses: docker/build-push-action@v5
+        uses: docker/build-push-action@v6
         with:
           push: true
           context: .

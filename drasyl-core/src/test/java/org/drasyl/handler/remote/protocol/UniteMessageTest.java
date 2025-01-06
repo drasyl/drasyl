@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,8 @@
 package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
+import io.netty.buffer.ByteBufAllocator;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
@@ -82,14 +83,17 @@ public class UniteMessageTest {
             final UniteMessage unite = UniteMessage.of(1, recipient, sender, proofOfWork, publicKey, Set.of(new InetSocketAddress(22527)));
             final int length = unite.getLength();
 
-            final ByteBuf byteBuf = Unpooled.buffer();
+            final ByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
+            ByteBuf byteBuf = null;
             try {
-                unite.writeTo(byteBuf);
+                byteBuf = unite.encodeMessage(alloc);
 
                 assertEquals(byteBuf.readableBytes(), length);
             }
             finally {
-                byteBuf.release();
+                if (byteBuf != null) {
+                    byteBuf.release();
+                }
             }
         }
     }

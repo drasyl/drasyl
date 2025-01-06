@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,6 +24,7 @@ package org.drasyl.node.plugin.groups.manager;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.Future;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinFailedMessage;
@@ -76,7 +77,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                         member.getMember().getPublicKey(),
                         org.drasyl.node.plugin.groups.client.Group.of(member.getGroup().getName()));
 
-                ctx.writeAndFlush(new OverlayAddressedMessage<>(leftMessage, member.getMember().getPublicKey())).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(member.getMember().getPublicKey()).channel().writeAndFlush(leftMessage).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                     }
@@ -103,11 +104,13 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
         try {
             final Set<Membership> recipients = database.getGroupMembers(group);
 
-            recipients.forEach(member -> ctx.writeAndFlush(new OverlayAddressedMessage<>(msg, member.getMember().getPublicKey())).addListener(future -> {
-                if (!future.isSuccess()) {
-                    LOG.warn(UNABLE_TO_SEND, msg.getClass()::getSimpleName, future::cause);
-                }
-            }));
+            recipients.forEach(member -> {
+                ((DrasylServerChannel) ctx.channel()).serve(member.getMember().getPublicKey()).channel().writeAndFlush(msg).addListener(future -> {
+                    if (!future.isSuccess()) {
+                        LOG.warn(UNABLE_TO_SEND, msg.getClass()::getSimpleName, future::cause);
+                    }
+                });
+            });
         }
         catch (final DatabaseException e) {
             LOG.debug("Error occurred on getting members of group `{}`: ", group, e);
@@ -125,10 +128,24 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
         final GroupsClientMessage grpMsg = msg.content();
 
         if (grpMsg instanceof GroupJoinMessage) {
-            ctx.executor().execute(() -> handleJoinRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupJoinMessage) grpMsg));
+            ctx.executor().execute(() -> {
+                try {
+                    handleJoinRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupJoinMessage) grpMsg);
+                }
+                catch (final Throwable e) {
+                    ctx.channel().pipeline().fireExceptionCaught(e);
+                }
+            });
         }
         else if (grpMsg instanceof GroupLeaveMessage) {
-            ctx.executor().execute(() -> handleLeaveRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupLeaveMessage) grpMsg));
+            ctx.executor().execute(() -> {
+                try {
+                    handleLeaveRequest(ctx, (IdentityPublicKey) msg.sender(), (GroupLeaveMessage) grpMsg);
+                }
+                catch (final Throwable e) {
+                    ctx.channel().pipeline().fireExceptionCaught(e);
+                }
+            });
         }
     }
 
@@ -151,7 +168,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                     doJoin(ctx, sender, group, msg.isRenew());
                 }
                 else {
-                    ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK), sender)).addListener(future -> {
+                    ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK)).addListener(future -> {
                         if (!future.isSuccess()) {
                             LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                         }
@@ -160,7 +177,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                 }
             }
             else {
-                ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND), sender)).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(groupName), GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                     }
@@ -188,7 +205,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
             final MemberLeftMessage leftMessage = MemberLeftMessage.of(sender, msg.getGroup());
 
             database.removeGroupMember(sender, msg.getGroup().getName());
-            ctx.writeAndFlush(new OverlayAddressedMessage<>(leftMessage, sender)).addListener(future -> {
+            ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(leftMessage).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, leftMessage.getClass()::getSimpleName, future::cause);
                 }
@@ -224,7 +241,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
                         .sequential()
                         .map(v -> v.getMember().getPublicKey())
                         .collect(Collectors.toSet());
-                ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships), sender)).addListener(future -> {
+                ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupWelcomeMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), memberships)).addListener(future -> {
                     if (!future.isSuccess()) {
                         LOG.warn(UNABLE_TO_SEND, GroupWelcomeMessage.class::getSimpleName, future::cause);
                     }
@@ -239,7 +256,7 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
             }
         }
         catch (final DatabaseException e) {
-            ctx.writeAndFlush(new OverlayAddressedMessage<>(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN), sender)).addListener(future -> {
+            ((DrasylServerChannel) ctx.channel()).serve(sender).channel().writeAndFlush(GroupJoinFailedMessage.of(org.drasyl.node.plugin.groups.client.Group.of(group.getName()), GroupJoinFailedMessage.Error.ERROR_UNKNOWN)).addListener(future -> {
                 if (!future.isSuccess()) {
                     LOG.warn(UNABLE_TO_SEND, GroupJoinFailedMessage.class::getSimpleName, future::cause);
                 }
@@ -251,7 +268,14 @@ public class GroupsManagerHandler extends SimpleChannelInboundHandler<OverlayAdd
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         // Register stale task timer
-        staleTask = ctx.executor().scheduleWithFixedDelay(() -> staleTask(ctx), 1L, 1L, MINUTES);
+        staleTask = ctx.executor().scheduleWithFixedDelay(() -> {
+            try {
+                staleTask(ctx);
+            }
+            catch (final Throwable e) {
+                ctx.channel().pipeline().fireExceptionCaught(e);
+            }
+        }, 1L, 1L, MINUTES);
     }
 
     @Override

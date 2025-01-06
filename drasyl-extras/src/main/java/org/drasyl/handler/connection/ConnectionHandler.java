@@ -201,7 +201,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     public void handlerRemoved(final ChannelHandlerContext ctx) {
         // release all resources/timers
         deleteTcb();
-        establishedPromise.tryFailure(new ConnectionClosingException());
+        establishedPromise.tryFailure(new ConnectionClosingException(ctx.channel()));
         ctx.channel().closeFuture().addListener(new PromiseNotifier<>(false, closedPromise));
     }
 
@@ -256,7 +256,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @Override
     public void channelInactive(final ChannelHandlerContext ctx) {
         if (tcb != null) {
-            tcb.sendBuffer().fail(new ConnectionClosingException());
+            tcb.sendBuffer().fail(new ConnectionClosingException(ctx.channel()));
             tcb.retransmissionQueue().release();
         }
         deleteTcb();
@@ -265,7 +265,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     @Override
     public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-        ReferenceCountUtil.touch(msg, "channelRead");
         if (msg instanceof Segment) {
             segmentArrives(ctx, (Segment) msg);
         }
@@ -406,7 +405,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Return "error: connection already exists".
-                throw new ConnectionAlreadyExistsException();
+                throw new ConnectionAlreadyExistsException(ctx.channel());
         }
     }
 
@@ -427,7 +426,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
                 LOG.trace("{} Connection is already closed. Reject data `{}`.", ctx.channel(), data);
-                promise.tryFailure(new ConnectionDoesNotExistException());
+                promise.tryFailure(new ConnectionDoesNotExistException(ctx.channel()));
                 ReferenceCountUtil.safeRelease(data);
                 break;
 
@@ -506,7 +505,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case TIME_WAIT:
                 // RFC 9293: Return "error: connection closing" and do not service request.
                 LOG.trace("{} Connection is in process of being closed. Reject data `{}`.", ctx.channel(), data);
-                promise.tryFailure(new ConnectionClosingException());
+                promise.tryFailure(new ConnectionClosingException(ctx.channel()));
                 ReferenceCountUtil.safeRelease(data);
                 break;
         }
@@ -518,7 +517,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S128")
     private void userCallReceive(final ChannelHandlerContext ctx) {
-        LOG.trace("{} RECEIVE call received.", ctx.channel(), state());
+        LOG.trace("{} RECEIVE call received (state={}).", ctx.channel(), state());
         switch (state()) {
             case CLOSED:
                 assert tcb == null;
@@ -644,7 +643,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case SYN_SENT:
                 // RFC 9293: Delete the TCB
                 // RFC 9293: and return "error: closing" responses to any queued SENDs,
-                tcb.sendBuffer().fail(new ConnectionClosingException());
+                tcb.sendBuffer().fail(new ConnectionClosingException(ctx.channel()));
                 tcb.retransmissionQueue().release();
                 // RFC 9293: or RECEIVEs.
                 // (not applicable to us)
@@ -708,7 +707,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 9293: "error: connection closing" response.
                 // RFC 9293: An "ok" response would be acceptable, too, as long as a second FIN is
                 // RFC 9293: not emitted (the first FIN may be retransmitted, though).
-                promise.tryFailure(new ConnectionClosingException());
+                promise.tryFailure(new ConnectionClosingException(ctx.channel()));
 
             case CLOSE_WAIT:
                 // RFC 9293: Queue this request until all preceding SENDs have been segmentized;
@@ -730,7 +729,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             case LAST_ACK:
             case TIME_WAIT:
                 // RFC 9293: Respond with "error: connection closing".
-                promise.tryFailure(new ConnectionClosingException());
+                promise.tryFailure(new ConnectionClosingException(ctx.channel()));
         }
     }
 
@@ -767,7 +766,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
-                throw new ConnectionDoesNotExistException();
+                throw new ConnectionDoesNotExistException(ctx.channel());
 
             case LISTEN:
                 // RFC 9293: Any outstanding RECEIVEs should be returned with "error: connection
@@ -787,7 +786,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
             case SYN_SENT:
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(new ConnectionResetException());
+                tcb.sendBuffer().fail(new ConnectionResetException(ctx.channel()));
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification.
                 // (not applicable to us)
 
@@ -812,7 +811,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 final Segment seg = formSegment(ctx, tcb.sndNxt(), RST);
 
                 // RFC 9293: All queued SENDs
-                tcb.sendBuffer().fail(new ConnectionResetException());
+                tcb.sendBuffer().fail(new ConnectionResetException(ctx.channel()));
                 // RFC 9293: and RECEIVEs should be given "connection reset" notification;
                 // (not applicable to us)
 
@@ -863,7 +862,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // (not applicable to us)
 
                 // RFC 9293: Otherwise, return "error: connection does not exist".
-                throw new ConnectionDoesNotExistException();
+                throw new ConnectionDoesNotExistException(ctx.channel());
 
             case LISTEN:
             case SYN_SENT:
@@ -927,7 +926,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
      */
     private void segmentArrives(final ChannelHandlerContext ctx,
                                 final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrives");
         LOG.trace("{} Read `{}`.", ctx.channel(), seg);
 
         try {
@@ -954,14 +952,12 @@ public class ConnectionHandler extends ChannelDuplexHandler {
             }
         }
         finally {
-            ReferenceCountUtil.touch(seg, "ReliableConnectionHandler release " + seg.toString());
             seg.release();
         }
     }
 
     private void segmentArrivesOnClosedState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnClosedState");
         // RFC 9293: all data in the incoming segment is discarded.
         // (this is handled by handler's auto release of all arrived segments)
 
@@ -994,7 +990,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
     private void segmentArrivesOnListenState(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnListenState");
         // RFC 9293: First, check for a RST:
         if (seg.isRst()) {
             // RFC 9293: An incoming RST segment could not be valid since it could not have been
@@ -1112,8 +1107,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnSynSentState(final ChannelHandlerContext ctx,
                                               final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnSynSentState");
-
         // RFC 9293: First, check the ACK bit:
         if (seg.isAck()) {
             // RFC 9293: If the ACK bit is set,
@@ -1157,7 +1150,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 LOG.trace("{} SEG `{}` is an acceptable ACK. Inform user, drop segment, enter CLOSED state.", ctx.channel(), seg);
 
                 // RFC 9293: then signal to the user "error: connection reset",
-                ctx.fireExceptionCaught(new ConnectionResetException());
+                ctx.fireExceptionCaught(new ConnectionResetException(ctx.channel()));
 
                 // RFC 9293: drop the segment,
                 // (this is handled by handler's auto release of all arrived segments)
@@ -1378,8 +1371,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
     @SuppressWarnings("java:S3776")
     private void segmentArrivesOnOtherStates(final ChannelHandlerContext ctx,
                                              final Segment seg) {
-        ReferenceCountUtil.touch(seg, "segmentArrivesOnOtherStates " + seg.toString());
-
         // RFC 9293: First, check sequence number:
 
         switch (state()) {
@@ -1564,7 +1555,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                         // RFC 9293: came from SYN-SENT state), then the connection was refused;
                         // RFC 9293: signal the user "connection refused".
                         LOG.trace("{} We got `{}`. Connection has been refused by remote peer.", ctx.channel(), seg);
-                        final ConnectionRefusedException evt = new ConnectionRefusedException();
+                        final ConnectionRefusedException evt = new ConnectionRefusedException(ctx.channel());
                         LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
                         ctx.fireExceptionCaught(evt);
                     }
@@ -1595,7 +1586,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                     // RFC 9293: If the RST bit is set, then any outstanding RECEIVEs
                     // (not applicable to us)
                     // RFC 9293: and SEND should receive "reset" responses.
-                    tcb.sendBuffer().fail(new ConnectionResetException());
+                    tcb.sendBuffer().fail(new ConnectionResetException(ctx.channel()));
 
                     // RFC 9293: All segment queues should be flushed.
                     tcb.retransmissionQueue().release();
@@ -1604,7 +1595,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
 
                     // RFC 9293: Users should also receive an unsolicited general
                     // RFC 9293: "connection reset" signal.
-                    final ConnectionResetException evt = new ConnectionResetException();
+                    final ConnectionResetException evt = new ConnectionResetException(ctx.channel());
                     LOG.trace("{} Trigger user event `{}`.", ctx.channel(), evt);
                     ctx.fireExceptionCaught(evt);
 
@@ -2216,7 +2207,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
                 // RFC 5681:    MUST be incremented by SMSS. This artificially inflates the
                 // RFC 5681:    congestion window in order to reflect the additional segment that
                 // RFC 5681:    has left the network.
-                LOG.trace("{} Congestion Control: Fast Recovery: Got additional duplicate ACK (after the third). Increment cwnd by SMSS.", ctx.channel());
+                LOG.trace("{} Congestion Control: Fast Recovery: Got additional duplicate ACK (#{}). Increment cwnd by SMSS.", ctx.channel(), tcb.duplicateAcks());
                 tcb.cwnd(ctx, tcb.cwnd() + tcb.smss());
 
                 // RFC 5681: 5.  When previously unsent data is available and the new value of
@@ -2453,7 +2444,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final AtomicBoolean doPush = new AtomicBoolean();
         final ChannelPromise promise = ctx.newPromise();
         final ByteBuf data = tcb.sendBuffer().read(bytes, doPush, promise);
-        ReferenceCountUtil.touch(data, "segmentizeData");
         byte ctl = ACK;
         if (doPush.get()) {
             ctl |= PSH;
@@ -2483,7 +2473,7 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         // RFC 9293: For any state if the user timeout expires,
         LOG.trace("{} USER timer timeout after {}ms. Close channel.", ctx.channel(), config.userTimeout().toMillis());
         // RFC 9293: flush all queues,
-        final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(config.userTimeout());
+        final ConnectionAbortedDueToUserTimeoutException e = new ConnectionAbortedDueToUserTimeoutException(ctx.channel(), config.userTimeout());
         if (tcb != null) {
             tcb.sendBuffer().fail(e);
             tcb.retransmissionQueue().release();
@@ -2585,7 +2575,6 @@ public class ConnectionHandler extends ChannelDuplexHandler {
         final Segment seg = tcb.retransmissionQueue().nextSegment();
         if (seg != null) {
             final ByteBuf copy = seg.content().copy();
-            ReferenceCountUtil.touch(copy, "retransmissionSegment");
             return formSegment(ctx, seg.seq(), seg.ack(), seg.ctl(), copy);
         }
         return null;

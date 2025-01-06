@@ -132,6 +132,8 @@ class RmiInvocationHandler implements InvocationHandler {
         final AddressedEnvelope<RmiRequest, SocketAddress> msg = new DefaultAddressedEnvelope<>(request, address);
         LOG.trace("Send `{}`.", msg);
         final ChannelHandlerContext ctx = handler.ctx;
+        requests.put(request.getId(), new RemoteInvocation(method, promise, cacheKey));
+        handler.requests.put(request.getId(), this);
         ctx.writeAndFlush(msg).addListener((ChannelFutureListener) future -> {
             if (future.cause() != null) {
                 LOG.warn("Error", future.cause());
@@ -145,8 +147,6 @@ class RmiInvocationHandler implements InvocationHandler {
             }
             else {
                 // wait for result
-                requests.put(request.getId(), new RemoteInvocation(method, promise, cacheKey));
-                handler.requests.put(request.getId(), this);
                 promise.addListener(f -> {
                     handler.requests.remove(request.getId());
                     requests.remove(request.getId());

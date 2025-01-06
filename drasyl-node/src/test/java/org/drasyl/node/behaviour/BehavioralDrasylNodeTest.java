@@ -41,6 +41,7 @@ import static org.drasyl.node.behaviour.Behavior.SHUTDOWN;
 import static org.drasyl.node.behaviour.Behavior.UNHANDLED;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Answers.RETURNS_SELF;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
@@ -50,7 +51,7 @@ import static org.mockito.Mockito.when;
 class BehavioralDrasylNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock(answer = RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_SELF)
     private ServerBootstrap bootstrap;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelFuture channelFuture;

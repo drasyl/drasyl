@@ -92,7 +92,7 @@ public class Serialization {
      * Rebuilds the inheritance graph, but keeps the old values.
      */
     public static synchronized void buildInheritanceGraph() {
-        LOG.debug("Scan classpath and build inheritance graph. This can take some time...");
+        LOG.trace("Scan classpath and build inheritance graph. This can take some time...");
 
         // scan classpath
         final ScanResult scanResult = new ClassGraph()
@@ -120,7 +120,7 @@ public class Serialization {
             }
         }
         subclasses = newSubclasses;
-        LOG.debug("Inheritance graph built!");
+        LOG.trace("Inheritance graph built!");
     }
 
     /**

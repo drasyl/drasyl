@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -87,11 +87,11 @@ public abstract class PublicHeader {
 
         final byte[] nonceBuffer = new byte[Nonce.NONCE_LENGTH];
         byteBuf.readBytes(nonceBuffer);
-        nonce = Nonce.of(nonceBuffer);
+        nonce = Nonce.ofDirect(nonceBuffer);
 
         final byte[] recipientBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
         byteBuf.readBytes(recipientBuffer);
-        recipient = IdentityPublicKey.of(recipientBuffer);
+        recipient = IdentityPublicKey.ofDirect(recipientBuffer);
 
         if (recipient == IdentityPublicKey.ZERO_ID) {
             recipient = null;
@@ -99,7 +99,7 @@ public abstract class PublicHeader {
 
         final byte[] senderBuffer = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
         byteBuf.readBytes(senderBuffer);
-        sender = IdentityPublicKey.of(senderBuffer);
+        sender = IdentityPublicKey.ofDirect(senderBuffer);
 
         proofOfWork = ProofOfWork.of(byteBuf.readInt());
 
@@ -145,7 +145,7 @@ public abstract class PublicHeader {
      * @param withHopCount if the hop count should be included
      */
     public void writeTo(final ByteBuf byteBuf, final boolean withHopCount) {
-        final byte[] recipientBuffer = getRecipient() == null ? IdentityPublicKey.ZERO_ID.toByteArray() : getRecipient().toByteArray();
+        final DrasylAddress recipient = getRecipient() == null ? IdentityPublicKey.ZERO_ID : getRecipient();
 
         byte flags = 0;
         // 000. ....
@@ -157,12 +157,12 @@ public abstract class PublicHeader {
             flags |= 1 << 4;
         }
 
-        byteBuf.writeByte(flags)                                //  1 byte
-                .writeInt(getNetworkId())                       //  4 bytes
-                .writeBytes(getNonce().toByteArray())           // 24 bytes
-                .writeBytes(recipientBuffer)                    // 32 bytes
-                .writeBytes(getSender().toByteArray())          // 32 bytes
-                .writeInt(getProofOfWork().intValue());         //  4 bytes
+        byteBuf.writeByte(flags);                       //  1 byte
+        byteBuf.writeInt(getNetworkId());               //  4 bytes
+        getNonce().writeTo(byteBuf);                    // 24 bytes
+        recipient.writeTo(byteBuf);                     // 32 bytes
+        getSender().writeTo(byteBuf);                   // 32 bytes
+        byteBuf.writeInt(getProofOfWork().intValue());  //  4 bytes
     }
 
     /**

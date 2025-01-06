@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.2
       - name: Set up JDK
-        uses: actions/setup-java@v4.2.1
+        uses: actions/setup-java@v4.6.0
         with:
           java-version: 11
           distribution: 'adopt'
@@ -48,6 +48,7 @@ jobs:
           - linux-amd64
           - linux-arm64
           - macos-amd64
+          - macos-arm64
           - windows-amd64
 
         include:
@@ -58,6 +59,9 @@ jobs:
             os: [ self-hosted, linux, ARM64 ]
 
           - job_name: macos-amd64
+            os: macOS-13
+
+          - job_name: macos-arm64
             os: macOS-latest
 
           - job_name: windows-amd64
@@ -84,8 +88,8 @@ jobs:
       - name: Set up GraalVM environment
         uses: graalvm/setup-graalvm@v1
         with:
-          version: 22.3.2
           java-version: 17
+          distribution: 'graalvm'
           components: native-image
           cache: 'maven'
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -94,6 +98,7 @@ jobs:
       - name: Build Native Image
         env:
           MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+          GRAALVM_QUICK_BUILD: "true"
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles native,fast --projects drasyl-cli --also-make package
 
       # package native image
@@ -118,7 +123,7 @@ jobs:
           for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
         if: success() && matrix.job_name == 'linux-arm64'
 
-      - name: Build Package on Mac x86
+      - name: Build Package on Mac
         run: |
           VERSION=$(./mvnw help:evaluate "-Dexpression=project.version" -q -DforceStdout)
           mkdir -p drasyl-${VERSION}-${{ matrix.job_name }}/bin/

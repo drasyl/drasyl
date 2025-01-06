@@ -23,16 +23,16 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.OverlayAddressedMessage;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
+import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.handler.remote.PeersManager.PathId;
+import org.drasyl.handler.remote.UdpServer.UdpServerBound;
+import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.ThrowingBiConsumer;
 import org.drasyl.util.ThrowingFunction;
+import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.NetworkUtil;
@@ -47,7 +47,6 @@ import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -69,88 +68,63 @@ import static org.drasyl.util.RandomUtil.randomLong;
  * <p>
  * Inspired by: <a href="https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java">Jadex</a>
  */
+@UnstableApi
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
-    private static final Object eventPath = LocalHostDiscovery.class;
+    static final PathId PATH_ID = new PathId() {
+        @Override
+        public short priority() {
+            return 80;
+        }
+    };
     public static final Duration REFRESH_INTERVAL_SAFETY_MARGIN = ofSeconds(5);
     public static final Duration WATCH_SERVICE_POLL_INTERVAL = ofSeconds(5);
     public static final String FILE_SUFFIX = ".txt";
     private final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader;
     private final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter;
-    private final Map<IdentityPublicKey, InetSocketAddress> routes;
     private final boolean watchEnabled;
     private final Duration leaseTime;
     private final Path path;
-    private final int networkId;
     private Future<?> watchDisposable;
     private Future<?> postDisposable;
     private WatchService watchService; // NOSONAR
 
-    public LocalHostDiscovery(final int networkId,
-                              final boolean watchEnabled,
+    @SuppressWarnings({ "java:S107" })
+    LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
+                       final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
+                       final boolean watchEnabled,
+                       final Duration leaseTime,
+                       final Path path,
+                       final Future<?> watchDisposable,
+                       final Future<?> postDisposable) {
+        this.fileReader = requireNonNull(fileReader);
+        this.fileWriter = requireNonNull(fileWriter);
+        this.watchEnabled = watchEnabled;
+        this.leaseTime = leaseTime;
+        this.path = path;
+        this.watchDisposable = watchDisposable;
+        this.postDisposable = postDisposable;
+    }
+
+    public LocalHostDiscovery(final boolean watchEnabled,
                               final Duration leaseTime,
                               final Path path) {
         this(
                 file -> LocalHostPeerInformation.of(file).addresses(),
                 (file, addresses) -> LocalHostPeerInformation.of(addresses).writeTo(file),
-                new HashMap<>(),
                 watchEnabled,
                 leaseTime,
                 path,
-                networkId, null,
+                null,
                 null
         );
-    }
-
-    @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(final ThrowingFunction<File, Set<InetSocketAddress>, IOException> fileReader,
-                       final ThrowingBiConsumer<File, Set<InetSocketAddress>, IOException> fileWriter,
-                       final Map<IdentityPublicKey, InetSocketAddress> routes,
-                       final boolean watchEnabled,
-                       final Duration leaseTime,
-                       final Path path,
-                       final int networkId,
-                       final Future<?> watchDisposable,
-                       final Future<?> postDisposable) {
-        this.fileReader = requireNonNull(fileReader);
-        this.fileWriter = requireNonNull(fileWriter);
-        this.routes = requireNonNull(routes);
-        this.watchEnabled = watchEnabled;
-        this.leaseTime = leaseTime;
-        this.path = path;
-        this.networkId = networkId;
-        this.watchDisposable = watchDisposable;
-        this.postDisposable = postDisposable;
-    }
-
-    @SuppressWarnings("unchecked")
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) throws Exception {
-        if (msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
-            final IdentityPublicKey recipient = (IdentityPublicKey) ((OverlayAddressedMessage<ApplicationMessage>) msg).recipient();
-
-            final InetSocketAddress localAddress = routes.get(recipient);
-            if (localAddress != null) {
-                LOG.trace("Resolve message `{}` for peer `{}` to inet address `{}`.", () -> ((OverlayAddressedMessage<ApplicationMessage>) msg).content().getNonce(), () -> recipient, () -> localAddress);
-                ctx.write(((OverlayAddressedMessage<ApplicationMessage>) msg).resolve(localAddress), promise);
-            }
-            else {
-                // pass through message
-                ctx.write(msg, promise);
-            }
-        }
-        else {
-            super.write(ctx, msg, promise);
-        }
     }
 
     private void startDiscovery(final ChannelHandlerContext ctx,
                                 final InetSocketAddress bindAddress) {
         LOG.debug("Start Local Host Discovery...");
-        final Path discoveryPath = discoveryPath();
+        final Path discoveryPath = discoveryPath(ctx);
         final File directory = discoveryPath.toFile();
 
         if (!directory.mkdirs() && !directory.exists()) {
@@ -188,7 +162,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             }
         }
 
-        final Path filePath = discoveryPath().resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX);
+        final Path filePath = discoveryPath(ctx).resolve(ctx.channel().localAddress().toString() + FILE_SUFFIX);
         try {
             Files.deleteIfExists(filePath);
         }
@@ -196,8 +170,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
             LOG.debug("Unable to delete `{}`", filePath, e);
         }
 
-        routes.keySet().forEach(publicKey -> ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath)));
-        routes.clear();
+        config(ctx).getPeersManager().removeChildrenPaths(ctx, PATH_ID);
 
         LOG.debug("Local Host Discovery stopped.");
     }
@@ -272,7 +245,7 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
      */
     @SuppressWarnings("java:S134")
     synchronized void scan(final ChannelHandlerContext ctx) {
-        final Path discoveryPath = discoveryPath();
+        final Path discoveryPath = discoveryPath(ctx);
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
         final String ownPublicKeyString = ctx.channel().localAddress().toString();
         final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
@@ -304,23 +277,19 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     private void updateRoutes(final ChannelHandlerContext ctx,
                               final Map<IdentityPublicKey, InetSocketAddress> newRoutes) {
         // remove outdated routes
-        for (final Iterator<IdentityPublicKey> i = routes.keySet().iterator();
-             i.hasNext(); ) {
-            final IdentityPublicKey publicKey = i.next();
-
+        final PeersManager peersManager = config(ctx).getPeersManager();
+        final Set<DrasylAddress> peers = peersManager.getPeers(PATH_ID);
+        for (final DrasylAddress publicKey : peers) {
             if (!newRoutes.containsKey(publicKey)) {
                 LOG.trace("Addresses for peer `{}` are outdated. Remove peer from routing table.", publicKey);
-                ctx.fireUserEventTriggered(RemovePathEvent.of(publicKey, eventPath));
-                i.remove();
+                peersManager.removeChildrenPath(ctx, publicKey, PATH_ID);
             }
         }
 
         // add new routes
         newRoutes.forEach(((publicKey, address) -> {
-            if (!routes.containsKey(publicKey)) {
-                routes.put(publicKey, address);
-                ctx.fireUserEventTriggered(AddPathEvent.of(publicKey, address, eventPath));
-            }
+            LOG.trace("Add new address `{}` for peer `{}`.", address, publicKey);
+            peersManager.addChildrenPath(ctx, publicKey, PATH_ID, address, PATH_ID.priority());
         }));
     }
 
@@ -353,14 +322,18 @@ public class LocalHostDiscovery extends ChannelDuplexHandler {
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof UdpServer.UdpServerBound) {
-            startDiscovery(ctx, ((UdpServer.UdpServerBound) evt).getBindAddress());
+        if (evt instanceof UdpServerBound) {
+            startDiscovery(ctx, ((UdpServerBound) evt).getBindAddress());
         }
 
         ctx.fireUserEventTriggered(evt);
     }
 
-    private Path discoveryPath() {
-        return path.resolve(String.valueOf(networkId));
+    private Path discoveryPath(final ChannelHandlerContext ctx) {
+        return path.resolve(String.valueOf(config(ctx).getNetworkId()));
+    }
+
+    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (DrasylServerChannelConfig) ctx.channel().config();
     }
 }

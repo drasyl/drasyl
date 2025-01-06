@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,6 +21,8 @@
  */
 package org.drasyl.identity;
 
+import io.netty.buffer.ByteBuf;
+
 import java.net.SocketAddress;
 
 /**
@@ -29,4 +31,11 @@ import java.net.SocketAddress;
 @SuppressWarnings("java:S118")
 public abstract class DrasylAddress extends SocketAddress {
     public abstract byte[] toByteArray();
+
+    /**
+     * Writes this public key to the buffer {@code out}.
+     *
+     * @param out writes this public key to the given buffer
+     */
+    public abstract void writeTo(final ByteBuf out);
 }

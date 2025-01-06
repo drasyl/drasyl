@@ -55,9 +55,15 @@
  */
 package org.drasyl.util.logging;
 
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.io.PrintStream;
 
 import static org.drasyl.util.logging.MessageFormatter.arrayFormat;
 import static org.drasyl.util.logging.MessageFormatter.format;
@@ -140,15 +146,32 @@ class MessageFormatterTest {
         assertEquals(new FormattingTuple("Value {} is smaller than 1"), format("Value \\{} is smaller than {}", 1, 2));
     }
 
-    @Test
-    void testExceptionIn_toString() {
-        final Object o = new Object() {
-            @Override
-            public String toString() {
-                throw new IllegalStateException("a");
-            }
-        };
-        assertEquals(new FormattingTuple("Troublesome object [FAILED toString()]"), format("Troublesome object {}", o));
+    @Nested
+    class ExceptionInToString {
+        private PrintStream originalErrStream;
+
+        @BeforeEach
+        void setUp(@Mock PrintStream printStream) {
+            originalErrStream = System.err;
+            System.setErr(printStream);
+        }
+
+        @AfterEach
+        void tearDown() {
+            System.setErr(originalErrStream);
+            originalErrStream = null;
+        }
+
+        @Test
+        void test() {
+            final Object o = new Object() {
+                @Override
+                public String toString() {
+                    throw new IllegalStateException("a");
+                }
+            };
+            assertEquals(new FormattingTuple("Troublesome object [FAILED toString()]"), format("Troublesome object {}", o));
+        }
     }
 
     @Test

@@ -178,6 +178,7 @@ class ConnectionHandlerTest {
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
             }
 
@@ -220,6 +221,7 @@ class ConnectionHandlerTest {
                 assertEquals(data, channel.readInbound());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
                 data.release();
             }
@@ -251,7 +253,7 @@ class ConnectionHandlerTest {
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 100, SYN, 64_000));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_B_PORT), dstPort(PEER_A_PORT), ctl(ACK), seq(301), ack(101)));
                 assertEquals(SYN_RECEIVED, handler.tcb.state());
-
+                channel.checkException();
             }
         }
 
@@ -315,6 +317,7 @@ class ConnectionHandlerTest {
                 assertEquals(301, handler.tcb.rcvNxt());
 
                 assertTrue(channel.isOpen());
+                channel.checkException();
                 channel.close();
             }
         }
@@ -372,6 +375,7 @@ class ConnectionHandlerTest {
                     assertEquals(0, handler.tcb.rcvNxt());
 
                     assertTrue(channel.isOpen());
+                    channel.checkException();
                     channel.close();
                 }
 
@@ -409,6 +413,8 @@ class ConnectionHandlerTest {
                     final Segment msg = new Segment(PEER_A_PORT, PEER_B_PORT, 100, RST);
                     assertThrows(ConnectionResetException.class, () -> channel.writeInbound(msg));
                     assertNull(handler.tcb);
+
+                    channel.checkException();
                 }
             }
 
@@ -441,6 +447,7 @@ class ConnectionHandlerTest {
                     channel.writeInbound(seg);
                     assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(RST), seq(100)));
 
+                    channel.checkException();
                     channel.close();
                 }
             }
@@ -486,6 +493,7 @@ class ConnectionHandlerTest {
                     channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, z + 1, RST));
                     assertEquals(LISTEN, handler.tcb.state());
 
+                    channel.checkException();
                     channel.close();
                 }
             }
@@ -558,6 +566,7 @@ class ConnectionHandlerTest {
                 // wait 2 MSL
                 await().untilAsserted(() -> {
                     channel.runScheduledPendingTasks();
+                    channel.checkException();
                     assertNull(handler.tcb);
                     assertTrue(future.isDone());
                 });
@@ -599,6 +608,8 @@ class ConnectionHandlerTest {
                 channel.writeInbound(new Segment(PEER_A_PORT, PEER_B_PORT, 101, 301, ACK));
 
                 assertNull(handler.tcb);
+
+                channel.checkException();
             }
         }
 
@@ -668,6 +679,8 @@ class ConnectionHandlerTest {
 
                 assertTrue(future.isDone());
                 assertNull(handler.tcb);
+
+                channel.checkException();
             }
         }
     }
@@ -864,6 +877,8 @@ class ConnectionHandlerTest {
                     assertThrows(UnsupportedMessageTypeException.class, () -> channel.writeOutbound("Hello World"));
 
                     channel.close();
+
+                    channel.checkException();
                 }
 
                 @Nested
@@ -1479,7 +1494,7 @@ class ConnectionHandlerTest {
                 class OnClosedState {
                     @Test
                     void shouldThrowException() {
-                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, null);
+                        final ConnectionHandler handler = new ConnectionHandler(0, 0, config, null, userTimer, retransmissionTimer, timeWaitTimer, establishedPromise, false, false, closedPromise, ctx);
 
                         assertThrows(ConnectionDoesNotExistException.class, () -> handler.userCallStatus());
                     }
@@ -3443,6 +3458,8 @@ class ConnectionHandlerTest {
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 6 * (mms - SEG_HDR_SIZE))));
                 assertThat(channel.readOutbound(), allOf(srcPort(PEER_A_PORT), dstPort(PEER_B_PORT), ctl(ACK), len(mms - SEG_HDR_SIZE), seq(iss + 7 * (mms - SEG_HDR_SIZE))));
                 assertNull(channel.readOutbound());
+
+                channel.checkException();
             }
         }
 
@@ -3502,6 +3519,8 @@ class ConnectionHandlerTest {
                 channel.writeInbound(new Segment(PEER_B_PORT, PEER_A_PORT, 300L, iss + 5 * (mms - 20), ACK, 64_000));
                 expectedCwnd += 267;
                 assertEquals(expectedCwnd, tcb.cwnd());
+
+                channel.checkException();
             }
         }
     }

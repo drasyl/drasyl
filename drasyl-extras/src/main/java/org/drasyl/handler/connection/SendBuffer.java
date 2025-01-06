@@ -141,7 +141,7 @@ public class SendBuffer {
      * Release all buffers in the queue and complete all listeners and promises.
      */
     public void release() {
-        fail(new ConnectionClosingException());
+        fail(new ConnectionClosingException(channel));
     }
 
     public void fail(final ConnectionException e) {

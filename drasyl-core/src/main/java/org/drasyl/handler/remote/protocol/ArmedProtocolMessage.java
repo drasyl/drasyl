@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,6 +34,7 @@ import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.InputStreamHelper;
 import org.drasyl.util.UnsignedShort;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 
@@ -46,6 +47,7 @@ import java.io.IOException;
  */
 @AutoValue
 @SuppressWarnings("java:S118")
+@UnstableApi
 public abstract class ArmedProtocolMessage implements PartialReadMessage {
     // authentication header is 16 bytes long
     public static final int ARMED_HEADER_LENGTH = 16;
@@ -194,13 +196,15 @@ public abstract class ArmedProtocolMessage implements PartialReadMessage {
     }
 
     @Override
-    public void writeTo(final ByteBuf out) {
+    public ByteBuf encodeMessage(final ByteBufAllocator alloc) {
+        final ByteBuf out = alloc.buffer(getLength());
         out.writeInt(MAGIC_NUMBER);
         buildPublicHeader().writeTo(out);
         final ByteBuf bytes = getBytes();
         bytes.markReaderIndex();
         out.writeBytes(bytes);
         bytes.resetReaderIndex();
+        return out;
     }
 
     private PublicHeader buildPublicHeader() {

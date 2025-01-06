@@ -24,10 +24,10 @@ package org.drasyl.node.plugin.groups.client;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import org.drasyl.channel.OverlayAddressedMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.node.plugin.groups.client.message.GroupsClientMessage;
+import org.drasyl.util.internal.UnstableApi;
 
 import java.util.List;
 
@@ -37,30 +37,25 @@ import static org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder.MA
 /**
  * Decodes {@link ByteBuf}s to {@link GroupsClientMessage}s.
  */
-public class GroupsClientMessageDecoder extends MessageToMessageDecoder<OverlayAddressedMessage<ByteBuf>> {
-    @Override
-    public boolean acceptInboundMessage(final Object msg) {
-        return msg instanceof OverlayAddressedMessage && ((OverlayAddressedMessage<?>) msg).content() instanceof ByteBuf;
-    }
-
+@UnstableApi
+public class GroupsClientMessageDecoder extends MessageToMessageDecoder<ByteBuf> {
     @Override
     protected void decode(final ChannelHandlerContext ctx,
-                          final OverlayAddressedMessage<ByteBuf> msg,
+                          final ByteBuf byteBuf,
                           final List<Object> out) {
-        final ByteBuf byteBuf = msg.content();
         byteBuf.markReaderIndex();
         final int magicNumber = byteBuf.readInt();
 
         switch (magicNumber) {
             case MAGIC_NUMBER_JOIN:
-                out.add(msg.replace(GroupJoinMessage.of(byteBuf)));
+                out.add(GroupJoinMessage.of(byteBuf));
                 break;
             case MAGIC_NUMBER_LEAVE:
-                out.add(msg.replace(GroupLeaveMessage.of(byteBuf)));
+                out.add(GroupLeaveMessage.of(byteBuf));
                 break;
             default:
                 byteBuf.resetReaderIndex();
-                out.add(msg.retain());
+                out.add(byteBuf.retain());
         }
     }
 }

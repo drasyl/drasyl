@@ -21,6 +21,7 @@
  */
 package org.drasyl.handler.connection;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -31,7 +32,7 @@ import org.drasyl.util.internal.UnstableApi;
  */
 @UnstableApi
 public class ConnectionAlreadyExistsException extends ConnectionException {
-    public ConnectionAlreadyExistsException() {
-        super("connection already exists");
+    public ConnectionAlreadyExistsException(final Channel channel) {
+        super(channel, "connection already exists");
     }
 }
