@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -98,6 +98,15 @@ public class ReadThroughputBenchmarkHelper {
 
         final InetSocketAddress remoteAddress = new InetSocketAddress(HOST, PORT);
 
+        final ChannelFutureListener listener = new ChannelFutureListener() {
+            @Override
+            public void operationComplete(final ChannelFuture future) {
+                if (!future.isSuccess() && !(future.cause() instanceof PortUnreachableException)) {
+                    future.channel().pipeline().fireExceptionCaught(future.cause());
+                }
+            }
+        };
+
         final EventLoopGroup group = new NioEventLoopGroup();
         try {
             final Bootstrap bootstrap = new Bootstrap()
@@ -116,14 +125,7 @@ public class ReadThroughputBenchmarkHelper {
                                     while (doSend && ctx.channel().isWritable()) {
                                         messagesWritten.increment();
                                         bytesWritten.add(PACKET_SIZE);
-                                        ctx.write(encoded.retain()).addListener(new ChannelFutureListener() {
-                                            @Override
-                                            public void operationComplete(final ChannelFuture future) {
-                                                if (!future.isSuccess() && !(future.cause() instanceof PortUnreachableException)) {
-                                                    future.channel().pipeline().fireExceptionCaught(future.cause());
-                                                }
-                                            }
-                                        });
+                                        ctx.write(encoded.retain()).addListener(listener);
                                     }
                                     if (!doSend) {
                                         ctx.close();

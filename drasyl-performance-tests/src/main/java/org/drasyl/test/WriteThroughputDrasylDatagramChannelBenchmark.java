@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -116,6 +116,15 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
                 }
             }
 
+            final ChannelFutureListener listener = new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        future.cause().printStackTrace();
+                    }
+                }
+            };
+
             // Start a thread to send packets as fast as possible
             final DatagramChannel finalUdpChannel = udpChannel;
             new Thread(() -> {
@@ -126,14 +135,7 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
                         final ApplicationMessage appMsg = ApplicationMessage.of(1, recipient, identity.getIdentityPublicKey(), identity.getProofOfWork(), data.retainedDuplicate());
                         final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, targetAddress);
 
-                        finalUdpChannel.writeAndFlush(inetMsg).addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(final ChannelFuture future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    future.cause().printStackTrace();
-                                }
-                            }
-                        });
+                        finalUdpChannel.writeAndFlush(inetMsg).addListener(listener);
                         messagesWritten.increment();
                         bytesWritten.add(PACKET_SIZE + 104);
                     }
