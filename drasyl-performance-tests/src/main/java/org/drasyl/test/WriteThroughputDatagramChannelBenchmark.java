@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -69,19 +69,21 @@ public class WriteThroughputDatagramChannelBenchmark {
 
             final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
 
+            final ChannelFutureListener listener = new ChannelFutureListener() {
+                @Override
+                public void operationComplete(final ChannelFuture future) throws Exception {
+                    if (!future.isSuccess()) {
+                        future.cause().printStackTrace();
+                    }
+                }
+            };
+
             // Start a thread to send packets as fast as possible
             new Thread(() -> {
                 final ByteBuf data = Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
                 while (doSend) {
                     if (channel.isWritable()) {
-                        channel.writeAndFlush(new DatagramPacket(data.retainedDuplicate(), targetAddress)).addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(final ChannelFuture future) throws Exception {
-                                if (!future.isSuccess()) {
-                                    future.cause().printStackTrace();
-                                }
-                            }
-                        });
+                        channel.writeAndFlush(new DatagramPacket(data.retainedDuplicate(), targetAddress)).addListener(listener);
                         messagesWritten.increment();
                         bytesWritten.add(PACKET_SIZE);
                     }

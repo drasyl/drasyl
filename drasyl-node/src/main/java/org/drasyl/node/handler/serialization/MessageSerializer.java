@@ -89,12 +89,14 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                 SerializedPayload.of(type, ImmutableByteArray.of(payload))
                         .writeTo(bytes);
 
-                out.add(bytes);
+                out.add(bytes.retain());
                 LOG.trace("Message `{}` has been serialized to `{}`", o, bytes);
             }
             catch (final IOException e) {
-                bytes.release();
                 throw new EncoderException("Serialization failed", e);
+            }
+            finally {
+                bytes.release();
             }
         }
         else {
