@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,10 +19,9 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.test;
+package util;
 
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
@@ -32,6 +31,7 @@ import org.drasyl.node.event.NodeNormalTerminationEvent;
 import org.drasyl.node.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.node.event.NodeUpEvent;
 import org.drasyl.util.RandomUtil;
+import org.drasyl.util.internal.NonNull;
 
 import java.io.IOException;
 import java.nio.file.Path;

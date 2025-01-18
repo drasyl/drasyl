@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.test;
+package util;
 
 import org.drasyl.identity.Identity;
 import org.drasyl.node.IdentityFile;
@@ -50,7 +50,7 @@ class IdentityProvider {
                     identities.add(IdentityFile.readFrom(file));
                 }
                 catch (final IOException e) {
-                    throw new IOException("Unable to read identity from " + file.toString(), e);
+                    throw new IOException("Unable to read identity from " + file, e);
                 }
             }
         }

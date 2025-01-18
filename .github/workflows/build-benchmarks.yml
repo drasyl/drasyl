@@ -1,0 +1,32 @@
+name: Test
+
+on:
+  push:
+    branches:
+      - '*'
+    tags:
+      - '*'
+  pull_request:
+
+jobs:
+  build-benchmarks:
+    name: Build Benchmarks
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4.1.2
+        with:
+          fetch-depth: 0
+      - name: Set up JDK
+        uses: actions/setup-java@v4.6.0
+        with:
+          java-version: 11
+          distribution: 'adopt'
+          cache: 'maven'
+      - name: Build with Maven
+        run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles fast,benchmark-jar --projects drasyl-performance-tests --also-make  package
+      - name: Publish artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: Benchmarks
+          path: drasyl-performance-tests/target/drasyl-benchmarks.jar

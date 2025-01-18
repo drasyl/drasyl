@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,8 +47,6 @@ import java.net.InetAddress;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.awaitility.Awaitility.await;
-
 @State(Scope.Benchmark)
 public class UdpServerBenchmark extends AbstractBenchmark {
     private DatagramSocket socket;
@@ -86,16 +84,14 @@ public class UdpServerBenchmark extends AbstractBenchmark {
                         }
                     });
 
-            await().until(() -> {
+            while (true) {
                 final Object evt = channel.readEvent();
                 if (evt instanceof UdpServer.UdpServerBound) {
                     port = ((UdpServer.UdpServerBound) evt).getBindAddress().getPort();
-                    return true;
+                    break;
                 }
-                else {
-                    return false;
-                }
-            });
+                Thread.sleep(10);
+            }
             localHost = InetAddress.getLocalHost();
         }
         catch (final Exception e) {

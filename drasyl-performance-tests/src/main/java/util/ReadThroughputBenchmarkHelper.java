@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.test;
+package util;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -175,7 +175,7 @@ public class ReadThroughputBenchmarkHelper {
                     throughputPerSecond.add(megabytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.println(String.format("%s : Second %3d         : %7.2f MB/s", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), second, megabytesPerSecond));
+                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), second, megabytesPerSecond);
                 }
                 doSend = false;
 
@@ -186,8 +186,8 @@ public class ReadThroughputBenchmarkHelper {
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.println(String.format("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), mean, standardDeviation));
-                System.out.println(String.format("%s : Messages sent      : %,7d", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), messagesWritten.sum()));
+                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), mean, standardDeviation);
+                System.out.printf("%s : Messages sent      : %,7d%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), messagesWritten.sum());
             }).start();
 
             // Keep the main thread alive until the test is finished

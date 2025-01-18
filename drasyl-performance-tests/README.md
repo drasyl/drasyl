@@ -6,7 +6,22 @@ Each benchmark must have a class name ending with `Benchmark` and inherit
 from [`AbstractBenchmark`](src/test/java/org/drasyl/AbstractBenchmark.java).
 
 ```shell
-mvn -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 test
+./mvnw install --activate-profiles fast
+cd drasyl-performance-tests
+# run all benchmarks
+../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 test
+# run specific benchmarks
+../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -Dtest='my.my.java.net.InetSocketAddressBenchmark,org.drasyl.identity.IdentityPublicKeyBenchmark' test
+```
+
+## Build benchmarks jar
+
+```shell
+./mvnw --projects drasyl-performance-tests --also-make --activate-profiles fast,benchmark-jar package
+# run all benchmarks
+java -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar org.drasyl.identity.IdentityPublicKeyBenchmark
+# run specific benchmarks
+java -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar org.drasyl.identity.IdentityPublicKeyBenchmark
 ```
 
 ## Load simulations
@@ -19,5 +34,5 @@ java -cp drasyl-performance-tests/target/drasyl-performance-tests-0.4.1-jar-with
   -Didentities=../drasyl-non-public/Identities \
   -Dnodes=500 \
   -Dchurn=1500 \
-  org.drasyl.test.StartNodes
+  org.drasyl.util.StartNodes
 ```

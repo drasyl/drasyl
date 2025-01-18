@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.test;
+package util;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -105,7 +105,7 @@ public class ReadThroughputDatagramChannelBenchmark {
                     throughputPerSecond.add(megabytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.println(String.format("%s : Second %3d         : %7.2f MB/s", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond));
+                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond);
                 }
                 doReceive = false;
 
@@ -116,8 +116,8 @@ public class ReadThroughputDatagramChannelBenchmark {
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.println(String.format("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), mean, standardDeviation));
-                System.out.println(String.format("%s : Messages received  : %,7d", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), messagesRead.sum()));
+                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), mean, standardDeviation);
+                System.out.printf("%s : Messages received  : %,7d%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), messagesRead.sum());
 
                 // Close the channel after the test completes
                 channel.close().syncUninterruptibly();
