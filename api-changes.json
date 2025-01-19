@@ -19,17 +19,16 @@
           {
             "matcher": "java-package",
             "match": "/org\\.drasyl\\.cli(\\..*)?/"
+          },
+          {
+            "matcher": "java",
+            "match": "**./.*Benchmark/"
           }
         ]
       },
       "annotated": {
         "exclude": {
           "item": "@org.drasyl.util.internal.UnstableApi"
-        }
-      },
-      "archives": {
-        "exclude": {
-          "item": "/org\\.drasyl:drasyl-performance-tests:.*/"
         }
       }
     }
