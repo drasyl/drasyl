@@ -19,18 +19,6 @@
           {
             "matcher": "java-package",
             "match": "/org\\.drasyl\\.cli(\\..*)?/"
-          },
-          {
-            "matcher": "java-package",
-            "match": "/benchmark(\\..*)?/"
-          },
-          {
-            "matcher": "java-package",
-            "match": "/.*\\.jmh_generated\\..*/"
-          },
-          {
-            "matcher": "java",
-            "match": "class **./.*Benchmark/ {}"
           }
         ]
       },
