@@ -25,6 +25,10 @@
             "match": "/benchmark(\\..*)?/"
           },
           {
+            "matcher": "java-package",
+            "match": "/.*\\.jmh_generated\\..*/"
+          },
+          {
             "matcher": "java",
             "match": "class **./.*Benchmark/ {}"
           }
