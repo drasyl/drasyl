@@ -51,8 +51,8 @@ import java.net.SocketAddress;
 
 import static io.netty.buffer.UnpooledByteBufAllocator.DEFAULT;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
+import static util.IdentityTestUtil.ID_1;
+import static util.IdentityTestUtil.ID_2;
 
 @Fork(1)
 @Warmup(iterations = 1)

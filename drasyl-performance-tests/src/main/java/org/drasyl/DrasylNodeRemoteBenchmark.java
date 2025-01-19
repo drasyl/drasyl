@@ -43,8 +43,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
+import static util.IdentityTestUtil.ID_1;
+import static util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {

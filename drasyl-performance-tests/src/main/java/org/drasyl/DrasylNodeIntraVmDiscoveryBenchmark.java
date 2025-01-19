@@ -35,8 +35,8 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
 
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
+import static util.IdentityTestUtil.ID_1;
+import static util.IdentityTestUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeIntraVmDiscoveryBenchmark extends AbstractBenchmark {

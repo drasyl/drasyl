@@ -62,8 +62,8 @@ import java.util.List;
 
 import static java.time.Duration.ofHours;
 import static org.drasyl.crypto.Crypto.INSTANCE;
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
+import static util.IdentityTestUtil.ID_1;
+import static util.IdentityTestUtil.ID_2;
 
 @Fork(1)
 @Warmup(iterations = 1)

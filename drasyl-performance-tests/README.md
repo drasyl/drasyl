@@ -11,7 +11,7 @@ cd drasyl-performance-tests
 # run all benchmarks
 ../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 test
 # run specific benchmarks
-../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -Dtest='my.my.java.net.InetSocketAddressBenchmark,org.drasyl.identity.IdentityPublicKeyBenchmark' test
+../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -Dtest='my.benchmark.java.net.InetSocketAddressBenchmark,org.drasyl.identity.IdentityPublicKeyBenchmark' test
 ```
 
 ## Build benchmarks jar

@@ -41,8 +41,8 @@ import org.openjdk.jmh.infra.Blackhole;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
 import static org.openjdk.jmh.annotations.Level.Invocation;
-import static test.util.IdentityTestUtil.ID_1;
-import static test.util.IdentityTestUtil.ID_2;
+import static util.IdentityTestUtil.ID_1;
+import static util.IdentityTestUtil.ID_2;
 
 @Fork(value = 1, jvmArgsPrepend = {
         "-Dio.netty.leakDetectionLevel=DISABLED",
