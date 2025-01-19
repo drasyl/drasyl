@@ -38,7 +38,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import test.util.IdentityTestUtil;
+import util.IdentityBenchmarkUtil;
 
 import java.io.IOException;
 import java.net.DatagramPacket;
@@ -64,7 +64,7 @@ public class UdpServerBenchmark extends AbstractBenchmark {
             futures = new CompletableFuture[Runtime.getRuntime().availableProcessors()];
             socket = new DatagramSocket();
 
-            identity2 = IdentityTestUtil.ID_2;
+            identity2 = IdentityBenchmarkUtil.ID_2;
 
             final UdpServer handler = new UdpServer();
 

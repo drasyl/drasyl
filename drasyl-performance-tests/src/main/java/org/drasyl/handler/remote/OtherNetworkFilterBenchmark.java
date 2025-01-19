@@ -48,7 +48,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-import test.util.IdentityTestUtil;
+import util.IdentityBenchmarkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -68,7 +68,7 @@ public class OtherNetworkFilterBenchmark extends AbstractBenchmark {
         ctx = new MyHandlerContext();
         sender = new InetSocketAddress("127.0.0.1", 25527);
         final byte[] payload = RandomUtil.randomBytes(1024);
-        message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
+        message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityBenchmarkUtil.ID_2.getIdentityPublicKey(), IdentityBenchmarkUtil.ID_1.getIdentityPublicKey(), IdentityBenchmarkUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
         instance = new OtherNetworkFilter(0);
     }
 

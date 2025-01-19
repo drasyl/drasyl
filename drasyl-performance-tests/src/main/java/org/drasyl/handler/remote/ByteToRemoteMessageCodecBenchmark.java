@@ -51,7 +51,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import test.util.IdentityTestUtil;
+import util.IdentityBenchmarkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
@@ -76,7 +76,7 @@ public class ByteToRemoteMessageCodecBenchmark extends AbstractBenchmark {
         sender = new InetSocketAddress("127.0.0.1", 25527);
         recipient = new InetSocketAddress("127.0.0.1", 25527);
         final byte[] payload = RandomUtil.randomBytes(1024);
-        message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityTestUtil.ID_2.getIdentityPublicKey(), IdentityTestUtil.ID_1.getIdentityPublicKey(), IdentityTestUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
+        message = ApplicationMessage.of(HopCount.of(), false, 0, Nonce.randomNonce(), IdentityBenchmarkUtil.ID_2.getIdentityPublicKey(), IdentityBenchmarkUtil.ID_1.getIdentityPublicKey(), IdentityBenchmarkUtil.ID_1.getProofOfWork(), Unpooled.wrappedBuffer(payload));
         final PooledByteBufAllocator alloc = PooledByteBufAllocator.DEFAULT;
         byteBuf = message.encodeMessage(alloc);
         instance = new ByteToRemoteMessageCodec();

@@ -43,8 +43,8 @@ import java.io.IOException;
 
 import static org.drasyl.handler.remote.protocol.Nonce.randomNonce;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static util.IdentityTestUtil.ID_1;
-import static util.IdentityTestUtil.ID_2;
+import static util.IdentityBenchmarkUtil.ID_1;
+import static util.IdentityBenchmarkUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class FullReadMessageBenchmark extends AbstractBenchmark {

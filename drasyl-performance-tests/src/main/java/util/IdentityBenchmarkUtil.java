@@ -23,7 +23,7 @@ package util;
 
 import org.drasyl.identity.Identity;
 
-public class IdentityTestUtil {
+public class IdentityBenchmarkUtil {
     public static final Identity ID_1;
     public static final Identity ID_2;
     public static final Identity ID_3;
@@ -48,7 +48,7 @@ public class IdentityTestUtil {
                 "8aed43756bea9689520a855b5ab26fb0c938ce3462038be791c28255849ae254b20a3def5777433017fb624ffba2b9c058a2eb1dcec0e2f8fcd2d843468ea9fc");
     }
 
-    private IdentityTestUtil() {
+    private IdentityBenchmarkUtil() {
         // util class
     }
 }

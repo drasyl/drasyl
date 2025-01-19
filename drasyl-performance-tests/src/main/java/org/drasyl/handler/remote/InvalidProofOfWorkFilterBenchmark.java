@@ -53,8 +53,8 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import static util.IdentityTestUtil.ID_1;
-import static util.IdentityTestUtil.ID_3;
+import static util.IdentityBenchmarkUtil.ID_1;
+import static util.IdentityBenchmarkUtil.ID_3;
 
 @Fork(1)
 @Warmup(iterations = 1)

@@ -30,7 +30,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
-import test.util.IdentityTestUtil;
+import util.IdentityBenchmarkUtil;
 
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
@@ -42,9 +42,9 @@ public class ProofOfWorkBenchmark extends AbstractBenchmark {
 
     @Setup
     public void setup() {
-        publicKey = IdentityTestUtil.ID_1.getIdentityPublicKey();
+        publicKey = IdentityBenchmarkUtil.ID_1.getIdentityPublicKey();
         invalidProofOfWork = ProofOfWork.of(1);
-        validProofOfWork = IdentityTestUtil.ID_1.getProofOfWork();
+        validProofOfWork = IdentityBenchmarkUtil.ID_1.getProofOfWork();
     }
 
     @Benchmark
