@@ -34,1051 +34,123 @@
     "configuration": {
       "differences": [
         {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "package": "org.drasyl.annotation",
-          "justification": "Internal element that is not intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.removed",
-          "annotation": "@org.drasyl.annotation.Beta",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.added",
-          "annotation": "@org.drasyl.util.internal.UnstableApi",
-          "justification": "Internal element that is not intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.removed",
-          "annotation": "@org.drasyl.annotation.NonNull",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.added",
-          "annotation": "@org.drasyl.util.internal.NonNull",
-          "justification": "Internal element that is not intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.removed",
-          "annotation": "@org.drasyl.annotation.Nullable",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.annotation.added",
-          "annotation": "@org.drasyl.util.internal.Nullable",
-          "justification": "Internal element that is not intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "old": "class org.drasyl.util.Ansi",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "old": "class org.drasyl.util.logging.JdkLogger",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "old": "class org.drasyl.util.logging.Slf4JLogger",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.method.removed",
-          "old": "method void org.drasyl.channel.DrasylChannel::<init>(io.netty.channel.Channel, org.drasyl.channel.DrasylChannel.State, org.drasyl.identity.DrasylAddress, org.drasyl.identity.DrasylAddress)",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "package": "org.drasyl.crypto",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "package": "org.drasyl.crypto.loader",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": "true",
-          "code": "java.class.removed",
-          "package": "org.drasyl.crypto.sodium",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.nowFinal",
-          "old": "class org.drasyl.handler.rmi.message.RmiResponse",
-          "new": "class org.drasyl.handler.rmi.message.RmiResponse",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.visibilityReduced",
-          "old": "method void org.drasyl.handler.rmi.RmiClientHandler::<init>(java.util.Map<java.util.UUID, org.drasyl.handler.rmi.RmiInvocationHandler>)",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void org.drasyl.handler.codec.JacksonCodec<T>::<init>(com.fasterxml.jackson.databind.ObjectMapper, java.lang.Class<T>)",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removed",
-          "old": "field org.drasyl.handler.rmi.RmiUtil.OBJECT_MAPPER",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.visibilityReduced",
-          "package": "org.drasyl.node.handler.serialization",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.visibilityReduced",
-          "package": "org.drasyl.node.handler.crypto",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.ArmMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.JSONUtil",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.manager.database.jdbc.JDBCDatabaseAdapter",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.added",
-          "annotation": "@com.google.auto.value.AutoValue$Builder",
-          "justification": "False positive due to auto-generated sources"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.added",
-          "annotation": "@com.google.auto.value.AutoValue.Builder",
-          "justification": "False positive due to auto-generated sources"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "annotation": "@com.google.auto.value.AutoValue.Builder",
-          "justification": "False positive due to auto-generated sources"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "annotation": "@com.google.auto.value.AutoValue$Builder",
-          "justification": "False positive due to auto-generated sources"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.channel.RelayOnlyDrasylServerChannelInitializer",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.channel.DefaultDrasylServerChannelInitializer",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.UdpBroadcastServer",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.UdpMulticastServer",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.DatagramChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.DatagramChannelConfig",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "enum io.netty.channel.socket.InternetProtocolFamily",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.channel.DrasylNodeServerChannelInitializer",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.FullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.InvalidProofOfWorkFilter",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.PartialReadMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.PublicHeader",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.protocol.RemoteMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.AcknowledgementMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.KeyExchangeMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.PeersRttHandler",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.HelloMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.UniteMessage",
-          "justification": "Internal element that was never intended to be used outside drasyl"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.ServerSocketChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.ServerSocketChannelConfig",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class org.drasyl.handler.peers.Peer",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class org.drasyl.handler.peers.PeersList",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.example.rtt.RttNode",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "enum org.drasyl.handler.peers.Role",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteEndpoints(java.util.Set<org.drasyl.node.PeerEndpoint>)",
-          "justification": "was never used"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_ENDPOINTS",
-          "justification": "was never used"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.util.Set<org.drasyl.node.PeerEndpoint> org.drasyl.node.DrasylConfig::getRemoteEndpoints()",
-          "justification": "was never used"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class io.netty.channel.ChannelInitializer<C extends io.netty.channel.Channel>",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.UdpServer",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.NatPmpPortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.PcpPortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.PortMapper",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.remote.portmapper.PortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.portmapper.UpnpIgdPortMapping",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.tcp.TcpClient",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.tcp.TcpServer",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.channel.DrasylChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.channel.DrasylServerChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "interface org.drasyl.util.logging.Logger",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.util.logging.LoggerFactory",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.util.ImmutableByteArray",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.returnTypeChanged",
-          "old": "method byte[] org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
-          "new": "method org.drasyl.util.ImmutableByteArray org.drasyl.node.handler.serialization.SerializedPayload::getPayload()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.parameterTypeChanged",
-          "old": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===byte[]===)",
-          "new": "parameter org.drasyl.node.handler.serialization.SerializedPayload org.drasyl.node.handler.serialization.SerializedPayload::of(java.lang.String, ===org.drasyl.util.ImmutableByteArray===)",
-          "parameterIndex": "1",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class io.netty.channel.socket.DatagramPacket",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.abstractMethodAdded",
-          "new": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::sntpServers(java.util.List<java.net.InetSocketAddress>)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.abstractMethodAdded",
-          "new": "method java.util.List<java.net.SocketAddress> org.drasyl.node.DrasylConfig::getSntpServers()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.numberOfParametersChanged",
-          "old": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
-          "new": "method void org.drasyl.node.DrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.numberOfParametersChanged",
-          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture)",
-          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, java.util.List<java.net.SocketAddress>)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.numberOfParametersChanged",
-          "old": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior)",
-          "new": "method void org.drasyl.node.behaviour.BehavioralDrasylNode::<init>(org.drasyl.identity.Identity, io.netty.bootstrap.ServerBootstrap, io.netty.channel.ChannelFuture, io.netty.channel.Channel, org.drasyl.node.behaviour.Behavior, java.util.List<java.net.SocketAddress>)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCompleted",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.connection.ConnectionHandshakeIssued",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqClock(java.time.Duration)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqDeadPeerTimeout(java.time.Duration)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqEnabled(boolean)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqRetryTimeout(java.time.Duration)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageArqWindowSize(int)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageComposedMessageTransferTimeout(java.time.Duration)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageMaxContentLength(int)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method org.drasyl.node.DrasylConfig.Builder org.drasyl.node.DrasylConfig.Builder::remoteMessageMtu(int)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_CLOCK",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_DEAD_PEER_TIMEOUT",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_ENABLED",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_RETRY_TIMEOUT",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_ARQ_WINDOW_SIZE",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_MAX_CONTENT_LENGTH",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.field.removedWithConstant",
-          "old": "field org.drasyl.node.DrasylConfig.REMOTE_MESSAGE_MTU",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqClock()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqDeadPeerTimeout()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageArqRetryTimeout()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageArqWindowSize()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method java.time.Duration org.drasyl.node.DrasylConfig::getRemoteMessageComposedMessageTransferTimeout()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageMaxContentLength()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method int org.drasyl.node.DrasylConfig::getRemoteMessageMtu()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method boolean org.drasyl.node.DrasylConfig::isRemoteMessageArqEnabled()",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.channel.DrasylNodeChannelInitializer",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.exception.checkedRemoved",
-          "old": "method void io.netty.channel.ChannelHandlerAdapter::handlerAdded(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.discovery.IntraVmDiscovery",
-          "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerAdded(io.netty.channel.ChannelHandlerContext)",
-          "exception": "java.lang.Exception",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.exception.checkedRemoved",
-          "old": "method void io.netty.channel.ChannelHandlerAdapter::handlerRemoved(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.discovery.IntraVmDiscovery",
-          "new": "method void org.drasyl.handler.discovery.IntraVmDiscovery::handlerRemoved(io.netty.channel.ChannelHandlerContext)",
-          "exception": "java.lang.Exception",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.ApplicationMessageToPayloadCodec",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.InternetDiscoveryChildrenHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoveryChildrenHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.identity.Identity",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.AbstractArmHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.crypto.LongTimeArmHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class io.netty.bootstrap.ServerBootstrap",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "class io.netty.bootstrap.ServerBootstrapConfig",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.ServerChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.SocketChannel",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.channel.socket.SocketChannelConfig",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.externalClassExposedInAPI",
-          "new": "interface io.netty.util.concurrent.FutureListener<V>",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.LoopbackHandler",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.discovery.DuplicatePathEventFilter",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.discovery.IntraVmDiscovery",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.LocalHostDiscovery",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeClosing",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.LocalNetworkDiscovery",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeCodec",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.StaticRoutesHandler",
+          "old": "interface org.drasyl.handler.connection.ConnectionHandshakeEvent",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.InternetDiscoverySuperPeerHandler",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeException",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.internet.TraversingInternetDiscoverySuperPeerHandler",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeHandler",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.monitoring.TopologyHandler",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakePendWritesHandler",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.DrasylConfig",
+          "old": "class org.drasyl.handler.connection.ConnectionHandshakeSegment",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.PeersManagerHandler",
+          "old": "class org.drasyl.handler.stream.ChunkedMessageAggregator",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "interface org.drasyl.node.handler.plugin.DrasylPlugin",
+          "old": "class org.drasyl.handler.stream.ChunkedMessageInput",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.handler.plugin.PluginsHandler",
+          "old": "class org.drasyl.handler.stream.LargeByteBufToChunkedMessageEncoder",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.client.GroupsClientMessageDecoder",
+          "old": "class org.drasyl.handler.stream.LastMessageChunk",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.client.GroupsClientMessageEncoder",
+          "old": "class org.drasyl.handler.stream.MessageChunk",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.client.GroupsClientPlugin",
+          "old": "class org.drasyl.handler.stream.MessageChunkDecoder",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.client.GroupsServerMessageEncoder",
+          "old": "class org.drasyl.handler.stream.MessageChunkEncoder",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.node.plugin.groups.manager.GroupsManagerPlugin",
+          "old": "class org.drasyl.handler.stream.MessageChunksBuffer",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.example.chat.ChatGui",
+          "old": "class org.drasyl.handler.stream.MessageChunksBufferInputList",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void org.drasyl.handler.remote.protocol.AbstractFullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>::writeTo(io.netty.buffer.ByteBuf) @ org.drasyl.handler.remote.protocol.AcknowledgementMessage",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.removed",
-          "old": "method void org.drasyl.handler.remote.protocol.AbstractFullReadMessage<T extends org.drasyl.handler.remote.protocol.FullReadMessage<?>>::writeTo(io.netty.buffer.ByteBuf) @ org.drasyl.handler.remote.protocol.ApplicationMessage",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.ArmedProtocolMessage",
+          "old": "class org.drasyl.handler.stream.ReassembledMessage",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.UnarmedProtocolMessage",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.class.removed",
-          "old": "class org.drasyl.handler.remote.protocol.Nonce",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.abstractMethodAdded",
-          "new": "method void org.drasyl.identity.DrasylAddress::writeTo(io.netty.buffer.ByteBuf)",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.method.visibilityReduced",
-          "old": "method void org.drasyl.identity.IdentityPublicKey::<init>()",
-          "new": "method void org.drasyl.identity.IdentityPublicKey::<init>(byte[])",
-          "oldVisibility": "public",
-          "newVisibility": "private",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "class org.drasyl.identity.IdentityPublicKey",
-          "new": "class org.drasyl.identity.IdentityPublicKey",
-          "annotation": "@com.google.auto.value.AutoValue",
+          "old": "class org.drasyl.handler.stream.ReassembledMessageDecoder",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.dht.chord.LocalChordNode.DrasylAddressMixin",
+          "old": "class org.drasyl.channel.ConnectionHandshakeChannelInitializer",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         },
         {
           "ignore": true,
           "code": "java.class.removed",
-          "old": "interface org.drasyl.handler.dht.chord.LocalChordNode.IdentityPublicKeyMixin",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.ByteToRemoteMessageCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.ByteToRemoteMessageCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.ProtocolArmHandler",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.ProtocolArmHandler",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.UnarmedMessageDecoder",
-          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.remote.crypto.UnarmedMessageDecoder",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.ByteToGoBackNArqDataCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.GoBackNArqCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.gobackn.GoBackNArqCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.ByteToStopAndWaitArqDataCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.arq.stopandwait.StopAndWaitArqCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.connection.ConnectionHandshakeCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.connection.ConnectionHandshakeCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.membership.cyclon.CyclonCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.membership.cyclon.CyclonCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.pubsub.PubSubCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.pubsub.PubSubCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.rmi.RmiCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.rmi.RmiCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunkDecoder",
-          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunkDecoder",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunksBuffer",
-          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.MessageChunksBuffer",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.ReassembledMessageDecoder",
-          "new": "method void io.netty.handler.codec.MessageToMessageDecoder<I>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.handler.stream.ReassembledMessageDecoder",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.ArmHeaderCodec",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.ArmHeaderCodec",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.PFSArmHandler",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.crypto.PFSArmHandler",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
-          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
-        },
-        {
-          "ignore": true,
-          "code": "java.annotation.removed",
-          "old": "method void io.netty.channel.ChannelInboundHandlerAdapter::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.serialization.MessageSerializer",
-          "new": "method void io.netty.handler.codec.MessageToMessageCodec<INBOUND_IN, OUTBOUND_IN>::channelReadComplete(io.netty.channel.ChannelHandlerContext) throws java.lang.Exception @ org.drasyl.node.handler.serialization.MessageSerializer",
-          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "old": "class org.drasyl.node.handler.timeout.IdleChannelCloser",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
