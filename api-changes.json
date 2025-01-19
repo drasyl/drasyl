@@ -26,6 +26,11 @@
         "exclude": {
           "item": "@org.drasyl.util.internal.UnstableApi"
         }
+      },
+      "archives": {
+        "exclude": {
+          "item": "/org\\.drasyl:drasyl-performance-tests:.*/"
+        }
       }
     }
   },
