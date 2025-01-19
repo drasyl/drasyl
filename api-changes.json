@@ -15,10 +15,6 @@
           {
             "matcher": "java-package",
             "match": "/com\\.fasterxml\\.jackson\\..*/"
-          },
-          {
-            "matcher": "java-package",
-            "match": "/org\\.drasyl\\.cli(\\..*)?/"
           }
         ]
       },
