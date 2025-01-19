@@ -42,8 +42,8 @@ import org.openjdk.jmh.infra.Blackhole;
 import java.io.IOException;
 
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static benchmark.IdentityBenchmarkUtil.ID_1;
-import static benchmark.IdentityBenchmarkUtil.ID_2;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class PartialReadMessageBenchmark extends AbstractBenchmark {

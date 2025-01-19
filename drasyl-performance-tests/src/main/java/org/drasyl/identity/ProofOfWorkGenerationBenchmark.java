@@ -32,7 +32,7 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 
-import static benchmark.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
 
 //@Fork(1)
 //@Warmup(iterations = 1)

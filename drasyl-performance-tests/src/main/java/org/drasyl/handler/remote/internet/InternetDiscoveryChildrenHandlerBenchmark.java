@@ -52,8 +52,8 @@ import java.net.SocketAddress;
 
 import static io.netty.buffer.UnpooledByteBufAllocator.DEFAULT;
 import static org.drasyl.util.RandomUtil.randomBytes;
-import static benchmark.IdentityBenchmarkUtil.ID_1;
-import static benchmark.IdentityBenchmarkUtil.ID_2;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class InternetDiscoveryChildrenHandlerBenchmark extends AbstractBenchmark {

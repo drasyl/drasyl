@@ -53,8 +53,8 @@ import org.openjdk.jmh.annotations.Warmup;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-import static benchmark.IdentityBenchmarkUtil.ID_1;
-import static benchmark.IdentityBenchmarkUtil.ID_3;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_3;
 
 @Fork(1)
 @Warmup(iterations = 1)

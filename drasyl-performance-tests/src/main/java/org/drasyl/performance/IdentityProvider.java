@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package benchmark;
+package org.drasyl.performance;
 
 import org.drasyl.identity.Identity;
 import org.drasyl.node.IdentityFile;

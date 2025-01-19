@@ -51,7 +51,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
-import benchmark.IdentityBenchmarkUtil;
+import org.drasyl.performance.IdentityBenchmarkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

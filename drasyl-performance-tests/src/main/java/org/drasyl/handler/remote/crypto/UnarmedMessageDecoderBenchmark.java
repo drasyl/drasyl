@@ -60,8 +60,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 import static org.drasyl.handler.remote.protocol.PrivateHeader.MessageType.APPLICATION;
-import static benchmark.IdentityBenchmarkUtil.ID_1;
-import static benchmark.IdentityBenchmarkUtil.ID_2;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_2;
 
 @Fork(1)
 @Warmup(iterations = 1)

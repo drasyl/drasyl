@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,11 +19,10 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl;
+package org.drasyl.node;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.util.internal.NonNull;
-import org.drasyl.node.DrasylConfig;
-import org.drasyl.node.DrasylNode;
 import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.event.PeerDirectEvent;
@@ -43,8 +42,8 @@ import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static benchmark.IdentityBenchmarkUtil.ID_1;
-import static benchmark.IdentityBenchmarkUtil.ID_2;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
+import static org.drasyl.performance.IdentityBenchmarkUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class DrasylNodeRemoteBenchmark extends AbstractBenchmark {

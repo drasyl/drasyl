@@ -38,7 +38,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import benchmark.IdentityBenchmarkUtil;
+import org.drasyl.performance.IdentityBenchmarkUtil;
 
 import java.io.IOException;
 import java.net.DatagramPacket;

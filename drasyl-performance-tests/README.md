@@ -11,7 +11,7 @@ cd drasyl-performance-tests
 # run all benchmarks
 ../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 test
 # run specific benchmarks
-../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -Dtest='my.benchmark.java.net.InetSocketAddressBenchmark,org.drasyl.identity.IdentityPublicKeyBenchmark' test
+../mvnw -DskipTests=false -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -Dtest='org.drasyl.performance.InetSocketAddressBenchmark,org.drasyl.identity.IdentityPublicKeyBenchmark' test
 ```
 
 ## Build benchmarks jar
@@ -34,5 +34,5 @@ java -cp drasyl-performance-tests/target/drasyl-performance-tests-0.4.1-jar-with
   -Didentities=../drasyl-non-public/Identities \
   -Dnodes=500 \
   -Dchurn=1500 \
-  org.drasyl.benchmark.StartNodes
+  org.drasyl.org.drasyl.performance.StartNodes
 ```

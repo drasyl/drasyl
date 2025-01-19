@@ -19,25 +19,25 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package benchmark;
+package org.drasyl.performance;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.identity.DrasylAddress;
+import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.handler.remote.UdpServer;
+import org.drasyl.handler.remote.UdpServerToDrasylHandler;
+import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
 
 import java.io.File;
@@ -45,25 +45,26 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
+import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 
-public class WriteThroughputDrasylChannelBenchmark {
-    private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
+/**
+ * Receives UDP packets for 60 seconds and calculates the read throughput. Results are used to
+ * compare different channels.
+ */
+public class ReadThroughputDrasylDatagramChannelBenchmark {
+    private static final String HOST = SystemPropertyUtil.get("host", "0.0.0.0");
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String IDENTITY = SystemPropertyUtil.get("identity", "benchmark.identity");
-    private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
-    private static final String RECIPIENT = SystemPropertyUtil.get("recipient", "c909a27d9ec0127c57142c3e1547ba9f82bc605277380b2a8fc0fabafe2be4c9");
-    private static final LongAdder messagesWritten = new LongAdder();
-    private static final LongAdder bytesWritten = new LongAdder();
+    private static final LongAdder messagesRead = new LongAdder();
+    private static final LongAdder bytesRead = new LongAdder();
     private static final List<Double> throughputPerSecond = new ArrayList<>();
-    private static boolean doSend = true;
+    private static boolean doReceive = true;
 
-    public static void main(final String[] args) throws InterruptedException, IOException, ExecutionException {
+    public static void main(final String[] args) throws InterruptedException, IOException {
         // load/create identity
         final File identityFile = new File(IDENTITY);
         if (!identityFile.exists()) {
@@ -76,21 +77,10 @@ public class WriteThroughputDrasylChannelBenchmark {
 
         final EventLoopGroup group = new NioEventLoopGroup();
         try {
-            final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
-            final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);
-
             final Channel channel = new ServerBootstrap()
                     .group(group)
                     .channel(DrasylServerChannel.class)
-                    .option(PEERS_MANAGER, new PeersManager() {
-                        @Override
-                        public InetSocketAddress resolve(final DrasylAddress peerKey) {
-                            if (recipient.equals(peerKey)) {
-                                return targetAddress;
-                            }
-                            return super.resolve(peerKey);
-                        }
-                    })
+                    .option(UDP_BIND, new InetSocketAddress(HOST, PORT))
                     .option(ARMING_ENABLED, false)
                     .handler(new DefaultDrasylServerChannelInitializer())
                     .childHandler(new ChannelInboundHandlerAdapter())
@@ -98,36 +88,62 @@ public class WriteThroughputDrasylChannelBenchmark {
                     .sync()
                     .channel();
 
-            final Channel drasylChannel = ((DrasylServerChannel) channel).serve(recipient).channel();
+            DatagramChannel udpChannel;
+            while (true) {
+                final UdpServer udpServer = channel.pipeline().get(UdpServer.class);
+                if (udpServer != null) {
+                    udpChannel = udpServer.udpChannel();
+                    if (udpChannel != null) {
+                        break;
+                    }
+                }
 
-            final ChannelFutureListener listener = new ChannelFutureListener() {
+                System.out.println("Wait for udpChannel...");
+
+                try {
+                    Thread.sleep(1000);
+                }
+                catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                    return;
+                }
+            }
+
+            System.out.println(udpChannel.localAddress());
+
+            udpChannel.pipeline().addBefore(udpChannel.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new ChannelInboundHandlerAdapter() {
                 @Override
-                public void operationComplete(final ChannelFuture future) {
-                    if (!future.isSuccess()) {
-                        future.cause().printStackTrace();
+                public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                    if (msg instanceof InetAddressedMessage<?> && ((InetAddressedMessage<?>) msg).content() instanceof ApplicationMessage) {
+                        final InetAddressedMessage<ApplicationMessage> application = (InetAddressedMessage<ApplicationMessage>) msg;
+                        final ByteBuf content = application.content().getPayload();
+                        final int packetSize = content.readableBytes() + 104;
+                        if (doReceive) {
+                            messagesRead.increment();
+                            bytesRead.add(packetSize);
+                        }
+                        application.release();
                     }
                 }
-            };
+            });
 
-            // Start a thread to send packets as fast as possible
-            new Thread(() -> {
-                final ByteBuf data = Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
-
-                while (doSend) {
-                    if (drasylChannel.isWritable()) {
-                        drasylChannel.writeAndFlush(data.retainedDuplicate()).addListener(listener);
-                        messagesWritten.increment();
-                        bytesWritten.add(PACKET_SIZE + 104);
-                    }
+            // wait 10 seconds to allow user to start udp client
+            for (int i = 10; i > 0; i--) {
+                System.out.println("Remaining time: " + i + " seconds");
+                try {
+                    Thread.sleep(1000); // Sleep for 1 second (1000 milliseconds)
                 }
-                drasylChannel.close().syncUninterruptibly();
-                channel.close().syncUninterruptibly();
-            }).start();
+                catch (final InterruptedException e) {
+                    e.printStackTrace();
+                }
+            }
+            System.out.println("Done!");
+            doReceive = true;
 
             // Start a thread to print the throughput every second
             new Thread(() -> {
                 for (int second = 1; second <= DURATION; second++) {
-                    final long startBytes = bytesWritten.sum();
+                    final long startBytes = bytesRead.sum();
                     try {
                         Thread.sleep(1000);
                     }
@@ -135,15 +151,15 @@ public class WriteThroughputDrasylChannelBenchmark {
                         Thread.currentThread().interrupt();
                         return;
                     }
-                    final long endBytes = bytesWritten.sum();
+                    final long endBytes = bytesRead.sum();
                     final long bytesPerSecond = endBytes - startBytes;
                     final double megabytesPerSecond = bytesPerSecond / 1048576.0;
                     throughputPerSecond.add(megabytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.printf("%s : Second %3d: %8.2f MB/s%n", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), second, megabytesPerSecond);
+                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond);
                 }
-                doSend = false;
+                doReceive = false;
 
                 // Calculate and print the mean (average) throughput and standard deviation
                 final double mean = throughputPerSecond.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
@@ -152,11 +168,14 @@ public class WriteThroughputDrasylChannelBenchmark {
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput: %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), mean, standardDeviation);
-                System.out.printf("%s : Messages sent      : %,7d%n", StringUtil.simpleClassName(WriteThroughputDrasylDatagramChannelBenchmark.class), messagesWritten.sum());
+                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputDrasylDatagramChannelBenchmark.class), mean, standardDeviation);
+                System.out.printf("%s : Messages received  : %,7d%n", StringUtil.simpleClassName(ReadThroughputDrasylDatagramChannelBenchmark.class), messagesRead.sum());
+
+                // Close the channel after the test completes
+                channel.close().syncUninterruptibly();
             }).start();
 
-            // Keep the main thread alive
+            // Keep the main thread alive until the test is finished
             channel.closeFuture().await();
         }
         finally {
