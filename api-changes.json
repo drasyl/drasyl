@@ -22,7 +22,7 @@
           },
           {
             "matcher": "java",
-            "match": "class .*Benchmark {}"
+            "match": "class **./.*Benchmark/ {}"
           }
         ]
       },
