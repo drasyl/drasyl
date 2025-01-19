@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,11 +29,6 @@ import org.drasyl.util.internal.UnstableApi;
 @UnstableApi
 public class ConnectionHandshakeCompleted implements ConnectionEvent {
     public ConnectionHandshakeCompleted() {
-    }
-
-    @Deprecated
-    public ConnectionHandshakeCompleted(final long sndNxt, final long rcvNxt) {
-        // do nothing
     }
 
     @Override
