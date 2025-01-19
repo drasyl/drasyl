@@ -48,7 +48,7 @@ import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Warmup;
-import util.IdentityBenchmarkUtil;
+import benchmark.IdentityBenchmarkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;

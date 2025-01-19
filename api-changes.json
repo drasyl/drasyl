@@ -21,6 +21,10 @@
             "match": "/org\\.drasyl\\.cli(\\..*)?/"
           },
           {
+            "matcher": "java-package",
+            "match": "/benchmark(\\..*)?/"
+          },
+          {
             "matcher": "java",
             "match": "class **./.*Benchmark/ {}"
           }

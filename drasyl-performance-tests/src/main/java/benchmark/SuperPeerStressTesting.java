@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -19,8 +19,9 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl;
+package benchmark;
 
+import org.drasyl.AbstractBenchmark;
 import org.drasyl.util.internal.NonNull;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;

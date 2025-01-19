@@ -39,8 +39,8 @@ import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static util.IdentityBenchmarkUtil.ID_1;
-import static util.IdentityBenchmarkUtil.ID_2;
+import static benchmark.IdentityBenchmarkUtil.ID_1;
+import static benchmark.IdentityBenchmarkUtil.ID_2;
 
 @State(Scope.Benchmark)
 public class EncryptionBenchmark extends AbstractBenchmark {

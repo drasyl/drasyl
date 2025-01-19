@@ -34,5 +34,5 @@ java -cp drasyl-performance-tests/target/drasyl-performance-tests-0.4.1-jar-with
   -Didentities=../drasyl-non-public/Identities \
   -Dnodes=500 \
   -Dchurn=1500 \
-  org.drasyl.util.StartNodes
+  org.drasyl.benchmark.StartNodes
 ```

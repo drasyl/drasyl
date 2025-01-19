@@ -30,7 +30,7 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
-import util.IdentityBenchmarkUtil;
+import benchmark.IdentityBenchmarkUtil;
 
 import static org.drasyl.identity.Identity.POW_DIFFICULTY;
 
