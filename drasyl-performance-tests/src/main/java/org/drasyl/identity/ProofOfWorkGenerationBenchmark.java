@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,11 +32,6 @@ import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 
-import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
-
-//@Fork(1)
-//@Warmup(iterations = 1)
-//@Measurement(iterations = 1)
 @State(Scope.Benchmark)
 public class ProofOfWorkGenerationBenchmark extends AbstractBenchmark {
     private IdentityPublicKey publicKey;
@@ -78,7 +73,7 @@ public class ProofOfWorkGenerationBenchmark extends AbstractBenchmark {
 
     @Setup
     public void setup() {
-        publicKey = ID_1.getIdentityPublicKey();
+        publicKey = IdentityPublicKey.of("18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
     }
 
     @Benchmark

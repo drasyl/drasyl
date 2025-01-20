@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,24 +38,18 @@ import org.drasyl.channel.InetAddressedMessage;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.handler.remote.protocol.HopCount;
 import org.drasyl.handler.remote.protocol.Nonce;
+import org.drasyl.performance.IdentityBenchmarkUtil;
 import org.drasyl.util.RandomUtil;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
-import org.openjdk.jmh.annotations.Warmup;
-import org.drasyl.performance.IdentityBenchmarkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 
-@Fork(1)
-@Warmup(iterations = 1)
-@Measurement(iterations = 1)
 @State(Scope.Benchmark)
 public class OtherNetworkFilterBenchmark extends AbstractBenchmark {
     private ChannelHandlerContext ctx;

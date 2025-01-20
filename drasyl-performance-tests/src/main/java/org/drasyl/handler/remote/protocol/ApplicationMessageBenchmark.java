@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,26 +30,21 @@ import org.drasyl.identity.ProofOfWork;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Fork;
-import org.openjdk.jmh.annotations.Measurement;
 import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.annotations.Threads;
-import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.infra.Blackhole;
 
-import static org.drasyl.util.RandomUtil.randomBytes;
-import static org.openjdk.jmh.annotations.Level.Invocation;
 import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
 import static org.drasyl.performance.IdentityBenchmarkUtil.ID_2;
+import static org.drasyl.util.RandomUtil.randomBytes;
+import static org.openjdk.jmh.annotations.Level.Invocation;
 
-@Fork(value = 1, jvmArgsPrepend = {
-        "-Dio.netty.leakDetectionLevel=DISABLED",
+@Fork(jvmArgsPrepend = {
         "-Dorg.drasyl.nonce.pseudorandom=true"
 })
-@Warmup(iterations = 2)
-@Measurement(iterations = 5)
 @State(Scope.Benchmark)
 public class ApplicationMessageBenchmark extends AbstractBenchmark {
     public static final PooledByteBufAllocator ALLOC = PooledByteBufAllocator.DEFAULT;
