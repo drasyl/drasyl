@@ -19,9 +19,9 @@ cd drasyl-performance-tests
 ```shell
 ./mvnw --projects drasyl-performance-tests --also-make --activate-profiles fast,benchmark-jar package
 # run all benchmarks
-java -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar org.drasyl.identity.IdentityPublicKeyBenchmark
+java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar -rf json -f 1 -wi 1 -i 1
 # run specific benchmarks
-java -Dforks=1 -Dwarmups=1 -Dmeasurements=1 -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar org.drasyl.identity.IdentityPublicKeyBenchmark
+java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar 'org.drasyl.identity.IdentityPublicKeyBenchmark' -rf json -f 1 -wi 1 -i 1
 ```
 
 ## Load simulations

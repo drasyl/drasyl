@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,9 +21,15 @@
  */
 package org.drasyl;
 
+import io.netty.util.ResourceLeakDetector;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.parallel.ResourceLock;
+import org.openjdk.jmh.annotations.Fork;
+import org.openjdk.jmh.annotations.Measurement;
+import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.State;
+import org.openjdk.jmh.annotations.Warmup;
 import org.openjdk.jmh.results.RunResult;
 import org.openjdk.jmh.results.format.ResultFormatType;
 import org.openjdk.jmh.runner.Runner;
@@ -38,8 +44,33 @@ import java.util.Collection;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
+@Fork(AbstractBenchmark.DEFAULT_FORKS)
+@Warmup(iterations = AbstractBenchmark.DEFAULT_WARMUP_ITERATIONS)
+@Measurement(iterations = AbstractBenchmark.DEFAULT_MEASURE_ITERATIONS)
+@State(Scope.Thread)
 @SuppressWarnings("java:S5786")
 public abstract class AbstractBenchmark {
+    protected static final int DEFAULT_FORKS = 2;
+    protected static final int DEFAULT_WARMUP_ITERATIONS = 10;
+    protected static final int DEFAULT_MEASURE_ITERATIONS = 10;
+
+    static {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
+    }
+
+    protected static final String[] BASE_JVM_ARGS = {
+            "-server",
+            "-dsa",
+            "-da",
+            "-ea:org.drasyl...",
+            "-XX:+HeapDumpOnOutOfMemoryError",
+            "-Xms768m",
+            "-Xmx768m",
+            "-XX:MaxDirectMemorySize=768m",
+            "-XX:BiasedLockingStartupDelay=0",
+            "-Dio.netty.leakDetection.level=disabled"
+    };
+
     @Test
     // prevent parallel execution of benchmarks
     @ResourceLock("Benchmark")
@@ -54,7 +85,8 @@ public abstract class AbstractBenchmark {
         final String className = getClass().getSimpleName();
 
         final ChainedOptionsBuilder runnerOptions = new OptionsBuilder()
-                .include(className);
+                .include(className)
+                .jvmArgs(jvmArgs());
 
         if (getForks() > 0) {
             runnerOptions.forks(getForks());
@@ -88,6 +120,10 @@ public abstract class AbstractBenchmark {
         }
 
         return runnerOptions;
+    }
+
+    protected String[] jvmArgs() {
+        return BASE_JVM_ARGS;
     }
 
     protected int getForks() {
