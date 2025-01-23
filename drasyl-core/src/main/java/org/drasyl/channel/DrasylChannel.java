@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,7 +34,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.RecvByteBufAllocator.Handle;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
 import io.netty.util.internal.InternalThreadLocalMap;
 import io.netty.util.internal.PlatformDependent;
@@ -54,7 +53,6 @@ import java.nio.channels.AlreadyConnectedException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.NotYetConnectedException;
 import java.util.HashSet;
-import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReferenceFieldUpdater;
 
@@ -83,10 +81,9 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
     private final ChannelConfig config = new DefaultChannelConfig(this);
-    private final Queue<Object> inboundBuffer = PlatformDependent.newMpscQueue();
     private final Runnable readTask = () -> {
         // ensure the inboundBuffer is not empty as readInbound() will always call fireChannelReadComplete()
-        if (!inboundBuffer.isEmpty()) {
+        if (!unsafe().inboundBuffer().isEmpty()) {
             readInbound();
         }
     };
@@ -168,7 +165,8 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
 
         state = State.CLOSED;
 
-        releaseInboundBuffer();
+        readInProgress = false;
+        unsafe().inboundBuffer().close();
     }
 
     void readInbound() {
@@ -176,12 +174,12 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         handle.reset(config());
         final ChannelPipeline pipeline = pipeline();
         do {
-            final Object received = inboundBuffer.poll();
-            if (received == null) {
+            final Object current = unsafe().inboundBuffer().remove();
+            if (current == null) {
                 break;
             }
             handle.incMessagesRead(1);
-            pipeline.fireChannelRead(received);
+            pipeline.fireChannelRead(current);
         } while (handle.continueReading());
         handle.readComplete();
 
@@ -195,7 +193,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
             return;
         }
 
-        if (inboundBuffer.isEmpty()) {
+        if (unsafe().inboundBuffer().isEmpty()) {
             // set to true to make sure this read operation will be performed when something is
             // written to the inbound buffer
             readInProgress = true;
@@ -227,12 +225,17 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         }
     }
 
+    @Override
+    public DrasylChannelUnsafe unsafe() {
+        return (DrasylChannelUnsafe) super.unsafe();
+    }
+
     /**
      * This method places the message {@code o} in the queue for inbound messages to be read by
      * this channel. Queued messages are not processed until {@link #finishRead()} is called.
      */
-    public void queueRead(final Object o) {
-        inboundBuffer.add(o);
+    public void queueRead(final ByteBuf msg) {
+        unsafe().inboundBuffer().addMessage(msg);
     }
 
     /**
@@ -265,7 +268,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         }
         // we should only set readInProgress to false if there is any data that was read as
         // otherwise we may miss to forward data later on.
-        if (readInProgress && !inboundBuffer.isEmpty()) {
+        if (readInProgress && !unsafe().inboundBuffer().isEmpty()) {
             readInProgress = false;
             readInbound();
         }
@@ -395,14 +398,6 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                 "unsupported message type: " + StringUtil.simpleClassName(msg) + EXPECTED_TYPES);
     }
 
-    private void releaseInboundBuffer() {
-        readInProgress = false;
-        Object msg;
-        while ((msg = inboundBuffer.poll()) != null) {
-            ReferenceCountUtil.release(msg);
-        }
-    }
-
     @Override
     public ChannelConfig config() {
         return config;
@@ -432,7 +427,25 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         return parent().config().getPeersManager().hasPath(remoteAddress);
     }
 
+    /**
+     * Returns {@code true} if and only if the total number of pending bytes exceed the read
+     * watermark of this channel.
+     */
+    public boolean isReadBufferFull() {
+        return !unsafe().inboundBuffer().isNotFull();
+    }
+
     private class DrasylChannelUnsafe extends AbstractUnsafe {
+        private final ChannelInboundBuffer inboundBuffer = new ChannelInboundBuffer(DrasylChannel.this);
+
+        /**
+         * Returns the {@link ChannelInboundBuffer} of the {@link Channel} where the pending read
+         * requests are stored.
+         */
+        public final ChannelInboundBuffer inboundBuffer() {
+            return inboundBuffer;
+        }
+
         @Override
         public void connect(final SocketAddress remoteAddress,
                             final SocketAddress localAddress,
