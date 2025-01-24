@@ -81,8 +81,14 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
-                LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
-                drasylChannel.queueRead(appMsg.getPayload());
+                if (!drasylChannel.isReadBufferFull()) {
+                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                    drasylChannel.queueRead(appMsg.getPayload());
+                }
+                else {
+                    LOG.trace("{} Drop inbound msg `{}` to `{}` as inbound buffer is full.", ctx.channel(), msg, drasylChannel);
+                    ReferenceCountUtil.release(appMsg.getPayload());
+                }
             }
             else {
                 readCompletePending.add(appMsg.getSender());
