@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.AbstractChannel;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelConfig;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelMetadata;
 import io.netty.channel.ChannelOutboundBuffer;
@@ -333,15 +332,17 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                     else {
                         buf.retain();
                         final boolean lastMsg = in.size() == 1;
-                        peerServerChannel.serve(identity.getAddress()).addListener(new ChannelFutureListener() {
-                            @Override
-                            public void operationComplete(final ChannelFuture future) throws Exception {
+                        peerServerChannel.serve(identity.getAddress()).addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
                                 final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
                                 LOG.trace("Pass message via IntraVm to peer `{}`.", remoteAddress);
                                 drasylChannel1.queueRead(buf);
                                 if (lastMsg) {
                                     drasylChannel1.finishRead();
                                 }
+                            }
+                            else {
+                                LOG.warn("Do not pass message via IntraVm to peer:", future.cause());
                             }
                         });
                     }
