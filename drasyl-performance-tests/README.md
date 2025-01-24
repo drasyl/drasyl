@@ -22,6 +22,10 @@ cd drasyl-performance-tests
 java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar -rf json -f 1 -wi 1 -i 1
 # run specific benchmarks
 java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar 'org.drasyl.identity.IdentityPublicKeyBenchmark' -rf json -f 1 -wi 1 -i 1
+# run benchmark with custom parameters
+java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar 'org.drasyl.performance.channel.DrasylChannelWriteBenchmark' -rf json -f 1 -wi 1 -i 1 -p armingEnabled=false -p pseudorandom=true
+# run benchmarks with profiler
+java -jar ./drasyl-performance-tests/target/drasyl-benchmarks.jar 'org.drasyl.identity.IdentityPublicKeyBenchmark' -rf json -f 1 -wi 1 -i 1 -prof async:output=flamegraph
 ```
 
 ## Load simulations
