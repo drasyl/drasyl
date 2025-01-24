@@ -89,11 +89,11 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
                 parent.serve(appMsg.getSender()).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
                         final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
-                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel1);
                         drasylChannel1.queueRead(appMsg.getPayload());
                     }
                     else {
-                        LOG.warn("{} Do not pass read to `{}` to `{}`:", ctx.channel(), msg, drasylChannel, future.cause());
+                        LOG.warn("{} Do not pass read to `{}` to `{}`:", ctx.channel(), msg, appMsg.getSender());
                         ReferenceCountUtil.release(appMsg.getPayload());
                     }
 
