@@ -23,7 +23,6 @@ package org.drasyl.channel;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
-import io.netty.channel.WriteBufferWaterMark;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
 
@@ -38,7 +37,6 @@ import static java.util.Objects.requireNonNull;
  * its pending inbound read requests.
  */
 public final class ChannelInboundBuffer {
-    private static final WriteBufferWaterMark READ_BUFFER_WATER_MARK = WriteBufferWaterMark.DEFAULT;
     private static final AtomicLongFieldUpdater<ChannelInboundBuffer> TOTAL_PENDING_SIZE_UPDATER =
             AtomicLongFieldUpdater.newUpdater(ChannelInboundBuffer.class, "totalPendingSize");
     private static final AtomicIntegerFieldUpdater<ChannelInboundBuffer> FULL_UPDATER =
@@ -51,7 +49,7 @@ public final class ChannelInboundBuffer {
     @SuppressWarnings("UnusedDeclaration")
     private volatile int full;
 
-    ChannelInboundBuffer(DrasylChannel channel) {
+    ChannelInboundBuffer(final DrasylChannel channel) {
         this.channel = requireNonNull(channel);
     }
 
@@ -69,8 +67,8 @@ public final class ChannelInboundBuffer {
             return;
         }
 
-        long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
-        if (newWriteBufferSize > READ_BUFFER_WATER_MARK.high()) {
+        final long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, size);
+        if (newWriteBufferSize > channel.parent().config().getReadBufferWaterMark().high()) {
             setFull();
         }
     }
@@ -83,8 +81,8 @@ public final class ChannelInboundBuffer {
             return;
         }
 
-        long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, -size);
-        if (newWriteBufferSize < READ_BUFFER_WATER_MARK.low()) {
+        final long newWriteBufferSize = TOTAL_PENDING_SIZE_UPDATER.addAndGet(this, -size);
+        if (newWriteBufferSize < channel.parent().config().getReadBufferWaterMark().low()) {
             setNotFull();
         }
     }

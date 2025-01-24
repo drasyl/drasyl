@@ -436,7 +436,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
         return !unsafe().inboundBuffer().isNotFull();
     }
 
-    private class DrasylChannelUnsafe extends AbstractUnsafe {
+    protected class DrasylChannelUnsafe extends AbstractUnsafe {
         private final ChannelInboundBuffer inboundBuffer = new ChannelInboundBuffer(DrasylChannel.this);
 
         /**
