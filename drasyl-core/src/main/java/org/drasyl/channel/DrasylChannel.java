@@ -343,6 +343,7 @@ public class DrasylChannel extends AbstractChannel implements IdentityChannel {
                             }
                             else {
                                 LOG.warn("Do not pass message via IntraVm to peer:", future.cause());
+                                buf.release();
                             }
                         });
                     }
