@@ -25,26 +25,27 @@ import org.drasyl.AbstractBenchmark;
 import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.BenchmarkMode;
 import org.openjdk.jmh.annotations.Mode;
+import org.openjdk.jmh.annotations.Param;
 import org.openjdk.jmh.annotations.Scope;
+import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.State;
 import org.openjdk.jmh.annotations.Threads;
 import org.openjdk.jmh.infra.Blackhole;
 
 @State(Scope.Benchmark)
 public class NonceBenchmark extends AbstractBenchmark {
-    @Benchmark
-    @Threads(1)
-    @BenchmarkMode(Mode.Throughput)
-    public void randomNonce(final Blackhole blackhole) {
-        System.setProperty("org.drasyl.nonce.pseudorandom", "false");
-        blackhole.consume(Nonce.randomNonce());
+    @Param({ "true", "false" })
+    private boolean pseudorandom;
+
+    @Setup
+    public void setup() {
+        System.setProperty("org.drasyl.nonce.pseudorandom", Boolean.toString(pseudorandom));
     }
 
     @Benchmark
     @Threads(1)
     @BenchmarkMode(Mode.Throughput)
-    public void pseudorandomNonce(final Blackhole blackhole) {
-        System.setProperty("org.drasyl.nonce.pseudorandom", "true");
+    public void randomNonce(final Blackhole blackhole) {
         blackhole.consume(Nonce.randomNonce());
     }
 }
