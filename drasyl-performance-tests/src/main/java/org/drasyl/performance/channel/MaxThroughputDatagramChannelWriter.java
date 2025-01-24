@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.performance;
+package org.drasyl.performance.channel;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
@@ -29,7 +29,13 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
+import io.netty.channel.epoll.EpollDatagramChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.StringUtil;
@@ -40,28 +46,59 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
+import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
+import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
+
 /**
- * Writes for 60 seconds as fast as possible to an empty {@link NioDatagramChannel} and prints the
+ * Writes for 60 seconds as fast as possible to an empty {@link DatagramChannel} and prints the
  * write throughput. Results are used as a baseline to compare with other channels.
  *
- * @see WriteThroughputDrasylDatagramChannelBenchmark
+ * @see MaxThroughputDrasylDatagramChannelWriter
  */
-public class WriteThroughputDatagramChannelBenchmark {
+@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+public class MaxThroughputDatagramChannelWriter {
+    private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDatagramChannelWriter.class);
+    private static final boolean KQUEUE = SystemPropertyUtil.getBoolean("kqueue", false);
+    private static final boolean EPOLL = SystemPropertyUtil.getBoolean("epoll", false);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final int PACKET_SIZE = SystemPropertyUtil.getInt("packetsize", 1024);
-    private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
+    private static final int DURATION = SystemPropertyUtil.getInt("duration", 10);
+    private static final int FLUSH_AFTER = SystemPropertyUtil.getInt("flushafter", 32);
+    private static int messagesSinceFlush;
     private static final LongAdder messagesWritten = new LongAdder();
     private static final LongAdder bytesWritten = new LongAdder();
-    private static final List<Double> throughputPerSecond = new ArrayList<>();
+    private static final List<Long> throughputPerSecond = new ArrayList<>();
     private static boolean doSend = true;
 
     public static void main(final String[] args) throws InterruptedException {
-        final EventLoopGroup group = new NioEventLoopGroup();
+        System.out.printf("%s : KQUEUE: %b%n", CLAZZ_NAME, KQUEUE);
+        System.out.printf("%s : EPOLL: %b%n", CLAZZ_NAME, EPOLL);
+        System.out.printf("%s : HOST: %s%n", CLAZZ_NAME, HOST);
+        System.out.printf("%s : PORT: %d%n", CLAZZ_NAME, PORT);
+        System.out.printf("%s : PACKET_SIZE: %d%n", CLAZZ_NAME, PACKET_SIZE);
+        System.out.printf("%s : DURATION: %d%n", CLAZZ_NAME, DURATION);
+        System.out.printf("%s : FLUSH_AFTER: %d%n", CLAZZ_NAME, FLUSH_AFTER);
+
+        final EventLoopGroup group;
+        final Class<? extends DatagramChannel> channelClass;
+        if (KQUEUE) {
+            group = new KQueueEventLoopGroup();
+            channelClass = KQueueDatagramChannel.class;
+        }
+        else if (EPOLL) {
+            group = new EpollEventLoopGroup();
+            channelClass = EpollDatagramChannel.class;
+        }
+        else {
+            group = new NioEventLoopGroup();
+            channelClass = NioDatagramChannel.class;
+        }
         try {
             final Channel channel = new Bootstrap()
                     .group(group)
-                    .channel(NioDatagramChannel.class)
+                    .channel(channelClass)
+                    .option(WRITE_BUFFER_WATER_MARK, new WriteBufferWaterMark(FLUSH_AFTER * PACKET_SIZE * 2, FLUSH_AFTER * PACKET_SIZE * 2))
                     .handler(new ChannelInboundHandlerAdapter())
                     .bind(0)
                     .sync()
@@ -69,12 +106,9 @@ public class WriteThroughputDatagramChannelBenchmark {
 
             final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
 
-            final ChannelFutureListener listener = new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) throws Exception {
-                    if (!future.isSuccess()) {
-                        future.cause().printStackTrace();
-                    }
+            final ChannelFutureListener listener = future -> {
+                if (doSend && !future.isSuccess()) {
+                    future.cause().printStackTrace();
                 }
             };
 
@@ -83,7 +117,16 @@ public class WriteThroughputDatagramChannelBenchmark {
                 final ByteBuf data = Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
                 while (doSend) {
                     if (channel.isWritable()) {
-                        channel.writeAndFlush(new DatagramPacket(data.retainedDuplicate(), targetAddress)).addListener(listener);
+                        final DatagramPacket msg = new DatagramPacket(data.retainedDuplicate(), targetAddress);
+                        final ChannelFuture future;
+                        if (++messagesSinceFlush >= FLUSH_AFTER) {
+                            future = channel.writeAndFlush(msg);
+                            messagesSinceFlush = 0;
+                        }
+                        else {
+                            future = channel.write(msg);
+                        }
+                        future.addListener(listener);
                         messagesWritten.increment();
                         bytesWritten.add(PACKET_SIZE);
                     }
@@ -104,23 +147,23 @@ public class WriteThroughputDatagramChannelBenchmark {
                     }
                     final long endBytes = bytesWritten.sum();
                     final long bytesPerSecond = endBytes - startBytes;
-                    final double megabytesPerSecond = bytesPerSecond / 1048576.0;
-                    throughputPerSecond.add(megabytesPerSecond);
+                    throughputPerSecond.add(bytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond);
+                    System.out.printf("%s : Second %3d         : %14s%n", CLAZZ_NAME, second, numberToHumanDataRate(bytesPerSecond * 8, (short) 2));
                 }
                 doSend = false;
 
                 // Calculate and print the mean (average) throughput and standard deviation
-                final double mean = throughputPerSecond.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                final double mean = throughputPerSecond.stream().mapToLong(Long::longValue).average().orElse(0.0);
                 final double variance = throughputPerSecond.stream()
                         .mapToDouble(d -> Math.pow(d - mean, 2))
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), mean, standardDeviation);
-                System.out.printf("%s : Messages sent      : %,7d%n", StringUtil.simpleClassName(WriteThroughputDatagramChannelBenchmark.class), messagesWritten.sum());
+                System.out.printf("%s : Average throughput : %14s (±  %14s)%n", CLAZZ_NAME, numberToHumanDataRate(mean * 8, (short) 2), numberToHumanDataRate(standardDeviation * 8, (short) 2));
+                System.out.printf("%s : Messages sent      : %,14d%n", CLAZZ_NAME, messagesWritten.sum());
+                System.out.printf("%s : Messages sent/s    : %,14d%n", CLAZZ_NAME, messagesWritten.sum() / DURATION);
             }).start();
 
             // Keep the main thread alive

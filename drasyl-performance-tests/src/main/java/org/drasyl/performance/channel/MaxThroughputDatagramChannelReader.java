@@ -19,14 +19,20 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.performance;
+package org.drasyl.performance.channel;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.EpollDatagramChannel;
+import io.netty.channel.epoll.EpollEventLoopGroup;
+import io.netty.channel.kqueue.KQueueDatagramChannel;
+import io.netty.channel.kqueue.KQueueEventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.internal.StringUtil;
@@ -36,26 +42,50 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
+import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
+
 /**
- * Reads for 60 seconds as fast as possible from a {@link NioDatagramChannel} and prints the
+ * Reads for 60 seconds as fast as possible from a {@link DatagramChannel} and prints the
  * read throughput. Results are used as a baseline to compare with other channels.
  *
- * @see ReadThroughputDatagramChannelBenchmark
+ * @see MaxThroughputDatagramChannelReader
  */
-public class ReadThroughputDatagramChannelBenchmark {
+@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+public class MaxThroughputDatagramChannelReader {
+    private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDatagramChannelReader.class);
+    private static final boolean KQUEUE = SystemPropertyUtil.getBoolean("kqueue", false);
+    private static final boolean EPOLL = SystemPropertyUtil.getBoolean("epoll", false);
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
     private static final LongAdder messagesRead = new LongAdder();
     private static final LongAdder bytesRead = new LongAdder();
-    private static final List<Double> throughputPerSecond = new ArrayList<>();
+    private static final List<Long> throughputPerSecond = new ArrayList<>();
     private static boolean doReceive;
 
     public static void main(final String[] args) throws InterruptedException {
-        final NioEventLoopGroup group = new NioEventLoopGroup();
+        System.out.printf("%s : KQUEUE: %b%n", CLAZZ_NAME, KQUEUE);
+        System.out.printf("%s : EPOLL: %b%n", CLAZZ_NAME, EPOLL);
+        System.out.printf("%s : PORT: %d%n", CLAZZ_NAME, PORT);
+        System.out.printf("%s : DURATION: %d%n", CLAZZ_NAME, DURATION);
+
+        final EventLoopGroup group;
+        final Class<? extends DatagramChannel> channelClass;
+        if (KQUEUE) {
+            group = new KQueueEventLoopGroup();
+            channelClass = KQueueDatagramChannel.class;
+        }
+        else if (EPOLL) {
+            group = new EpollEventLoopGroup();
+            channelClass = EpollDatagramChannel.class;
+        }
+        else {
+            group = new NioEventLoopGroup();
+            channelClass = NioDatagramChannel.class;
+        }
         try {
             final Channel channel = new Bootstrap()
                     .group(group)
-                    .channel(NioDatagramChannel.class)
+                    .channel(channelClass)
                     .handler(new ChannelInboundHandlerAdapter() {
                         @Override
                         public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
@@ -101,23 +131,23 @@ public class ReadThroughputDatagramChannelBenchmark {
                     }
                     final long endBytes = bytesRead.sum();
                     final long bytesPerSecond = endBytes - startBytes;
-                    final double megabytesPerSecond = bytesPerSecond / 1048576.0;
-                    throughputPerSecond.add(megabytesPerSecond);
+                    throughputPerSecond.add(bytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond);
+                    System.out.printf("%s : Second %3d         : %14s%n", CLAZZ_NAME, second, numberToHumanDataRate(bytesPerSecond * 8, (short) 2));
                 }
                 doReceive = false;
 
                 // Calculate and print the mean (average) throughput and standard deviation
-                final double mean = throughputPerSecond.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                final double mean = throughputPerSecond.stream().mapToLong(Long::longValue).average().orElse(0.0);
                 final double variance = throughputPerSecond.stream()
                         .mapToDouble(d -> Math.pow(d - mean, 2))
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), mean, standardDeviation);
-                System.out.printf("%s : Messages received  : %,7d%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), messagesRead.sum());
+                System.out.printf("%s : Average throughput : %14s (±  %14s)%n", CLAZZ_NAME, numberToHumanDataRate(mean * 8, (short) 2), numberToHumanDataRate(standardDeviation * 8, (short) 2));
+                System.out.printf("%s : Messages sent      : %,14d%n", CLAZZ_NAME, messagesRead.sum());
+                System.out.printf("%s : Messages sent/s    : %,14d%n", CLAZZ_NAME, messagesRead.sum() / DURATION);
 
                 // Close the channel after the test completes
                 channel.close().syncUninterruptibly();

@@ -19,14 +19,13 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.performance;
+package org.drasyl.performance.channel;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
@@ -49,14 +48,18 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
+import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
+
 /**
- * Helper class to write as fast as possible (on multiple threads) to a given udp server. Intented
- * to be used with read throughput benchmarks.
+ * Helper class to write as fast as possible (on multiple threads) to a given udp server. Intended
+ * to be used with max throughput readers.
  *
- * @see ReadThroughputDatagramChannelBenchmark
- * @see ReadThroughputDrasylDatagramChannelBenchmark
+ * @see MaxThroughputDatagramChannelReader
+ * @see MaxThroughputDrasylDatagramChannelReader
  */
-public class ReadThroughputBenchmarkHelper {
+@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+public class MaxThroughputChannelReaderHelper {
+    private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputChannelReaderHelper.class);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String IDENTITY = SystemPropertyUtil.get("identity", "benchmark.identity");
@@ -66,7 +69,7 @@ public class ReadThroughputBenchmarkHelper {
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 90);
     private static final LongAdder messagesWritten = new LongAdder();
     private static final LongAdder bytesWritten = new LongAdder();
-    private static final List<Double> throughputPerSecond = new ArrayList<>();
+    private static final List<Long> throughputPerSecond = new ArrayList<>();
     private static boolean doSend = true;
 
     public static void main(final String[] args) throws InterruptedException, IOException {
@@ -98,12 +101,9 @@ public class ReadThroughputBenchmarkHelper {
 
         final InetSocketAddress remoteAddress = new InetSocketAddress(HOST, PORT);
 
-        final ChannelFutureListener listener = new ChannelFutureListener() {
-            @Override
-            public void operationComplete(final ChannelFuture future) {
-                if (!future.isSuccess() && !(future.cause() instanceof PortUnreachableException)) {
-                    future.channel().pipeline().fireExceptionCaught(future.cause());
-                }
+        final ChannelFutureListener listener = future -> {
+            if (!future.isSuccess() && !(future.cause() instanceof PortUnreachableException)) {
+                future.channel().pipeline().fireExceptionCaught(future.cause());
             }
         };
 
@@ -171,23 +171,23 @@ public class ReadThroughputBenchmarkHelper {
                     }
                     final long endBytes = bytesWritten.sum();
                     final long bytesPerSecond = endBytes - startBytes;
-                    final double megabytesPerSecond = bytesPerSecond / 1048576.0;
-                    throughputPerSecond.add(megabytesPerSecond);
+                    throughputPerSecond.add(bytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), second, megabytesPerSecond);
+                    System.out.printf("%s : Second %3d         : %14s%n", CLAZZ_NAME, second, numberToHumanDataRate(bytesPerSecond * 8, (short) 2));
                 }
                 doSend = false;
 
                 // Calculate and print the mean (average) throughput and standard deviation
-                final double mean = throughputPerSecond.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                final double mean = throughputPerSecond.stream().mapToLong(Long::longValue).average().orElse(0.0);
                 final double variance = throughputPerSecond.stream()
                         .mapToDouble(d -> Math.pow(d - mean, 2))
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), mean, standardDeviation);
-                System.out.printf("%s : Messages sent      : %,7d%n", StringUtil.simpleClassName(ReadThroughputBenchmarkHelper.class), messagesWritten.sum());
+                System.out.printf("%s : Average throughput : %14s (±  %14s)%n", CLAZZ_NAME, numberToHumanDataRate(mean * 8, (short) 2), numberToHumanDataRate(standardDeviation * 8, (short) 2));
+                System.out.printf("%s : Messages sent      : %,14d%n", CLAZZ_NAME, messagesWritten.sum());
+                System.out.printf("%s : Messages sent/s    : %,14d%n", CLAZZ_NAME, messagesWritten.sum() / DURATION);
             }).start();
 
             // Keep the main thread alive until the test is finished

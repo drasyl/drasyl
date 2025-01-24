@@ -19,7 +19,7 @@
  * OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE
  * OR OTHER DEALINGS IN THE SOFTWARE.
  */
-package org.drasyl.performance;
+package org.drasyl.performance.channel;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
@@ -28,7 +28,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
@@ -49,22 +48,29 @@ import java.util.concurrent.atomic.LongAdder;
 
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
 
 /**
  * Receives UDP packets for 60 seconds and calculates the read throughput. Results are used to
  * compare different channels.
  */
-public class ReadThroughputDrasylDatagramChannelBenchmark {
+@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+public class MaxThroughputDrasylDatagramChannelReader {
+    private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDrasylDatagramChannelReader.class);
     private static final String HOST = SystemPropertyUtil.get("host", "0.0.0.0");
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
     private static final String IDENTITY = SystemPropertyUtil.get("identity", "benchmark.identity");
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 60);
     private static final LongAdder messagesRead = new LongAdder();
     private static final LongAdder bytesRead = new LongAdder();
-    private static final List<Double> throughputPerSecond = new ArrayList<>();
+    private static final List<Long> throughputPerSecond = new ArrayList<>();
     private static boolean doReceive = true;
 
     public static void main(final String[] args) throws InterruptedException, IOException {
+        System.out.printf("%s : HOST: %s%n", CLAZZ_NAME, HOST);
+        System.out.printf("%s : PORT: %d%n", CLAZZ_NAME, PORT);
+        System.out.printf("%s : DURATION: %d%n", CLAZZ_NAME, DURATION);
+
         // load/create identity
         final File identityFile = new File(IDENTITY);
         if (!identityFile.exists()) {
@@ -88,7 +94,7 @@ public class ReadThroughputDrasylDatagramChannelBenchmark {
                     .sync()
                     .channel();
 
-            DatagramChannel udpChannel;
+            Channel udpChannel;
             while (true) {
                 final UdpServer udpServer = channel.pipeline().get(UdpServer.class);
                 if (udpServer != null) {
@@ -153,23 +159,23 @@ public class ReadThroughputDrasylDatagramChannelBenchmark {
                     }
                     final long endBytes = bytesRead.sum();
                     final long bytesPerSecond = endBytes - startBytes;
-                    final double megabytesPerSecond = bytesPerSecond / 1048576.0;
-                    throughputPerSecond.add(megabytesPerSecond);
+                    throughputPerSecond.add(bytesPerSecond);
 
                     // Print the current second and throughput
-                    System.out.printf("%s : Second %3d         : %7.2f MB/s%n", StringUtil.simpleClassName(ReadThroughputDatagramChannelBenchmark.class), second, megabytesPerSecond);
+                    System.out.printf("%s : Second %3d         : %14s%n", CLAZZ_NAME, second, numberToHumanDataRate(bytesPerSecond * 8, (short) 2));
                 }
                 doReceive = false;
 
                 // Calculate and print the mean (average) throughput and standard deviation
-                final double mean = throughputPerSecond.stream().mapToDouble(Double::doubleValue).average().orElse(0.0);
+                final double mean = throughputPerSecond.stream().mapToLong(Long::longValue).average().orElse(0.0);
                 final double variance = throughputPerSecond.stream()
                         .mapToDouble(d -> Math.pow(d - mean, 2))
                         .average()
                         .orElse(0.0);
                 final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput : %7.2f MB/s (±  %7.2f MB/s)%n", StringUtil.simpleClassName(ReadThroughputDrasylDatagramChannelBenchmark.class), mean, standardDeviation);
-                System.out.printf("%s : Messages received  : %,7d%n", StringUtil.simpleClassName(ReadThroughputDrasylDatagramChannelBenchmark.class), messagesRead.sum());
+                System.out.printf("%s : Average throughput : %14s (±  %14s)%n", CLAZZ_NAME, numberToHumanDataRate(mean * 8, (short) 2), numberToHumanDataRate(standardDeviation * 8, (short) 2));
+                System.out.printf("%s : Messages sent      : %,14d%n", CLAZZ_NAME, messagesRead.sum());
+                System.out.printf("%s : Messages sent/s    : %,14d%n", CLAZZ_NAME, messagesRead.sum() / DURATION);
 
                 // Close the channel after the test completes
                 channel.close().syncUninterruptibly();
