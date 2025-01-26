@@ -70,8 +70,6 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
     @SuppressWarnings("unchecked")
     @Setup
     public void setup() {
-        // ensure write buffer is big enough so channel will not become unwritable before next flush
-        final WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(flushAfter * packetSize * 2, flushAfter * packetSize * 2);
 
         final Class<? extends DatagramChannel> channelClass;
         if ("kqueue".equals(channelImpl)) {
@@ -88,10 +86,15 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
         }
 
         try {
-            channel = new Bootstrap()
+            Bootstrap channel1 = new Bootstrap()
                     .group(group)
-                    .channel(channelClass)
-                    .option(WRITE_BUFFER_WATER_MARK, writeBufferWaterMark)
+                    .channel(channelClass);
+            if (flushAfter != -1) {
+                // ensure write buffer is big enough so channel will not become unwritable before next flush
+                final WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(flushAfter * packetSize * 2, flushAfter * packetSize * 2);
+                channel1.option(WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
+            }
+            channel = channel1
                     .handler(new ChannelInboundHandlerAdapter())
                     .bind(0)
                     .sync()
