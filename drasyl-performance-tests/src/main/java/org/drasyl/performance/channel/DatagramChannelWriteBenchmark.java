@@ -56,7 +56,7 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
     private static final int PORT = 12345;
     @Param({ "1024" })
     private int packetSize;
-    @Param({ "32" })
+    @Param({ "-1", "32" })
     private int flushAfter;
     @Param({ "nio", "kqueue", "epoll" })
     private String channelImpl;
@@ -118,12 +118,14 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
 
     @Setup(Level.Invocation)
     public void setupWrite() {
-        if (++messagesSinceFlush >= flushAfter) {
-            flush = true;
-            messagesSinceFlush = 0;
-        }
-        else {
-            flush = false;
+        if (flushAfter != -1) {
+            if (++messagesSinceFlush >= flushAfter) {
+                flush = true;
+                messagesSinceFlush = 0;
+            }
+            else {
+                flush = false;
+            }
         }
     }
 
@@ -135,13 +137,22 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
         }
 
         final DatagramPacket msg = new DatagramPacket(data.retainedDuplicate(), targetAddress);
-        final ChannelFuture future;
-        if (flush) {
-            future = channel.writeAndFlush(msg);
+        if (flushAfter == -1) {
+            blackhole.consume(channel.write(msg));
+
+            if (!channel.isWritable()) {
+                blackhole.consume(channel.flush());
+            }
         }
         else {
-            future = channel.write(msg);
+            final ChannelFuture future;
+            if (flush) {
+                future = channel.writeAndFlush(msg);
+            }
+            else {
+                future = channel.write(msg);
+            }
+            blackhole.consume(future);
         }
-        blackhole.consume(future);
     }
 }
