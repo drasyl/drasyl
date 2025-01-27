@@ -26,7 +26,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 
@@ -110,7 +109,6 @@ abstract class AbstractMaxThroughputWriter {
 
     protected abstract String className();
 
-    @Sharable
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private volatile long messagesWritten;
         private final E msg;
@@ -126,7 +124,7 @@ abstract class AbstractMaxThroughputWriter {
             this.msgDuplicator = requireNonNull(msgDuplicator);
         }
 
-        public WriteHandler(final E msg, Function<E, E> msgDuplicator) {
+        public WriteHandler(final E msg, final Function<E, E> msgDuplicator) {
             this(0, msg, msgDuplicator);
         }
 

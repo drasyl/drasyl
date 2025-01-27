@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.ReferenceCountUtil;
@@ -89,7 +88,6 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
         receivedMsgs.getAndDecrement();
     }
 
-    @Sharable
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private final E msg;
         private final Function<E, E> msgDuplicator;

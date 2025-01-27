@@ -26,7 +26,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.AbstractBenchmark;
@@ -92,7 +91,6 @@ abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
         blackhole.consume(writeHandler.messagesWritten().getAndDecrement());
     }
 
-    @Sharable
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private final AtomicLong messagesWritten;
         private final E msg;
@@ -108,7 +106,7 @@ abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
             this.msgDuplicator = requireNonNull(msgDuplicator);
         }
 
-        public WriteHandler(final E msg, Function<E, E> msgDuplicator) {
+        public WriteHandler(final E msg, final Function<E, E> msgDuplicator) {
             this(new AtomicLong(), msg, msgDuplicator);
         }
 
