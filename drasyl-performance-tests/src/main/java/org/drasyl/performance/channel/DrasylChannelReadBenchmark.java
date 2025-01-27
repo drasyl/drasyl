@@ -72,8 +72,8 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private boolean armingEnabled;
     @Param({ "true", "false" })
     private boolean pseudorandom;
-    private EventLoopGroup writerGroup;
-    private EventLoopGroup readerGroup;
+    private EventLoopGroup writeGroup;
+    private EventLoopGroup readGroup;
     private EventLoopGroup udpGroup;
 
     @Override
@@ -89,11 +89,10 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
         }
         final ByteBuf msg = message.encodeMessage(alloc);
 
-        writerGroup = new NioEventLoopGroup(writeThreads);
-        udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
+        writeGroup = new NioEventLoopGroup(writeThreads);
 
         final Bootstrap writeBootstrap = new Bootstrap()
-                .group(writerGroup)
+                .group(writeGroup)
                 .channel(NioDatagramChannel.class)
                 .handler(new ChannelInitializer<>() {
                     @Override
@@ -111,7 +110,7 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
                     }
                 });
 
-        final ChannelGroup writeChannels = new DefaultChannelGroup(writerGroup.next());
+        final ChannelGroup writeChannels = new DefaultChannelGroup(writeGroup.next());
         for (int i = 0; i < writeThreads; i++) {
             writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
         }
@@ -121,11 +120,11 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
 
     @Override
     protected Channel setupReadChannel() throws InterruptedException {
-        readerGroup = new NioEventLoopGroup(1);
+        readGroup = new NioEventLoopGroup(1);
         udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
 
         final ServerBootstrap drasylServerBootstrap = new ServerBootstrap()
-                .group(readerGroup, udpGroup)
+                .group(readGroup, udpGroup)
                 .channel(DrasylServerChannel.class)
                 .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
                         .option(IP_TOS, 0xB8)
@@ -154,7 +153,7 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
     @Override
     protected void teardownChannel() throws InterruptedException {
         udpGroup.shutdownGracefully().await();
-        writerGroup.shutdownGracefully().await();
-        readerGroup.shutdownGracefully().await();
+        writeGroup.shutdownGracefully().await();
+        readGroup.shutdownGracefully().await();
     }
 }

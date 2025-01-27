@@ -25,7 +25,7 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.util.ReferenceCountUtil;
@@ -66,6 +66,9 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
     @TearDown
     public void teardown() {
         try {
+            writeChannels.forEach(channel -> {
+                channel.pipeline().get(WriteHandler.class).stopWriting();
+            });
             writeChannels.close().await();
             readChannel.close().await();
             teardownChannel();
@@ -86,7 +89,7 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
         receivedMsgs.getAndDecrement();
     }
 
-    @ChannelHandler.Sharable
+    @Sharable
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private final E msg;
         private final Function<E, E> msgDuplicator;
@@ -126,7 +129,7 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
         private void doWrite(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (stopWriting || !channel.isActive()) {
-                ReferenceCountUtil.release(msg);
+                ReferenceCountUtil.safeRelease(msg);
                 ctx.flush();
                 return;
             }

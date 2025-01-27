@@ -52,7 +52,7 @@ public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private int packetSize;
     @Param({ "nio", "kqueue", "epoll" })
     private String channelImpl;
-    private EventLoopGroup writGroup;
+    private EventLoopGroup writeGroup;
     private EventLoopGroup readGroup;
 
     @Override
@@ -61,20 +61,20 @@ public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
 
         final Class<? extends DatagramChannel> channelClass;
         if ("kqueue".equals(channelImpl)) {
-            writGroup = new KQueueEventLoopGroup(writeThreads);
+            writeGroup = new KQueueEventLoopGroup(writeThreads);
             channelClass = KQueueDatagramChannel.class;
         }
         else if ("epoll".equals(channelImpl)) {
-            writGroup = new EpollEventLoopGroup(writeThreads);
+            writeGroup = new EpollEventLoopGroup(writeThreads);
             channelClass = EpollDatagramChannel.class;
         }
         else {
-            writGroup = new NioEventLoopGroup(writeThreads);
+            writeGroup = new NioEventLoopGroup(writeThreads);
             channelClass = NioDatagramChannel.class;
         }
 
         final Bootstrap writeBootstrap = new Bootstrap()
-                .group(writGroup)
+                .group(writeGroup)
                 .channel(channelClass)
                 .handler(new ChannelInitializer<>() {
                     @Override
@@ -92,7 +92,7 @@ public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
                     }
                 });
 
-        final ChannelGroup writeChannels = new DefaultChannelGroup(writGroup.next());
+        final ChannelGroup writeChannels = new DefaultChannelGroup(writeGroup.next());
         for (int i = 0; i < writeThreads; i++) {
             writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
         }
@@ -132,7 +132,7 @@ public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
 
     @Override
     protected void teardownChannel() throws InterruptedException {
-        writGroup.shutdownGracefully().await();
+        writeGroup.shutdownGracefully().await();
         readGroup.shutdownGracefully().await();
     }
 }
