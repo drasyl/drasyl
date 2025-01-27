@@ -26,11 +26,8 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
@@ -46,20 +43,15 @@ import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
-import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.atomic.LongAdder;
+import java.util.function.Function;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
-import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
 import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
-import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
 
 @SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
-public class MaxThroughputDrasylChannelWriter {
+public class MaxThroughputDrasylChannelWriter extends AbstractMaxThroughputWriter {
     private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDrasylChannelWriter.class);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
     private static final int PORT = SystemPropertyUtil.getInt("port", 12345);
@@ -70,20 +62,20 @@ public class MaxThroughputDrasylChannelWriter {
     private static final int FLUSH_AFTER = SystemPropertyUtil.getInt("flushafter", 32);
     private static final boolean ARMING_ENABLED = SystemPropertyUtil.getBoolean("arming", false);
     private static final int DRASYL_OVERHEAD = 104;
-    private static int messagesSinceFlush;
-    private static final LongAdder messagesWritten = new LongAdder();
-    private static final LongAdder bytesWritten = new LongAdder();
-    private static final List<Long> throughputPerSecond = new ArrayList<>();
-    private static boolean doSend = true;
+    private EventLoopGroup group;
+    private EventLoopGroup udpGroup;
 
-    public static void main(final String[] args) throws InterruptedException, IOException {
-        System.out.printf("%s : HOST: %s%n", CLAZZ_NAME, HOST);
-        System.out.printf("%s : PORT: %d%n", CLAZZ_NAME, PORT);
-        System.out.printf("%s : PACKET_SIZE: %d%n", CLAZZ_NAME, PACKET_SIZE);
-        System.out.printf("%s : DURATION: %d%n", CLAZZ_NAME, DURATION);
-        System.out.printf("%s : FLUSH_AFTER: %d%n", CLAZZ_NAME, FLUSH_AFTER);
-        System.out.printf("%s : ARMING_ENABLED: %b%n", CLAZZ_NAME, ARMING_ENABLED);
+    private MaxThroughputDrasylChannelWriter() {
+        super(DURATION);
+    }
 
+    @Override
+    protected long bytesWritten(WriteHandler<?> writeHandler) {
+        return (writeHandler.messagesWritten() + DRASYL_OVERHEAD) * PACKET_SIZE;
+    }
+
+    @Override
+    protected Channel setupChannel() throws Exception {
         // load/create identity
         final File identityFile = new File(IDENTITY);
         if (!identityFile.exists()) {
@@ -94,109 +86,73 @@ public class MaxThroughputDrasylChannelWriter {
 
         System.out.println("My address = " + identity.getAddress());
 
-        final EventLoopGroup group = new NioEventLoopGroup();
-        final EventLoopGroup udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
-        try {
-            final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
-            final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);
-            final WriteBufferWaterMark waterMark = new WriteBufferWaterMark(FLUSH_AFTER * (PACKET_SIZE + DRASYL_OVERHEAD) * 2, FLUSH_AFTER * (PACKET_SIZE + DRASYL_OVERHEAD) * 2);
+        group = new NioEventLoopGroup();
+        udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
 
-            final Channel channel = new ServerBootstrap()
-                    .group(group)
-                    .channel(DrasylServerChannel.class)
-                    .option(WRITE_BUFFER_WATER_MARK, waterMark)
-                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
-                            .option(IP_TOS, 0xB8)
-                            .option(WRITE_BUFFER_WATER_MARK, waterMark)
-                            .group(udpGroup.next())
-                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                            .handler(new UdpServerChannelInitializer(parent)))
-                    .option(PEERS_MANAGER, new PeersManager() {
-                        @Override
-                        public InetSocketAddress resolve(final DrasylAddress peerKey) {
-                            if (recipient.equals(peerKey)) {
-                                return targetAddress;
-                            }
-                            return super.resolve(peerKey);
+        final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
+        final IdentityPublicKey recipient = IdentityPublicKey.of(RECIPIENT);
+
+        final Channel channel = new ServerBootstrap()
+                .group(group)
+                .channel(DrasylServerChannel.class)
+                .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                        .option(IP_TOS, 0xB8)
+                        .group(udpGroup.next())
+                        .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                        .handler(new UdpServerChannelInitializer(parent)))
+                .option(PEERS_MANAGER, new PeersManager() {
+                    @Override
+                    public InetSocketAddress resolve(final DrasylAddress peerKey) {
+                        if (recipient.equals(peerKey)) {
+                            return targetAddress;
                         }
-                    })
-                    .option(DrasylServerChannelConfig.ARMING_ENABLED, ARMING_ENABLED)
-                    .handler(new DefaultDrasylServerChannelInitializer())
-                    .childHandler(new ChannelInboundHandlerAdapter())
-                    .bind(identity)
-                    .sync()
-                    .channel();
-
-            final Channel drasylChannel = ((DrasylServerChannel) channel).serve(recipient).sync().channel();
-
-            final ChannelFutureListener listener = future -> {
-                if (doSend && !future.isSuccess()) {
-                    future.cause().printStackTrace();
-                }
-            };
-
-            // Start a thread to send packets as fast as possible
-            new Thread(() -> {
-                final ByteBuf data = Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
-
-                while (doSend) {
-                    if (drasylChannel.isWritable()) {
-                        final ChannelFuture future;
-                        if (++messagesSinceFlush >= FLUSH_AFTER) {
-                            future = drasylChannel.writeAndFlush(data.retainedDuplicate());
-                            messagesSinceFlush = 0;
-                        }
-                        else {
-                            future = drasylChannel.write(data.retainedDuplicate());
-                        }
-                        future.addListener(listener);
-                        messagesWritten.increment();
-                        bytesWritten.add(PACKET_SIZE + (long) DRASYL_OVERHEAD);
+                        return super.resolve(peerKey);
                     }
-                }
-                drasylChannel.close().syncUninterruptibly();
-                channel.close().syncUninterruptibly();
-            }).start();
+                })
+                .option(DrasylServerChannelConfig.ARMING_ENABLED, ARMING_ENABLED)
+                .handler(new DefaultDrasylServerChannelInitializer())
+                .childHandler(new ChannelInboundHandlerAdapter())
+                .bind(identity)
+                .sync()
+                .channel();
 
-            // Start a thread to print the throughput every second
-            new Thread(() -> {
-                for (int second = 1; second <= DURATION; second++) {
-                    final long startBytes = bytesWritten.sum();
-                    try {
-                        Thread.sleep(1000);
-                    }
-                    catch (final InterruptedException e) {
-                        Thread.currentThread().interrupt();
-                        return;
-                    }
-                    final long endBytes = bytesWritten.sum();
-                    final long bytesPerSecond = endBytes - startBytes;
-                    throughputPerSecond.add(bytesPerSecond);
+        return ((DrasylServerChannel) channel).serve(recipient).sync().channel();
+    }
 
-                    // Print the current second and throughput
-                    System.out.printf("%s : Second %3d: %14s%n", CLAZZ_NAME, second, numberToHumanDataRate(bytesPerSecond * 8, (short) 2));
-                }
-                doSend = false;
+    @Override
+    protected Object buildMsg() {
+        return Unpooled.wrappedBuffer(new byte[PACKET_SIZE]);
+    }
 
-                // Calculate and print the mean (average) throughput and standard deviation
-                final double mean = throughputPerSecond.stream().mapToDouble(Long::longValue).average().orElse(0.0);
-                final double variance = throughputPerSecond.stream()
-                        .mapToDouble(d -> Math.pow(d - mean, 2))
-                        .average()
-                        .orElse(0.0);
-                final double standardDeviation = Math.sqrt(variance);
-                System.out.printf("%s : Average throughput : %14s (±  %14s)%n", CLAZZ_NAME, numberToHumanDataRate(mean * 8, (short) 2), numberToHumanDataRate(standardDeviation * 8, (short) 2));
-                System.out.printf("%s : Messages sent      : %,14d%n", CLAZZ_NAME, messagesWritten.sum());
-                System.out.printf("%s : Messages sent/s    : %,14d%n", CLAZZ_NAME, messagesWritten.sum() / DURATION);
-            }).start();
+    @Override
+    protected Function<Object, Object> getMsgDuplicator() {
+        return new Function<Object, Object>() {
+            @Override
+            public Object apply(final Object o) {
+                return ((ByteBuf) o).retainedDuplicate();
+            }
+        };
+    }
 
-            // Keep the main thread alive
-            channel.closeFuture().await();
-        }
-        finally {
-            group.shutdownGracefully().await();
-            udpGroup.shutdownGracefully().await();
-            System.exit(0);
-        }
+    @Override
+    protected void teardown() throws InterruptedException {
+        group.shutdownGracefully().await();
+        udpGroup.shutdownGracefully().await();
+    }
+
+    @Override
+    protected String className() {
+        return CLAZZ_NAME;
+    }
+
+    public static void main(final String[] args) throws Exception {
+        System.out.printf("%s : HOST: %s%n", CLAZZ_NAME, HOST);
+        System.out.printf("%s : PORT: %d%n", CLAZZ_NAME, PORT);
+        System.out.printf("%s : PACKET_SIZE: %d%n", CLAZZ_NAME, PACKET_SIZE);
+        System.out.printf("%s : DURATION: %d%n", CLAZZ_NAME, DURATION);
+        System.out.printf("%s : FLUSH_AFTER: %d%n", CLAZZ_NAME, FLUSH_AFTER);
+        System.out.printf("%s : ARMING_ENABLED: %b%n", CLAZZ_NAME, ARMING_ENABLED);
+
+        new MaxThroughputDrasylChannelWriter().run();
     }
 }
