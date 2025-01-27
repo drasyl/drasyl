@@ -22,13 +22,10 @@
 package org.drasyl.performance.channel;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.kqueue.KQueueDatagramChannel;
@@ -37,40 +34,22 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import org.drasyl.AbstractBenchmark;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Level;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.TearDown;
-import org.openjdk.jmh.infra.Blackhole;
 
 import java.net.InetSocketAddress;
+import java.util.function.Function;
 
-import static io.netty.channel.ChannelOption.WRITE_BUFFER_WATER_MARK;
-
-public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
+public class DatagramChannelWriteBenchmark extends AbstractChannelWriteBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
     @Param({ "1024" })
     private int packetSize;
-    @Param({ "-1", "32" })
-    private int flushAfter;
     @Param({ "nio", "kqueue", "epoll" })
     private String channelImpl;
-    private boolean flush;
-    private int messagesSinceFlush;
     private EventLoopGroup group;
-    private Channel channel;
-    private InetSocketAddress targetAddress;
-    private ByteBuf data;
 
-    @SuppressWarnings("unchecked")
-    @Setup
-    public void setup() {
-
+    @Override
+    protected Channel setupChannel() throws Exception {
         final Class<? extends DatagramChannel> channelClass;
         if ("kqueue".equals(channelImpl)) {
             group = new KQueueEventLoopGroup();
@@ -85,77 +64,33 @@ public class DatagramChannelWriteBenchmark extends AbstractBenchmark {
             channelClass = NioDatagramChannel.class;
         }
 
-        try {
-            Bootstrap channel1 = new Bootstrap()
-                    .group(group)
-                    .channel(channelClass);
-            if (flushAfter != -1) {
-                // ensure write buffer is big enough so channel will not become unwritable before next flush
-                final WriteBufferWaterMark writeBufferWaterMark = new WriteBufferWaterMark(flushAfter * packetSize * 2, flushAfter * packetSize * 2);
-                channel1.option(WRITE_BUFFER_WATER_MARK, writeBufferWaterMark);
-            }
-            channel = channel1
-                    .handler(new ChannelInboundHandlerAdapter())
-                    .bind(0)
-                    .sync()
-                    .channel();
-            targetAddress = new InetSocketAddress(HOST, PORT);
-            data = Unpooled.wrappedBuffer(new byte[packetSize]);
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
+        return new Bootstrap()
+                .group(group)
+                .channel(channelClass)
+                .handler(new ChannelInboundHandlerAdapter())
+                .bind(0)
+                .sync()
+                .channel();
     }
 
-    @TearDown
-    public void teardown() {
-        try {
-            data.release();
-            channel.close().await();
-            group.shutdownGracefully().await();
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
+    @Override
+    protected Object buildMsg() {
+        final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
+        return new DatagramPacket(Unpooled.wrappedBuffer(new byte[packetSize]), targetAddress);
     }
 
-    @Setup(Level.Invocation)
-    public void setupWrite() {
-        if (flushAfter != -1) {
-            if (++messagesSinceFlush >= flushAfter) {
-                flush = true;
-                messagesSinceFlush = 0;
+    @Override
+    protected Function<Object, Object> getMsgDuplicator() {
+        return new Function<Object, Object>() {
+            @Override
+            public Object apply(final Object o) {
+                return ((DatagramPacket) o).retainedDuplicate();
             }
-            else {
-                flush = false;
-            }
-        }
+        };
     }
 
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void write(final Blackhole blackhole) {
-        while (!channel.isWritable()) {
-            // wait until channel is writable again
-        }
-
-        final DatagramPacket msg = new DatagramPacket(data.retainedDuplicate(), targetAddress);
-        if (flushAfter == -1) {
-            blackhole.consume(channel.write(msg));
-
-            if (!channel.isWritable()) {
-                blackhole.consume(channel.flush());
-            }
-        }
-        else {
-            final ChannelFuture future;
-            if (flush) {
-                future = channel.writeAndFlush(msg);
-            }
-            else {
-                future = channel.write(msg);
-            }
-            blackhole.consume(future);
-        }
+    @Override
+    protected void teardownChannel() throws Exception {
+        group.shutdownGracefully().await();
     }
 }

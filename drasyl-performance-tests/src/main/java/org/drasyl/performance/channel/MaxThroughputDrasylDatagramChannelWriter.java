@@ -91,11 +91,6 @@ public class MaxThroughputDrasylDatagramChannelWriter extends AbstractMaxThrough
     }
 
     @Override
-    protected long bytesWritten(WriteHandler<?> writeHandler) {
-        return (writeHandler.messagesWritten() + DRASYL_OVERHEAD) * PACKET_SIZE;
-    }
-
-    @Override
     protected Channel setupChannel() throws InterruptedException, IOException {
         // load/create identity
         final File identityFile = new File(IDENTITY);
@@ -160,7 +155,12 @@ public class MaxThroughputDrasylDatagramChannelWriter extends AbstractMaxThrough
     }
 
     @Override
-    protected void teardown() throws InterruptedException {
+    protected long bytesWritten(WriteHandler<?> writeHandler) {
+        return (writeHandler.messagesWritten() + DRASYL_OVERHEAD) * PACKET_SIZE;
+    }
+
+    @Override
+    protected void teardownChannel() throws InterruptedException {
         group.shutdownGracefully().await();
         udpGroup.shutdownGracefully().await();
     }

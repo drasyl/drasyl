@@ -24,10 +24,10 @@ package org.drasyl.performance.channel;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.epoll.EpollEventLoopGroup;
@@ -39,140 +39,100 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import org.drasyl.AbstractBenchmark;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.TearDown;
 
 import java.net.PortUnreachableException;
-import java.util.concurrent.atomic.AtomicLong;
 
-public class DatagramChannelReadBenchmark extends AbstractBenchmark {
+public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
     @Param({ "3" })
-    private int writeThreads;
+    protected int writeThreads;
     @Param({ "1024" })
     private int packetSize;
     @Param({ "nio", "kqueue", "epoll" })
     private String channelImpl;
-    private EventLoopGroup group;
-    private ByteBuf data;
-    private boolean doWrite = true;
-    private ChannelGroup writeChannels;
-    private final AtomicLong receivedMsgs = new AtomicLong();
+    private EventLoopGroup writGroup;
+    private EventLoopGroup readGroup;
 
-    @SuppressWarnings("unchecked")
-    @Setup
-    public void setup() {
+    @Override
+    protected ChannelGroup setupWriteChannels() throws Exception {
+        final ByteBuf msg = Unpooled.wrappedBuffer(new byte[packetSize]);
+
         final Class<? extends DatagramChannel> channelClass;
         if ("kqueue".equals(channelImpl)) {
-            group = new KQueueEventLoopGroup(writeThreads + 1);
+            writGroup = new KQueueEventLoopGroup(writeThreads);
             channelClass = KQueueDatagramChannel.class;
         }
         else if ("epoll".equals(channelImpl)) {
-            group = new EpollEventLoopGroup(writeThreads + 1);
+            writGroup = new EpollEventLoopGroup(writeThreads);
             channelClass = EpollDatagramChannel.class;
         }
         else {
-            group = new NioEventLoopGroup(writeThreads + 1);
+            writGroup = new NioEventLoopGroup(writeThreads);
             channelClass = NioDatagramChannel.class;
         }
 
-        data = Unpooled.wrappedBuffer(new byte[packetSize]);
-
-        try {
-            final Bootstrap writeBootstrap = new Bootstrap()
-                    .group(group)
-                    .channel(channelClass)
-                    .handler(new MyChannelDuplexHandler());
-
-            writeChannels = new DefaultChannelGroup(group.next());
-            for (int i = 0; i < writeThreads; i++) {
-                writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
-            }
-
-            final Bootstrap readBootstrap = new Bootstrap()
-                    .group(group)
-                    .channel(channelClass)
-                    .handler(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
-                            if (msg instanceof DatagramPacket) {
-                                ((DatagramPacket) msg).content().release();
-                                receivedMsgs.incrementAndGet();
+        final Bootstrap writeBootstrap = new Bootstrap()
+                .group(writGroup)
+                .channel(channelClass)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) throws Exception {
+                        ch.pipeline().addLast(new WriteHandler<>(msg));
+                        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                        final Throwable cause) {
+                                if (!(cause instanceof PortUnreachableException)) {
+                                    ctx.fireExceptionCaught(cause);
+                                }
                             }
-                        }
-                    });
-            readBootstrap.bind(HOST, PORT);
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
-
-    @TearDown
-    public void teardown() {
-        try {
-            doWrite = false;
-            data.release();
-            writeChannels.close().await();
-            group.shutdownGracefully().await();
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void read() {
-        while (receivedMsgs.get() < 1) {
-            // do nothing
-        }
-        receivedMsgs.getAndDecrement();
-    }
-
-    @Sharable
-    private class MyChannelDuplexHandler extends ChannelDuplexHandler {
-        @Override
-        public void channelActive(final ChannelHandlerContext ctx) {
-            ctx.fireChannelActive();
-            scheduleWriteTask(ctx);
-        }
-
-        private void scheduleWriteTask(final ChannelHandlerContext ctx) {
-            if (ctx.channel().isActive()) {
-                ctx.executor().execute(() -> {
-                    while (doWrite && ctx.channel().isWritable()) {
-                        ctx.write(data.retain());
+                        });
                     }
-                    if (!doWrite) {
-                        ctx.close();
-                    }
-                    ctx.flush();
                 });
-            }
+
+        final ChannelGroup writeChannels = new DefaultChannelGroup(writGroup.next());
+        for (int i = 0; i < writeThreads; i++) {
+            writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
+        }
+        return writeChannels;
+    }
+
+    @Override
+    protected Channel setupReadChannel() {
+        final Class<? extends DatagramChannel> channelClass;
+        if ("kqueue".equals(channelImpl)) {
+            readGroup = new KQueueEventLoopGroup(1);
+            channelClass = KQueueDatagramChannel.class;
+        }
+        else if ("epoll".equals(channelImpl)) {
+            readGroup = new EpollEventLoopGroup(1);
+            channelClass = EpollDatagramChannel.class;
+        }
+        else {
+            readGroup = new NioEventLoopGroup(1);
+            channelClass = NioDatagramChannel.class;
         }
 
-        @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-            if (ctx.channel().isWritable()) {
-                scheduleWriteTask(ctx);
-            }
+        final Bootstrap readBootstrap = new Bootstrap()
+                .group(readGroup)
+                .channel(channelClass)
+                .handler(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelRead(final ChannelHandlerContext ctx, final Object msg) {
+                        if (msg instanceof DatagramPacket) {
+                            ((DatagramPacket) msg).content().release();
+                            receivedMsgs.incrementAndGet();
+                        }
+                    }
+                });
+        return readBootstrap.bind(HOST, PORT).channel();
+    }
 
-            ctx.fireChannelWritabilityChanged();
-        }
-
-        @Override
-        public void exceptionCaught(final ChannelHandlerContext ctx,
-                                    final Throwable cause) {
-            if (!(cause instanceof PortUnreachableException)) {
-                cause.printStackTrace();
-            }
-        }
+    @Override
+    protected void teardownChannel() throws InterruptedException {
+        writGroup.shutdownGracefully().await();
+        readGroup.shutdownGracefully().await();
     }
 }

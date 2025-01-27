@@ -27,45 +27,35 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import io.netty.buffer.UnpooledByteBufAllocator;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.nio.NioDatagramChannel;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.AbstractBenchmark;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.sodium.SessionPair;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
-import org.drasyl.handler.remote.protocol.InvalidMessageFormatException;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.EventLoopGroupUtil;
-import org.openjdk.jmh.annotations.Benchmark;
-import org.openjdk.jmh.annotations.BenchmarkMode;
-import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Param;
-import org.openjdk.jmh.annotations.Setup;
-import org.openjdk.jmh.annotations.TearDown;
 
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
-import java.util.concurrent.atomic.AtomicLong;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 
-public class DrasylChannelReadBenchmark extends AbstractBenchmark {
+public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
     private static final Identity WRITER_IDENTITY = Identity.of(-2082598243,
@@ -82,21 +72,13 @@ public class DrasylChannelReadBenchmark extends AbstractBenchmark {
     private boolean armingEnabled;
     @Param({ "true", "false" })
     private boolean pseudorandom;
-    private EventLoopGroup group;
+    private EventLoopGroup writerGroup;
+    private EventLoopGroup readerGroup;
     private EventLoopGroup udpGroup;
-    private ByteBuf data;
-    private boolean doWrite = true;
-    private ChannelGroup writeChannels;
-    private final AtomicLong receivedMsgs = new AtomicLong();
-    private Channel readerChannel;
 
-    @SuppressWarnings("unchecked")
-    @Setup
-    public void setup() throws CryptoException, InvalidMessageFormatException {
+    @Override
+    protected ChannelGroup setupWriteChannels() throws Exception {
         System.setProperty("org.drasyl.nonce.pseudorandom", Boolean.toString(pseudorandom));
-
-        group = new NioEventLoopGroup(writeThreads + 1);
-        udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
 
         final ByteBuf payload = Unpooled.wrappedBuffer(new byte[packetSize]);
         RemoteMessage message = ApplicationMessage.of(1, RECEIVER_IDENTITY.getIdentityPublicKey(), WRITER_IDENTITY.getIdentityPublicKey(), WRITER_IDENTITY.getProofOfWork(), payload);
@@ -105,109 +87,74 @@ public class DrasylChannelReadBenchmark extends AbstractBenchmark {
             final SessionPair sessionPair = Crypto.INSTANCE.generateSessionKeyPair(RECEIVER_IDENTITY.getKeyAgreementKeyPair(), WRITER_IDENTITY.getKeyAgreementPublicKey());
             message = ((ApplicationMessage) message).arm(alloc, Crypto.INSTANCE, SessionPair.of(sessionPair.getTx(), sessionPair.getRx()));
         }
-        data = message.encodeMessage(alloc);
+        final ByteBuf msg = message.encodeMessage(alloc);
 
-        try {
-            final Bootstrap writeBootstrap = new Bootstrap()
-                    .group(group)
-                    .channel(NioDatagramChannel.class)
-                    .handler(new MyChannelDuplexHandler());
+        writerGroup = new NioEventLoopGroup(writeThreads);
+        udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
 
-            writeChannels = new DefaultChannelGroup(group.next());
-            for (int i = 0; i < writeThreads; i++) {
-                writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
-            }
-
-            final ServerBootstrap readerBootstrap = new ServerBootstrap()
-                    .group(group, udpGroup)
-                    .channel(DrasylServerChannel.class)
-                    .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
-                            .option(IP_TOS, 0xB8)
-                            .group(udpGroup)
-                            .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                            .handler(new UdpServerChannelInitializer(parent)))
-                    .option(UDP_BIND, new InetSocketAddress(HOST, PORT))
-                    .option(ARMING_ENABLED, armingEnabled)
-                    .handler(new DefaultDrasylServerChannelInitializer())
-                    .childHandler(new ChannelInboundHandlerAdapter() {
-                        @Override
-                        public void channelRead(final ChannelHandlerContext ctx,
-                                                final Object msg) {
-                            ReferenceCountUtil.release(msg);
-                            receivedMsgs.incrementAndGet();
-                        }
-                    });
-            readerChannel = readerBootstrap
-                    .bind(RECEIVER_IDENTITY)
-                    .sync()
-                    .channel();
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
-
-    @TearDown
-    public void teardown() {
-        try {
-            doWrite = false;
-            data.release();
-            readerChannel.close().await();
-            writeChannels.close().await();
-            udpGroup.shutdownGracefully().await();
-            group.shutdownGracefully().await();
-        }
-        catch (final Exception e) {
-            handleUnexpectedException(e);
-        }
-    }
-
-    @Benchmark
-    @BenchmarkMode(Mode.Throughput)
-    public void read() {
-        while (receivedMsgs.get() < 1) {
-            // do nothing
-        }
-        receivedMsgs.getAndDecrement();
-    }
-
-    @Sharable
-    private class MyChannelDuplexHandler extends ChannelDuplexHandler {
-        @Override
-        public void channelActive(final ChannelHandlerContext ctx) {
-            ctx.fireChannelActive();
-            scheduleWriteTask(ctx);
-        }
-
-        private void scheduleWriteTask(final ChannelHandlerContext ctx) {
-            if (ctx.channel().isActive()) {
-                ctx.executor().execute(() -> {
-                    while (doWrite && ctx.channel().isWritable()) {
-                        ctx.write(data.retain());
+        final Bootstrap writeBootstrap = new Bootstrap()
+                .group(writerGroup)
+                .channel(NioDatagramChannel.class)
+                .handler(new ChannelInitializer<>() {
+                    @Override
+                    protected void initChannel(final Channel ch) throws Exception {
+                        ch.pipeline().addLast(new WriteHandler<>(msg));
+                        ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
+                            @Override
+                            public void exceptionCaught(final ChannelHandlerContext ctx,
+                                                        final Throwable cause) {
+                                if (!(cause instanceof PortUnreachableException)) {
+                                    ctx.fireExceptionCaught(cause);
+                                }
+                            }
+                        });
                     }
-                    if (!doWrite) {
-                        ctx.close();
-                    }
-                    ctx.flush();
                 });
-            }
+
+        final ChannelGroup writeChannels = new DefaultChannelGroup(writerGroup.next());
+        for (int i = 0; i < writeThreads; i++) {
+            writeChannels.add(writeBootstrap.connect(HOST, PORT).sync().channel());
         }
 
-        @Override
-        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
-            if (ctx.channel().isWritable()) {
-                scheduleWriteTask(ctx);
-            }
+        return writeChannels;
+    }
 
-            ctx.fireChannelWritabilityChanged();
-        }
+    @Override
+    protected Channel setupReadChannel() throws InterruptedException {
+        readerGroup = new NioEventLoopGroup(1);
+        udpGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
 
-        @Override
-        public void exceptionCaught(final ChannelHandlerContext ctx,
-                                    final Throwable cause) {
-            if (!(cause instanceof PortUnreachableException)) {
-                cause.printStackTrace();
-            }
-        }
+        final ServerBootstrap drasylServerBootstrap = new ServerBootstrap()
+                .group(readerGroup, udpGroup)
+                .channel(DrasylServerChannel.class)
+                .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
+                        .option(IP_TOS, 0xB8)
+                        .group(udpGroup)
+                        .channel(EventLoopGroupUtil.getBestDatagramChannel())
+                        .handler(new UdpServerChannelInitializer(parent)))
+                .option(UDP_BIND, new InetSocketAddress(HOST, PORT))
+                .option(ARMING_ENABLED, armingEnabled)
+                .handler(new DefaultDrasylServerChannelInitializer())
+                .childHandler(new ChannelInboundHandlerAdapter() {
+                    @Override
+                    public void channelRead(final ChannelHandlerContext ctx,
+                                            final Object msg) {
+                        ReferenceCountUtil.release(msg);
+                        receivedMsgs.incrementAndGet();
+                    }
+                });
+        final Channel drasylServerChannel = drasylServerBootstrap
+                .bind(RECEIVER_IDENTITY)
+                .sync()
+                .channel();
+
+        return drasylServerChannel;
+    }
+
+    @Override
+    protected void teardownChannel() throws InterruptedException {
+        udpGroup.shutdownGracefully().await();
+        writerGroup.shutdownGracefully().await();
+        readerGroup.shutdownGracefully().await();
     }
 }

@@ -63,11 +63,6 @@ public class MaxThroughputDatagramChannelWriter extends AbstractMaxThroughputWri
     }
 
     @Override
-    protected long bytesWritten(WriteHandler<?> writeHandler) {
-        return writeHandler.messagesWritten() * PACKET_SIZE;
-    }
-
-    @Override
     protected Channel setupChannel() throws InterruptedException {
         final Class<? extends DatagramChannel> channelClass;
         if (KQUEUE) {
@@ -110,7 +105,12 @@ public class MaxThroughputDatagramChannelWriter extends AbstractMaxThroughputWri
     }
 
     @Override
-    protected void teardown() throws InterruptedException {
+    protected long bytesWritten(WriteHandler<?> writeHandler) {
+        return writeHandler.messagesWritten() * PACKET_SIZE;
+    }
+
+    @Override
+    protected void teardownChannel() throws InterruptedException {
         group.shutdownGracefully().await();
     }
 
