@@ -97,7 +97,7 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
                 .handler(new ChannelInitializer<>() {
                     @Override
                     protected void initChannel(final Channel ch) throws Exception {
-                        ch.pipeline().addLast(new WriteHandler<>(msg));
+                        ch.pipeline().addLast(new WriteHandler<>(msg.retain()));
                         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                             @Override
                             public void exceptionCaught(final ChannelHandlerContext ctx,

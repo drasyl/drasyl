@@ -129,7 +129,7 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
         private void doWrite(final ChannelHandlerContext ctx) {
             final Channel channel = ctx.channel();
             if (stopWriting || !channel.isActive()) {
-                ReferenceCountUtil.safeRelease(msg);
+                ReferenceCountUtil.release(msg);
                 ctx.flush();
                 return;
             }
