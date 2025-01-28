@@ -64,7 +64,7 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final Identity RECEIVER_IDENTITY = Identity.of(-2122268831,
             "622d860a23517b0e20e59d8a481db4da2c89649c979d7318bc4ef19828f4663e",
             "fc10ab6bb85c51c453dbfe44c0c29d96d1a365257ad871dea49c29c98f1f8421622d860a23517b0e20e59d8a481db4da2c89649c979d7318bc4ef19828f4663e");
-    @Param({ "1" })
+    @Param({ "2" })
     private int writeThreads;
     @Param({ "1024" })
     private int packetSize;

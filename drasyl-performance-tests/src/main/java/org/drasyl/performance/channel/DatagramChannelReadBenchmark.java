@@ -46,7 +46,7 @@ import java.net.PortUnreachableException;
 public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
-    @Param({ "3" })
+    @Param({ "4" })
     protected int writeThreads;
     @Param({ "1024" })
     private int packetSize;
