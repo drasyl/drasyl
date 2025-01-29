@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,6 +29,7 @@ import io.netty.channel.ChannelOption;
 import io.netty.channel.DefaultChannelConfig;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.WriteBufferWaterMark;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.handler.remote.PeersManager;
@@ -87,6 +88,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     public static final ChannelOption<Duration> PATH_IDLE_TIME = valueOf("PATH_IDLE_TIME");
     public static final ChannelOption<Byte> HOP_LIMIT = valueOf("HOP_LIMIT");
     public static final ChannelOption<Boolean> INTRA_VM_DISCOVERY_ENABLED = valueOf("INTRA_VM_DISCOVERY_ENABLED");
+    public static final ChannelOption<WriteBufferWaterMark> READ_BUFFER_WATER_MARK = valueOf("READ_BUFFER_WATER_MARK");
 
     private volatile int networkId = 1;
     private volatile PeersManager peersManager = new PeersManager();
@@ -120,6 +122,7 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
     private volatile Duration pathIdleTime = ofSeconds(60);
     private volatile Byte hopLimit = 8;
     private volatile Boolean intraVmDiscoveryEnabled = true;
+    private volatile ReadBufferWaterMark readBufferWaterMark = ReadBufferWaterMark.DEFAULT;
 
     public DrasylServerChannelConfig(final Channel channel) {
         super(channel);
@@ -152,7 +155,8 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
                 HOLE_PUNCHING_ENABLED,
                 PATH_IDLE_TIME,
                 HOP_LIMIT,
-                INTRA_VM_DISCOVERY_ENABLED
+                INTRA_VM_DISCOVERY_ENABLED,
+                READ_BUFFER_WATER_MARK
         );
     }
 
@@ -230,6 +234,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         if (option == INTRA_VM_DISCOVERY_ENABLED) {
             return (T) Boolean.valueOf(isIntraVmDiscoveryEnabled());
+        }
+        if (option == READ_BUFFER_WATER_MARK) {
+            return (T) getReadBufferWaterMark();
         }
         return super.getOption(option);
     }
@@ -333,6 +340,10 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         return intraVmDiscoveryEnabled;
     }
 
+    public ReadBufferWaterMark getReadBufferWaterMark() {
+        return readBufferWaterMark;
+    }
+
     @Override
     public <T> boolean setOption(final ChannelOption<T> option, final T value) {
         validate(option, value);
@@ -408,6 +419,9 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
         }
         else if (option == INTRA_VM_DISCOVERY_ENABLED) {
             setIntraVmDiscoveryEnabled((Boolean) value);
+        }
+        else if (option == READ_BUFFER_WATER_MARK) {
+            setReadBufferWaterMark((ReadBufferWaterMark) value);
         }
         else {
             return super.setOption(option, value);
@@ -582,5 +596,12 @@ public class DrasylServerChannelConfig extends DefaultChannelConfig {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
+    }
+
+    private void setReadBufferWaterMark(final ReadBufferWaterMark readBufferWaterMark) {
+        if (channel.isRegistered()) {
+            throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
+        }
+        this.readBufferWaterMark = requireNonNull(readBufferWaterMark);
     }
 }

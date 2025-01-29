@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,6 +26,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
@@ -54,7 +55,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
-    private Set<Channel> flushChannels = new HashSet<>();
+    private final Set<Channel> flushChannels = new HashSet<>();
 
     public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
@@ -80,18 +81,28 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
 
             final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
-                LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
-                drasylChannel.queueRead(appMsg.getPayload());
+                if (!drasylChannel.isReadBufferFull()) {
+                    LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                    drasylChannel.queueRead(appMsg.getPayload());
+                }
+                else {
+                    LOG.trace("{} Drop inbound msg `{}` to `{}` as inbound buffer is full.", ctx.channel(), msg, drasylChannel);
+                    ReferenceCountUtil.release(appMsg.getPayload());
+                }
             }
             else {
                 readCompletePending.add(appMsg.getSender());
-                parent.serve(appMsg.getSender()).addListener(new ChannelFutureListener() {
-                    @Override
-                    public void operationComplete(final ChannelFuture future) throws Exception {
+                parent.serve(appMsg.getSender()).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
                         final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
-                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
+                        LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel1);
                         drasylChannel1.queueRead(appMsg.getPayload());
                     }
+                    else {
+                        LOG.warn("{} Do not pass read to `{}` to `{}`:", ctx.channel(), msg, appMsg.getSender());
+                        ReferenceCountUtil.release(appMsg.getPayload());
+                    }
+
                 });
             }
         }

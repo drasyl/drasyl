@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -244,7 +244,7 @@ public class DrasylServerChannel extends AbstractServerChannel implements Identi
             return channel.registeredPromise;
         }
         else {
-            return null;
+            return newFailedFuture(new Exception("DrasylServerChannel is closed and no DrasylChannel exist."));
         }
     }
 

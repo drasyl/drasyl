@@ -34,6 +34,7 @@ The assets below contain the drasyl command-line tool and shared native library.
 * Update back to next SNAPSHOT version
   in [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json) and [CITATION.cff](CITATION.cff).
 * Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. template for next release is included).
+* If a new minor version is released, the `revapi.differences` section in [api-changes.json](api-changes.json) should be cleared.
 * Commit changes (commit message: `Prepare for next development iteration`).
 * Create/update version branch (e.g., `v1.2` if you release `v1.2.0`) and push.
 * Update [docs.drasyl.org](https://github.com/drasyl/docs.drasyl.org) if necessary.
