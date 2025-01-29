@@ -39,7 +39,7 @@ import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 
 import java.net.InetSocketAddress;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 /**
  * Writes for 60 seconds as fast as possible to an empty {@link DatagramChannel} and prints the
@@ -77,35 +77,28 @@ public class MaxThroughputDatagramChannelWriter extends AbstractMaxThroughputWri
             group = new NioEventLoopGroup();
             channelClass = NioDatagramChannel.class;
         }
-        final Channel channel = new Bootstrap()
+        return new Bootstrap()
                 .group(group)
                 .channel(channelClass)
                 .handler(new ChannelInboundHandlerAdapter())
                 .bind(0)
                 .sync()
                 .channel();
-        return channel;
     }
 
     @Override
     protected ByteBufHolder buildMsg() {
         final InetSocketAddress targetAddress = new InetSocketAddress(HOST, PORT);
-        final DatagramPacket msg = new DatagramPacket(Unpooled.wrappedBuffer(new byte[PACKET_SIZE]), targetAddress);
-        return msg;
+        return new DatagramPacket(Unpooled.wrappedBuffer(new byte[PACKET_SIZE]), targetAddress);
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                return ((ByteBufHolder) o).retainedDuplicate();
-            }
-        };
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> ((ByteBufHolder) o).retainedDuplicate();
     }
 
     @Override
-    protected long bytesWritten(WriteHandler<?> writeHandler) {
+    protected long bytesWritten(final WriteHandler<?> writeHandler) {
         return writeHandler.messagesWritten() * PACKET_SIZE;
     }
 

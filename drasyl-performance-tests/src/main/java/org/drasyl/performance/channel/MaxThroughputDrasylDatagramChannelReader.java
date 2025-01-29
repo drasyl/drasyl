@@ -54,7 +54,16 @@ import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
  * Receives UDP packets for 60 seconds and calculates the read throughput. Results are used to
  * compare different channels.
  */
-@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S2142",
+        "java:S3776",
+        "java:S4507",
+        "unchecked",
+        "resource",
+        "CallToPrintStackTrace",
+        "BusyWait"
+})
 public class MaxThroughputDrasylDatagramChannelReader {
     private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDrasylDatagramChannelReader.class);
     private static final String HOST = SystemPropertyUtil.get("host", "0.0.0.0");

@@ -21,10 +21,8 @@
  */
 package org.drasyl.performance.channel;
 
-import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -32,11 +30,13 @@ import io.netty.util.ReferenceCountUtil;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
 import static org.drasyl.util.Preconditions.requirePositive;
 
+@SuppressWarnings({ "finally", "java:S106", "java:S112", "java:S3077" })
 abstract class AbstractMaxThroughputWriter {
     private final int duration;
     private final List<Long> throughputPerSecond = new ArrayList<>();
@@ -49,7 +49,7 @@ abstract class AbstractMaxThroughputWriter {
         try {
             final Channel channel = setupChannel();
             final Object msg = buildMsg();
-            final Function<Object, Object> msgDuplicator = getMsgDuplicator();
+            final UnaryOperator<Object> msgDuplicator = getMsgDuplicator();
 
             // Add a handler to send packets as fast as possible
             final WriteHandler<Object> writeHandler = new WriteHandler<>(msg, msgDuplicator);
@@ -101,7 +101,7 @@ abstract class AbstractMaxThroughputWriter {
 
     protected abstract Object buildMsg();
 
-    protected abstract Function<Object, Object> getMsgDuplicator();
+    protected abstract UnaryOperator<Object> getMsgDuplicator();
 
     protected abstract long bytesWritten(final WriteHandler<?> writeHandler);
 
@@ -109,6 +109,7 @@ abstract class AbstractMaxThroughputWriter {
 
     protected abstract String className();
 
+    @SuppressWarnings("NonAtomicOperationOnVolatileField")
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private volatile long messagesWritten;
         private final E msg;
@@ -118,18 +119,14 @@ abstract class AbstractMaxThroughputWriter {
 
         WriteHandler(final long messagesWritten,
                      final E msg,
-                     final Function<E, E> msgDuplicator) {
+                     final UnaryOperator<E> msgDuplicator) {
             this.messagesWritten = messagesWritten;
             this.msg = requireNonNull(msg);
             this.msgDuplicator = requireNonNull(msgDuplicator);
         }
 
-        public WriteHandler(final E msg, final Function<E, E> msgDuplicator) {
+        public WriteHandler(final E msg, final UnaryOperator<E> msgDuplicator) {
             this(0, msg, msgDuplicator);
-        }
-
-        public WriteHandler(final ByteBufHolder msg) {
-            this(0, (E) msg, e -> (E) ((ByteBufHolder) e).retainedDuplicate());
         }
 
         public long messagesWritten() {
@@ -142,15 +139,12 @@ abstract class AbstractMaxThroughputWriter {
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            this.writeListener = new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        MaxThroughputDatagramChannelWriter.WriteHandler.this.messagesWritten++;
-                    }
-                    else {
-                        future.channel().pipeline().fireExceptionCaught(future.cause());
-                    }
+            this.writeListener = future -> {
+                if (future.isSuccess()) {
+                    WriteHandler.this.messagesWritten++;
+                }
+                else {
+                    future.channel().pipeline().fireExceptionCaught(future.cause());
                 }
             };
 

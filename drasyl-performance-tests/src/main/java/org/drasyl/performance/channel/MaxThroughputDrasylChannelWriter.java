@@ -44,7 +44,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.net.InetSocketAddress;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
 import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
@@ -120,17 +120,12 @@ public class MaxThroughputDrasylChannelWriter extends AbstractMaxThroughputWrite
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                return ((ByteBuf) o).retainedDuplicate();
-            }
-        };
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> ((ByteBuf) o).retainedDuplicate();
     }
 
     @Override
-    protected long bytesWritten(WriteHandler<?> writeHandler) {
+    protected long bytesWritten(final WriteHandler<?> writeHandler) {
         return (writeHandler.messagesWritten() + DRASYL_OVERHEAD) * PACKET_SIZE;
     }
 

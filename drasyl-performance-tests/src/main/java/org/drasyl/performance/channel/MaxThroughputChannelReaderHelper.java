@@ -57,7 +57,15 @@ import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
  * @see MaxThroughputDatagramChannelReader
  * @see MaxThroughputDrasylDatagramChannelReader
  */
-@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S112",
+        "java:S2142",
+        "java:S3776",
+        "java:S4507",
+        "resource",
+        "CallToPrintStackTrace"
+})
 public class MaxThroughputChannelReaderHelper {
     private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputChannelReaderHelper.class);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
@@ -114,7 +122,7 @@ public class MaxThroughputChannelReaderHelper {
                     .channel(NioDatagramChannel.class)
                     .handler(new ChannelDuplexHandler() {
                         @Override
-                        public void channelActive(final ChannelHandlerContext ctx) throws Exception {
+                        public void channelActive(final ChannelHandlerContext ctx) {
                             ctx.fireChannelActive();
                             scheduleWriteTask(ctx);
                         }
@@ -136,7 +144,7 @@ public class MaxThroughputChannelReaderHelper {
                         }
 
                         @Override
-                        public void channelWritabilityChanged(final ChannelHandlerContext ctx) throws Exception {
+                        public void channelWritabilityChanged(final ChannelHandlerContext ctx) {
                             if (ctx.channel().isWritable()) {
                                 scheduleWriteTask(ctx);
                             }

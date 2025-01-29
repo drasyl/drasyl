@@ -37,8 +37,9 @@ import io.netty.channel.socket.nio.NioDatagramChannel;
 import org.openjdk.jmh.annotations.Param;
 
 import java.net.InetSocketAddress;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
+@SuppressWarnings("NewClassNamingConvention")
 public class DatagramChannelWriteBenchmark extends AbstractChannelWriteBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
@@ -80,13 +81,8 @@ public class DatagramChannelWriteBenchmark extends AbstractChannelWriteBenchmark
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                return ((DatagramPacket) o).retainedDuplicate();
-            }
-        };
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> ((DatagramPacket) o).retainedDuplicate();
     }
 
     @Override

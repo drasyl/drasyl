@@ -43,6 +43,11 @@ import org.openjdk.jmh.annotations.Param;
 
 import java.net.PortUnreachableException;
 
+@SuppressWarnings({
+        "NewClassNamingConvention",
+        "java:S2142",
+        "java:S4507"
+})
 public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
@@ -78,7 +83,7 @@ public class DatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
                 .channel(channelClass)
                 .handler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         ch.pipeline().addLast(new WriteHandler<>(msg.retain()));
                         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                             @Override

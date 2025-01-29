@@ -22,7 +22,6 @@
 package org.drasyl.performance.channel;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
@@ -36,17 +35,23 @@ import org.openjdk.jmh.annotations.Setup;
 import org.openjdk.jmh.annotations.TearDown;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings({
+        "JmhInspections",
+        "DataFlowIssue",
+        "java:S112",
+        "java:S2142",
+        "StatementWithEmptyBody"
+})
 abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
     protected final AtomicLong receivedMsgs = new AtomicLong();
     private ChannelGroup writeChannels;
     private Channel readChannel;
 
-    @SuppressWarnings("unchecked")
     @Setup
     public void setup() {
         try {
@@ -65,9 +70,7 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
     @TearDown
     public void teardown() {
         try {
-            writeChannels.forEach(channel -> {
-                channel.pipeline().get(WriteHandler.class).stopWriting();
-            });
+            writeChannels.forEach(ch -> ch.pipeline().get(WriteHandler.class).stopWriting());
             writeChannels.close().await();
             readChannel.close().await();
             teardownChannel();
@@ -88,19 +91,16 @@ abstract class AbstractChannelReadBenchmark extends AbstractBenchmark {
         receivedMsgs.getAndDecrement();
     }
 
+    @SuppressWarnings("unchecked")
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private final E msg;
-        private final Function<E, E> msgDuplicator;
+        private final UnaryOperator<E> msgDuplicator;
         private volatile boolean stopWriting;
 
         public WriteHandler(final E msg,
-                            final Function<E, E> msgDuplicator) {
+                            final UnaryOperator<E> msgDuplicator) {
             this.msg = requireNonNull(msg);
             this.msgDuplicator = requireNonNull(msgDuplicator);
-        }
-
-        public WriteHandler(final ByteBufHolder msg) {
-            this((E) msg, e -> (E) ((ByteBufHolder) e).retainedDuplicate());
         }
 
         public WriteHandler(final ByteBuf msg) {

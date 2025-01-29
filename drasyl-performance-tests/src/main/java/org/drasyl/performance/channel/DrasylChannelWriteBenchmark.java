@@ -41,7 +41,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 import org.openjdk.jmh.annotations.Param;
 
 import java.net.InetSocketAddress;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
@@ -49,11 +49,11 @@ import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.performance.IdentityBenchmarkUtil.ID_1;
 
+@SuppressWarnings({ "NewClassNamingConvention", "java:S1170", "java:S1845" })
 public class DrasylChannelWriteBenchmark extends AbstractChannelWriteBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
     private static final String RECIPIENT = SystemPropertyUtil.get("recipient", "c909a27d9ec0127c57142c3e1547ba9f82bc605277380b2a8fc0fabafe2be4c9");
-    private static final int DRASYL_OVERHEAD = 104;
     @Param({ "1024" })
     private int packetSize;
     @Param({ "true", "false" })
@@ -107,13 +107,8 @@ public class DrasylChannelWriteBenchmark extends AbstractChannelWriteBenchmark {
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                return ((ByteBuf) o).retainedDuplicate();
-            }
-        };
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> ((ByteBuf) o).retainedDuplicate();
     }
 
     @Override

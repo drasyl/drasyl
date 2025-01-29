@@ -42,12 +42,13 @@ import org.drasyl.util.EventLoopGroupUtil;
 import org.openjdk.jmh.annotations.Param;
 
 import java.net.InetSocketAddress;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 
+@SuppressWarnings({ "NewClassNamingConvention", "java:S2142", "unchecked", "resource" })
 public class DrasylDatagramChannelWriteBenchmark extends AbstractChannelWriteBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
@@ -55,7 +56,6 @@ public class DrasylDatagramChannelWriteBenchmark extends AbstractChannelWriteBen
     private static final Identity SENDER = Identity.of(-2082598243,
             "18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127",
             "65f20fc3fdcaf569cdcf043f79047723d8856b0169bd4c475ba15ef1b37d27ae18cdb282be8d1293f5040cd620a91aca86a475682e4ddc397deabe300aad9127");
-    private static final int DRASYL_OVERHEAD = 104;
     @Param({ "1024" })
     private int packetSize;
     @Param({ "true", "false" })
@@ -95,8 +95,6 @@ public class DrasylDatagramChannelWriteBenchmark extends AbstractChannelWriteBen
                     return channel;
                 }
             }
-
-            Thread.sleep(1000);
         }
     }
 
@@ -109,15 +107,12 @@ public class DrasylDatagramChannelWriteBenchmark extends AbstractChannelWriteBen
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                final InetAddressedMessage<ApplicationMessage> oldInetMsg = (InetAddressedMessage<ApplicationMessage>) o;
-                final ApplicationMessage oldAppMsg = oldInetMsg.content();
-                final ApplicationMessage appMsg = ApplicationMessage.of(1, (IdentityPublicKey) oldAppMsg.getRecipient(), (IdentityPublicKey) oldAppMsg.getSender(), oldAppMsg.getProofOfWork(), oldAppMsg.getPayload().retainedDuplicate());
-                return oldInetMsg.replace(appMsg);
-            }
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> {
+            final InetAddressedMessage<ApplicationMessage> oldInetMsg = (InetAddressedMessage<ApplicationMessage>) o;
+            final ApplicationMessage oldAppMsg = oldInetMsg.content();
+            final ApplicationMessage appMsg = ApplicationMessage.of(1, (IdentityPublicKey) oldAppMsg.getRecipient(), (IdentityPublicKey) oldAppMsg.getSender(), oldAppMsg.getProofOfWork(), oldAppMsg.getPayload().retainedDuplicate());
+            return oldInetMsg.replace(appMsg);
         };
     }
 

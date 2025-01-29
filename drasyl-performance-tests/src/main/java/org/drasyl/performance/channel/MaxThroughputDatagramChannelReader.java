@@ -50,7 +50,13 @@ import static org.drasyl.util.NumberUtil.numberToHumanDataRate;
  *
  * @see MaxThroughputDatagramChannelReader
  */
-@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S2142",
+        "java:S3776",
+        "java:S4507",
+        "CallToPrintStackTrace"
+})
 public class MaxThroughputDatagramChannelReader {
     private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDatagramChannelReader.class);
     private static final boolean KQUEUE = SystemPropertyUtil.getBoolean("kqueue", false);

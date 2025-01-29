@@ -55,6 +55,7 @@ import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
 import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 
+@SuppressWarnings({ "NewClassNamingConvention", "resource" })
 public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
     private static final int PORT = 12345;
@@ -96,7 +97,7 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
                 .channel(NioDatagramChannel.class)
                 .handler(new ChannelInitializer<>() {
                     @Override
-                    protected void initChannel(final Channel ch) throws Exception {
+                    protected void initChannel(final Channel ch) {
                         ch.pipeline().addLast(new WriteHandler<>(msg.retain()));
                         ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
                             @Override
@@ -142,12 +143,11 @@ public class DrasylChannelReadBenchmark extends AbstractChannelReadBenchmark {
                         receivedMsgs.incrementAndGet();
                     }
                 });
-        final Channel drasylServerChannel = drasylServerBootstrap
+
+        return drasylServerBootstrap
                 .bind(RECEIVER_IDENTITY)
                 .sync()
                 .channel();
-
-        return drasylServerChannel;
     }
 
     @Override

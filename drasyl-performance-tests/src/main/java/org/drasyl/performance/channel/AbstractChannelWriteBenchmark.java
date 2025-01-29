@@ -21,10 +21,8 @@
  */
 package org.drasyl.performance.channel;
 
-import io.netty.buffer.ByteBufHolder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -37,21 +35,28 @@ import org.openjdk.jmh.annotations.TearDown;
 import org.openjdk.jmh.infra.Blackhole;
 
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static java.util.Objects.requireNonNull;
 
+@SuppressWarnings({
+        "JmhInspections",
+        "DataFlowIssue",
+        "java:S112",
+        "java:S2142",
+        "java:S3077",
+        "StatementWithEmptyBody"
+})
 abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
     private Channel channel;
     protected WriteHandler<Object> writeHandler;
 
-    @SuppressWarnings("unchecked")
     @Setup
     public void setup() {
         try {
             channel = setupChannel();
             final Object msg = buildMsg();
-            final Function<Object, Object> msgDuplicator = getMsgDuplicator();
+            final UnaryOperator<Object> msgDuplicator = getMsgDuplicator();
 
             // Add a handler to send packets as fast as possible
             writeHandler = new WriteHandler<>(msg, msgDuplicator);
@@ -66,7 +71,7 @@ abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
 
     protected abstract Object buildMsg();
 
-    protected abstract Function<Object, Object> getMsgDuplicator();
+    protected abstract UnaryOperator<Object> getMsgDuplicator();
 
     @TearDown
     public void teardown() {
@@ -94,24 +99,20 @@ abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
     protected static class WriteHandler<E> extends ChannelDuplexHandler {
         private final AtomicLong messagesWritten;
         private final E msg;
-        private final Function<E, E> msgDuplicator;
+        private final UnaryOperator<E> msgDuplicator;
         private volatile ChannelFutureListener writeListener;
         private volatile boolean stopWriting;
 
         WriteHandler(final AtomicLong messagesWritten,
                      final E msg,
-                     final Function<E, E> msgDuplicator) {
+                     final UnaryOperator<E> msgDuplicator) {
             this.messagesWritten = messagesWritten;
             this.msg = requireNonNull(msg);
             this.msgDuplicator = requireNonNull(msgDuplicator);
         }
 
-        public WriteHandler(final E msg, final Function<E, E> msgDuplicator) {
+        public WriteHandler(final E msg, final UnaryOperator<E> msgDuplicator) {
             this(new AtomicLong(), msg, msgDuplicator);
-        }
-
-        public WriteHandler(final ByteBufHolder msg) {
-            this(new AtomicLong(), (E) msg, e -> (E) ((ByteBufHolder) e).retainedDuplicate());
         }
 
         public AtomicLong messagesWritten() {
@@ -124,15 +125,12 @@ abstract class AbstractChannelWriteBenchmark extends AbstractBenchmark {
 
         @Override
         public void handlerAdded(final ChannelHandlerContext ctx) {
-            this.writeListener = new ChannelFutureListener() {
-                @Override
-                public void operationComplete(final ChannelFuture future) {
-                    if (future.isSuccess()) {
-                        AbstractChannelWriteBenchmark.WriteHandler.this.messagesWritten.getAndIncrement();
-                    }
-                    else {
-                        future.channel().pipeline().fireExceptionCaught(future.cause());
-                    }
+            this.writeListener = future -> {
+                if (future.isSuccess()) {
+                    WriteHandler.this.messagesWritten.getAndIncrement();
+                }
+                else {
+                    future.channel().pipeline().fireExceptionCaught(future.cause());
                 }
             };
 

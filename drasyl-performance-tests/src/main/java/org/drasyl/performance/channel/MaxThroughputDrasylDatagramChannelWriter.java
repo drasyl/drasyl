@@ -46,9 +46,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 import java.io.File;
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.function.Function;
+import java.util.function.UnaryOperator;
 
 import static io.netty.channel.ChannelOption.IP_TOS;
 import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
@@ -60,7 +58,15 @@ import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
  *
  * @see MaxThroughputDatagramChannelWriter
  */
-@SuppressWarnings({ "java:S106", "java:S3776", "java:S4507" })
+@SuppressWarnings({
+        "java:S106",
+        "java:S1845",
+        "java:S3776",
+        "java:S4507",
+        "BusyWait",
+        "unchecked",
+        "resource"
+})
 public class MaxThroughputDrasylDatagramChannelWriter extends AbstractMaxThroughputWriter {
     private static final String CLAZZ_NAME = StringUtil.simpleClassName(MaxThroughputDrasylDatagramChannelWriter.class);
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
@@ -70,7 +76,6 @@ public class MaxThroughputDrasylDatagramChannelWriter extends AbstractMaxThrough
     private static final int DURATION = SystemPropertyUtil.getInt("duration", 10);
     private static final String RECIPIENT = SystemPropertyUtil.get("recipient", "c909a27d9ec0127c57142c3e1547ba9f82bc605277380b2a8fc0fabafe2be4c9");
     private static final int DRASYL_OVERHEAD = 104;
-    private static final List<Long> throughputPerSecond = new ArrayList<>();
     private Identity identity;
     private EventLoopGroup group;
     private EventLoopGroup udpGroup;
@@ -142,20 +147,17 @@ public class MaxThroughputDrasylDatagramChannelWriter extends AbstractMaxThrough
     }
 
     @Override
-    protected Function<Object, Object> getMsgDuplicator() {
-        return new Function<Object, Object>() {
-            @Override
-            public Object apply(final Object o) {
-                final InetAddressedMessage<ApplicationMessage> oldInetMsg = (InetAddressedMessage<ApplicationMessage>) o;
-                final ApplicationMessage oldAppMsg = oldInetMsg.content();
-                final ApplicationMessage appMsg = ApplicationMessage.of(1, (IdentityPublicKey) oldAppMsg.getRecipient(), (IdentityPublicKey) oldAppMsg.getSender(), oldAppMsg.getProofOfWork(), oldAppMsg.getPayload().retainedDuplicate());
-                return oldInetMsg.replace(appMsg);
-            }
+    protected UnaryOperator<Object> getMsgDuplicator() {
+        return o -> {
+            final InetAddressedMessage<ApplicationMessage> oldInetMsg = (InetAddressedMessage<ApplicationMessage>) o;
+            final ApplicationMessage oldAppMsg = oldInetMsg.content();
+            final ApplicationMessage appMsg = ApplicationMessage.of(1, (IdentityPublicKey) oldAppMsg.getRecipient(), (IdentityPublicKey) oldAppMsg.getSender(), oldAppMsg.getProofOfWork(), oldAppMsg.getPayload().retainedDuplicate());
+            return oldInetMsg.replace(appMsg);
         };
     }
 
     @Override
-    protected long bytesWritten(WriteHandler<?> writeHandler) {
+    protected long bytesWritten(final WriteHandler<?> writeHandler) {
         return (writeHandler.messagesWritten() + DRASYL_OVERHEAD) * PACKET_SIZE;
     }
 
