@@ -125,12 +125,12 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     exec("/sbin/ip", "link", "set", "dev", name, "up");
                 }
 
-                LOG.debug("Policy `{}` went present.", policy);
                 policy.setPresent();
+                LOG.debug("Policy `{}` went present.", policy);
             }
             else {
-                LOG.debug("Policy `{}` failed:", policy, future.cause());
                 policy.setFailed();
+                LOG.debug("Policy `{}` failed:", policy, future.cause());
             }
         });
 

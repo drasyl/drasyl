@@ -24,27 +24,39 @@ package org.drasyl.cli.sdon.config;
 import org.drasyl.cli.util.LuaHelper;
 import org.drasyl.identity.DrasylAddress;
 import org.luaj.vm2.LuaTable;
+import org.luaj.vm2.LuaValue;
 
 import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.util.HashSet;
+import java.util.Set;
 
 public class Devices extends LuaTable {
-    private final Map<DrasylAddress, Device> devices = new HashMap<>();
-
     Devices() {
     }
 
     @Override
     public String toString() {
-        return "Devices" + LuaHelper.toString(LuaHelper.createTable(devices.values()));
+        return "Devices" + LuaHelper.toString(this);
     }
 
     public Device getOrCreateDevice(final DrasylAddress address) {
-        return devices.computeIfAbsent(address, k -> new Device(k));
+        final LuaValue device = get(address.toString());
+        if (device != NIL) {
+            return (Device) device;
+        }
+        else {
+            final Device newDevice = new Device(address);
+            set(address.toString(), newDevice);
+            return newDevice;
+        }
     }
 
     public Collection<Device> getDevices() {
-        return devices.values();
+        final Set<Device> devices = new HashSet<>();
+        final LuaValue[] keys = keys();
+        for (final LuaValue key : keys) {
+            devices.add((Device) get(key));
+        }
+        return devices;
     }
 }
