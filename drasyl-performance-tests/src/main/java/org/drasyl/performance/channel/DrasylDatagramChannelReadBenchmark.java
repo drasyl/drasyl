@@ -63,7 +63,8 @@ import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
         "java:S2142",
         "java:S4507",
         "resource",
-        "unchecked"
+        "unchecked",
+        "BusyWait"
 })
 public class DrasylDatagramChannelReadBenchmark extends AbstractChannelReadBenchmark {
     private static final String HOST = "127.0.0.1";
@@ -166,6 +167,8 @@ public class DrasylDatagramChannelReadBenchmark extends AbstractChannelReadBench
                     break;
                 }
             }
+
+            Thread.sleep(1000);
         }
 
         channel.pipeline().addBefore(channel.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new ChannelInboundHandlerAdapter() {
