@@ -85,6 +85,7 @@ public class DrasylDatagramChannelReadBenchmark extends AbstractChannelReadBench
     private EventLoopGroup writeGroup;
     private EventLoopGroup readGroup;
     private EventLoopGroup udpGroup;
+    private Channel drasylServerChannel;
 
     @Override
     protected ChannelGroup setupWriteChannels() throws Exception {
@@ -151,7 +152,7 @@ public class DrasylDatagramChannelReadBenchmark extends AbstractChannelReadBench
                         ReferenceCountUtil.release(msg);
                     }
                 });
-        final Channel drasylServerChannel = drasylServerBootstrap
+        drasylServerChannel = drasylServerBootstrap
                 .bind(RECEIVER_IDENTITY)
                 .sync()
                 .channel();
@@ -183,6 +184,7 @@ public class DrasylDatagramChannelReadBenchmark extends AbstractChannelReadBench
 
     @Override
     protected void teardownChannel() throws InterruptedException {
+        drasylServerChannel.close().sync();
         udpGroup.shutdownGracefully().await();
         writeGroup.shutdownGracefully().await();
         readGroup.shutdownGracefully().await();
