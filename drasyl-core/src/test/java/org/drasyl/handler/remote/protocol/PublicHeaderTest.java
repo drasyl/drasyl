@@ -23,6 +23,7 @@ package org.drasyl.handler.remote.protocol;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
+import io.netty.buffer.UnpooledByteBufAllocator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -75,6 +76,19 @@ class PublicHeaderTest {
 
             assertEquals(PublicHeader.LENGTH, out.readableBytes());
             out.release();
+        }
+    }
+
+    @Nested
+    class BuildAuthTag {
+        @Test
+        void name() {
+            final Nonce nonce = Nonce.of("198187c4eea756159f26249b53d5055a497fc30eb6330baf");
+            final PublicHeader publicHeader = PublicHeader.of(HopCount.of(), true, 1, nonce, ID_1.getIdentityPublicKey(), ID_2.getIdentityPublicKey(), ID_2.getProofOfWork());
+            final UnpooledByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
+            final byte[] authTag = publicHeader.buildAuthTag(alloc);
+
+            System.out.println();
         }
     }
 }
