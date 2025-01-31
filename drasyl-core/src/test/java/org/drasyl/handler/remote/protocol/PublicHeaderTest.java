@@ -88,6 +88,10 @@ class PublicHeaderTest {
             final UnpooledByteBufAllocator alloc = UnpooledByteBufAllocator.DEFAULT;
             final byte[] authTag = publicHeader.buildAuthTag(alloc);
 
+            int[] unsignedAuthTag = new int[authTag.length];
+            for (int i = 0; i < authTag.length; i++) {
+                unsignedAuthTag[i] = authTag[i] & 0xFF; // `& 0xFF` macht es unsigned
+            }
             System.out.println();
         }
     }
