@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,8 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndExitOnExceptionHandler;
 import org.drasyl.cli.tunnel.handler.ConsumeDrasylHandler;
 import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
@@ -84,7 +86,14 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
 
         final ChannelPipeline p = ch.pipeline();
         p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
+        final int maxPeers;
+        if (ch.parent() instanceof JavaDrasylServerChannel) {
+            maxPeers = ((JavaDrasylServerChannel) ch.parent()).config().getMaxPeers();
+        }
+        else {
+            maxPeers = Math.toIntExact(((RustDrasylServerChannel) ch.parent()).config().getMaxPeers());
+        }
+        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, maxPeers, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

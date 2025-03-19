@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -142,7 +142,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
         // role (super peer)
         final boolean firstSuperPeer = superPeers.isEmpty();
         if (superPeers.add(publicKey) && firstSuperPeer) {
-            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
+            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(((JavaDrasylServerChannel) ctx.channel()).identity())));
         }
     }
 
@@ -153,7 +153,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
 
         // role (super peer)
         if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
+            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(((JavaDrasylServerChannel) ctx.channel()).identity())));
         }
 
         // path

@@ -148,6 +148,12 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.node.handler.timeout.IdleChannelCloser",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.DrasylServerChannelConfig",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,6 +25,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.cli.tun.handler.DrasylToTunHandler;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
@@ -74,7 +76,14 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         if (applicationArmEnabled) {
             p.addLast(new ArmHeaderCodec());
-            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
+            final int maxPeers;
+            if (ch.parent() instanceof JavaDrasylServerChannel) {
+                maxPeers = ((JavaDrasylServerChannel) ch.parent()).config().getMaxPeers();
+            }
+            else {
+                maxPeers = Math.toIntExact(((RustDrasylServerChannel) ch.parent()).config().getMaxPeers());
+            }
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, maxPeers, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
         }
 
         p.addLast(new TunPacketCodec());

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,7 +29,7 @@ import picocli.CommandLine.Model.OptionSpec;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.DEFAULT_SUPER_PEERS;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.DEFAULT_SUPER_PEERS;
 
 public class ChannelOptionsDefaultProvider implements CommandLine.IDefaultValueProvider {
     @Override

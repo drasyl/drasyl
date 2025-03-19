@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -29,9 +29,9 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.PromiseNotifier;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.util.internal.UnstableApi;
 import org.drasyl.util.logging.Logger;
@@ -65,10 +65,10 @@ public class UdpServer extends ChannelDuplexHandler {
         LOG.debug("Start server...");
 
         final InetSocketAddress localAddress = config(ctx).getUdpBind();
-        final ChannelFuture future = config(ctx).getUdpBootstrap().apply((DrasylServerChannel) ctx.channel())
+        final ChannelFuture future = config(ctx).getUdpBootstrap().apply((JavaDrasylServerChannel) ctx.channel())
                 .bind(localAddress);
         udpChannel = (DatagramChannel) future.channel();
-        future.addListener(new UdpServerBindListener((DrasylServerChannel) ctx.channel(), localAddress));
+        future.addListener(new UdpServerBindListener((JavaDrasylServerChannel) ctx.channel(), localAddress));
     }
 
     @Override
@@ -89,8 +89,8 @@ public class UdpServer extends ChannelDuplexHandler {
         ctx.flush();
     }
 
-    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    private static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 
     public DatagramChannel udpChannel() {
@@ -101,10 +101,10 @@ public class UdpServer extends ChannelDuplexHandler {
      * Listener that gets called once the channel is bound.
      */
     private static class UdpServerBindListener implements ChannelFutureListener {
-        private final DrasylServerChannel parent;
+        private final JavaDrasylServerChannel parent;
         private final InetSocketAddress localAddress;
 
-        UdpServerBindListener(final DrasylServerChannel parent,
+        UdpServerBindListener(final JavaDrasylServerChannel parent,
                               final InetSocketAddress localAddress) {
             this.parent = requireNonNull(parent);
             this.localAddress = requireNonNull(localAddress);

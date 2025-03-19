@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -48,7 +48,7 @@ class DrasylNodeChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylChannel channel) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylChannel channel) throws Exception {
             when(node.identity()).thenReturn(ID_1);
             when(config.isRemoteMessageArmApplicationEnabled()).thenReturn(true);
             when(config.getRemoteMessageArmApplicationAgreementMaxCount()).thenReturn(100);

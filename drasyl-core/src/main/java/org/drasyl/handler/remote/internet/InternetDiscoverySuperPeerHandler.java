@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,9 +25,9 @@ import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
@@ -249,8 +249,8 @@ public class InternetDiscoverySuperPeerHandler extends ChannelDuplexHandler {
         ReferenceCountUtil.release(msg);
     }
 
-    protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    protected static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 
     protected static class ChildrenPeer {

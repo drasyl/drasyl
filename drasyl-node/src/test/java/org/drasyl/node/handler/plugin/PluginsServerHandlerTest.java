@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +46,7 @@ class PluginsServerHandlerTest {
     @Mock
     private DrasylPlugin plugin;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylServerChannel channel;
+    private JavaDrasylServerChannel channel;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
 

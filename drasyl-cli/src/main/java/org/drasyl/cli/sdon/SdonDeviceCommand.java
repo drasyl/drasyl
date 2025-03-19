@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdonDeviceChannelInitializer;
@@ -97,7 +97,7 @@ public class SdonDeviceCommand extends ChannelOptions {
     }
 
     @Override
-    protected ChannelHandler getUdpChannelInitializer(final DrasylServerChannel parent) {
+    protected ChannelHandler getUdpChannelInitializer(final JavaDrasylServerChannel parent) {
         return new UdpServerChannelInitializer(parent) {
             @Override
             protected void initChannel(final DatagramChannel ch) {

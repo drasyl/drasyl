@@ -34,8 +34,8 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.Identity;
@@ -49,7 +49,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_ENABLED;
 
 /**
  * Writes for 60 seconds as fast as possible to the {@link DatagramChannel} used by drasyl and
@@ -84,7 +84,7 @@ public class WriteThroughputDrasylDatagramChannelBenchmark {
         try {
             final Channel channel = new ServerBootstrap()
                     .group(group)
-                    .channel(DrasylServerChannel.class)
+                    .channel(JavaDrasylServerChannel.class)
                     .option(ARMING_ENABLED, false)
                     .handler(new DefaultDrasylServerChannelInitializer())
                     .childHandler(new ChannelInboundHandlerAdapter())

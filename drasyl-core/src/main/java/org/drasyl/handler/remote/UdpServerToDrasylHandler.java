@@ -27,9 +27,9 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
@@ -46,18 +46,18 @@ import static org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandle
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.DatagramChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
+ * {@link JavaDrasylServerChannel}'s context.
  */
 @UnstableApi
 public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(UdpServerToDrasylHandler.class);
-    private final DrasylServerChannel parent;
+    private final JavaDrasylServerChannel parent;
     private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
     private final Set<Channel> flushChannels = new HashSet<>();
 
-    public UdpServerToDrasylHandler(final DrasylServerChannel parent) {
+    public UdpServerToDrasylHandler(final JavaDrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
     }
 
@@ -79,7 +79,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             peersManager.tryAddChildrenPath(ctx, appMsg.getSender(), PATH_ID, ((InetAddressedMessage<?>) msg).sender());
             peersManager.helloMessageReceived(appMsg.getSender(), PATH_ID); // consider every message as hello. this is fine here
 
-            final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
+            final JavaDrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
                 if (!drasylChannel.isReadBufferFull()) {
                     LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
@@ -94,7 +94,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
                 readCompletePending.add(appMsg.getSender());
                 parent.serve(appMsg.getSender()).addListener((ChannelFutureListener) future -> {
                     if (future.isSuccess()) {
-                        final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
+                        final JavaDrasylChannel drasylChannel1 = (JavaDrasylChannel) future.channel();
                         LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel1);
                         drasylChannel1.queueRead(appMsg.getPayload());
                     }
@@ -118,7 +118,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             parentReadCompletePending = false;
             parent.pipeline().fireChannelReadComplete();
         }
-        for (final DrasylChannel drasylChannel : parent.getChannels().values()) {
+        for (final JavaDrasylChannel drasylChannel : parent.getChannels().values()) {
             if (drasylChannel.isRegistered()) {
                 LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel);
                 drasylChannel.finishRead();
@@ -128,7 +128,7 @@ public class UdpServerToDrasylHandler extends ChannelInboundHandlerAdapter {
             parent.serve(address).addListener(new ChannelFutureListener() {
                 @Override
                 public void operationComplete(final ChannelFuture future) throws Exception {
-                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.channel();
+                    final JavaDrasylChannel drasylChannel1 = (JavaDrasylChannel) future.channel();
                     LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel1);
                     drasylChannel1.finishRead();
                 }

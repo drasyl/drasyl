@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,8 +22,8 @@
 package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.AcknowledgementMessage;
 import org.drasyl.handler.remote.protocol.HelloMessage;
@@ -54,7 +54,7 @@ import static test.util.IdentityTestUtil.ID_2;
 @ExtendWith(MockitoExtension.class)
 class InternetDiscoveryChildrenHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylServerChannelConfig config;
+    private JavaDrasylServerChannelConfig config;
     @Mock
     private LongSupplier currentTime;
     @Mock(answer = RETURNS_DEEP_STUBS)

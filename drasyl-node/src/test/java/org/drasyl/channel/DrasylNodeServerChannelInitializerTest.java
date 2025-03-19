@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -47,7 +47,7 @@ class DrasylNodeServerChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannel channel) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylServerChannel channel) throws Exception {
             when(ctx.channel()).thenReturn(channel);
             when(config.isRemoteEnabled()).thenReturn(true);
             when(config.isRemoteTcpFallbackEnabled()).thenReturn(true);
@@ -58,7 +58,7 @@ class DrasylNodeServerChannelInitializerTest {
             when(config.getRemotePingTimeout()).thenReturn(ofSeconds(30L));
             when(config.getRemoteUniteMinInterval()).thenReturn(ofSeconds(20L));
 
-            final ChannelInitializer<DrasylServerChannel> handler = new DrasylNodeServerChannelInitializer(config, node);
+            final ChannelInitializer handler = new DrasylNodeServerChannelInitializer(config, node);
             handler.channelRegistered(ctx);
 
             verify(channel.pipeline(), times(16)).addLast(any());

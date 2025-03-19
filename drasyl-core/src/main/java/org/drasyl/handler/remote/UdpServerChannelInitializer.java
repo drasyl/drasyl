@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.remote.crypto.ProtocolArmHandler;
 import org.drasyl.handler.remote.crypto.UnarmedMessageDecoder;
@@ -34,9 +34,9 @@ import static java.util.Objects.requireNonNull;
 
 @UnstableApi
 public class UdpServerChannelInitializer extends ChannelInitializer<DatagramChannel> {
-    private final DrasylServerChannel parent;
+    private final JavaDrasylServerChannel parent;
 
-    public UdpServerChannelInitializer(final DrasylServerChannel parent) {
+    public UdpServerChannelInitializer(final JavaDrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
     }
 

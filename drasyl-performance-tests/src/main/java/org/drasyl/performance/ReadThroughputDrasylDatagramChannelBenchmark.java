@@ -32,8 +32,8 @@ import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
@@ -47,8 +47,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.UDP_BIND;
 
 /**
  * Receives UDP packets for 60 seconds and calculates the read throughput. Results are used to
@@ -79,7 +79,7 @@ public class ReadThroughputDrasylDatagramChannelBenchmark {
         try {
             final Channel channel = new ServerBootstrap()
                     .group(group)
-                    .channel(DrasylServerChannel.class)
+                    .channel(JavaDrasylServerChannel.class)
                     .option(UDP_BIND, new InetSocketAddress(HOST, PORT))
                     .option(ARMING_ENABLED, false)
                     .handler(new DefaultDrasylServerChannelInitializer())

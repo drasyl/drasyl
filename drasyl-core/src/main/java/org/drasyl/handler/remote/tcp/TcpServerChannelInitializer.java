@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateHandler;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.handler.remote.ByteToRemoteMessageCodec;
 import org.drasyl.handler.remote.InvalidProofOfWorkFilter;
@@ -39,9 +39,9 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @UnstableApi
 public class TcpServerChannelInitializer extends ChannelInitializer<SocketChannel> {
-    private final DrasylServerChannel parent;
+    private final JavaDrasylServerChannel parent;
 
-    public TcpServerChannelInitializer(final DrasylServerChannel parent) {
+    public TcpServerChannelInitializer(final JavaDrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
     }
 

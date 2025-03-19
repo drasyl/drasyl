@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,9 +34,9 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
@@ -74,7 +74,7 @@ class TcpServerTest {
     private Map<IdentityPublicKey, SocketChannel> clientChannels;
     private InetAddress bindHost;
     private int bindPort;
-    private Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
 
     @BeforeEach
     void setUp() throws UnknownHostException {
@@ -87,7 +87,7 @@ class TcpServerTest {
     class StartServer {
         @Test
         void shouldStartServerOnChannelActive(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelFuture channelFuture,
-                                              @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannelConfig config) {
+                                              @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylServerChannelConfig config) {
             when(channelFuture.channel().localAddress()).thenReturn(new InetSocketAddress(443));
             when(bootstrap.bind(any(InetAddress.class), anyInt())).thenReturn(channelFuture);
             when(bootstrap.bind(bindHost, bindPort).addListener(any())).then(invocation -> {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,6 +28,7 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.connection.ConnectionConfig;
@@ -50,7 +51,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.Null.NULL;
 
 /**
- * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
+ * Initialize child {@link JavaDrasylChannel}s used by {@link DrasylNode}.
  */
 @UnstableApi
 public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.discovery.AddPathEvent;
@@ -714,7 +714,7 @@ public class PeersManager {
         }
 
         boolean hasApplicationTraffic(final ChannelHandlerContext ctx) {
-            final long pathIdleTimeMillis = ((DrasylServerChannelConfig) ctx.channel().config()).getPathIdleTime().toMillis();
+            final long pathIdleTimeMillis = ((JavaDrasylServerChannelConfig) ctx.channel().config()).getPathIdleTime().toMillis();
             return Math.max(lastApplicationMessageSentTime, lastApplicationMessageReceivedTime) >= currentTime.getAsLong() - pathIdleTimeMillis;
         }
 
@@ -974,11 +974,11 @@ public class PeersManager {
         }
 
         boolean isStale(final ChannelHandlerContext ctx) {
-            return lastHelloMessageReceivedTime < currentTime.getAsLong() - ((DrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
+            return lastHelloMessageReceivedTime < currentTime.getAsLong() - ((JavaDrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
         }
 
         boolean isReachable(final ChannelHandlerContext ctx) {
-            return lastAcknowledgementMessageReceivedTime >= currentTime.getAsLong() - ((DrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
+            return lastAcknowledgementMessageReceivedTime >= currentTime.getAsLong() - ((JavaDrasylServerChannelConfig) ctx.channel().config()).getHelloTimeout().toMillis();
         }
 
         /**

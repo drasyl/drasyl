@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
 import org.drasyl.node.DrasylConfig;
@@ -68,7 +68,7 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
 
         bootstrap.handler(new DrasylNodeServerChannelInitializer(config, this) {
             @Override
-            protected void initChannel(final DrasylServerChannel ch) {
+            protected void initChannel(final JavaDrasylServerChannel ch) {
                 super.initChannel(ch);
 
                 ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {

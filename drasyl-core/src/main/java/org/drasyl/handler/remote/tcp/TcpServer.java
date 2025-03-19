@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
@@ -60,14 +60,14 @@ public class TcpServer extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpServer.class);
     static final boolean STATUS_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.status.enabled", true);
     static final byte[] HTTP_OK = "HTTP/1.1 200 OK\nContent-Length:0".getBytes(UTF_8);
-    private final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     final Map<IdentityPublicKey, SocketChannel> tcpClientChannels;
     private ServerSocketChannel tcpServerChannel;
 
     /**
      */
     @SuppressWarnings("java:S107")
-    TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+    TcpServer(final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
               final ServerSocketChannel tcpServerChannel,
               final Map<IdentityPublicKey, SocketChannel> tcpClientChannels) {
         this.tcpClientChannels = requireNonNull(tcpClientChannels);
@@ -77,7 +77,7 @@ public class TcpServer extends ChannelDuplexHandler {
 
     /**
      */
-    public TcpServer(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    public TcpServer(final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 channelInitializerSupplier, null, new ConcurrentHashMap<>()
         );
@@ -95,9 +95,9 @@ public class TcpServer extends ChannelDuplexHandler {
         config(ctx).getTcpServerBootstrap().get()
                 .group(config(ctx).getTcpServerEventLoopGroup().get())
                 .channel(config(ctx).getTcpServerChannelClass())
-                .childHandler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()))
+                .childHandler(channelInitializerSupplier.apply((JavaDrasylServerChannel) ctx.channel()))
                 .bind(config(ctx).getTcpServerBind())
-                .addListener(new TcpServerBindListener((DrasylServerChannel) ctx.channel()));
+                .addListener(new TcpServerBindListener((JavaDrasylServerChannel) ctx.channel()));
 
         ctx.fireChannelActive();
     }
@@ -136,17 +136,17 @@ public class TcpServer extends ChannelDuplexHandler {
         ctx.flush();
     }
 
-    protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    protected static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 
     /**
      * Listener that gets called once the channel is bound.
      */
     private class TcpServerBindListener implements ChannelFutureListener {
-        private final DrasylServerChannel parent;
+        private final JavaDrasylServerChannel parent;
 
-        TcpServerBindListener(final DrasylServerChannel parent) {
+        TcpServerBindListener(final JavaDrasylServerChannel parent) {
             this.parent = requireNonNull(parent);
         }
 

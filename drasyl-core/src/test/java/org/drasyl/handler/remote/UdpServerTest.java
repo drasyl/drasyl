@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -28,9 +28,9 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,9 +56,9 @@ class UdpServerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DatagramChannel udpChannel;
     private InetSocketAddress bindAddress;
-    private Function<DrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
+    private Function<JavaDrasylServerChannel, ChannelInitializer<DatagramChannel>> channelInitializerSupplier;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylServerChannelConfig config;
+    private JavaDrasylServerChannelConfig config;
 
     @BeforeEach
     void setUp() {

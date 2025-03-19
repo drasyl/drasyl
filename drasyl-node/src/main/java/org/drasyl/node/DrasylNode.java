@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,6 +35,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.peers.PeersList;
 import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.handler.remote.UdpServerToDrasylHandler;
@@ -75,20 +76,20 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_EXPIRE_AFTER;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
-import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_INTERVAL;
-import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_TIMEOUT;
-import static org.drasyl.channel.DrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.MAX_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
-import static org.drasyl.channel.DrasylServerChannelConfig.PATH_IDLE_TIME;
-import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
-import static org.drasyl.channel.DrasylServerChannelConfig.TCP_SERVER_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_SESSION_EXPIRE_AFTER;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.HELLO_INTERVAL;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.HELLO_TIMEOUT;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.MAX_PEERS;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.PATH_IDLE_TIME;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.TCP_SERVER_BIND;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -187,7 +188,7 @@ public abstract class DrasylNode {
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .localAddress(identity)
-                .channel(DrasylServerChannel.class)
+                .channel(JavaDrasylServerChannel.class)
                 .option(NETWORK_ID, config.getNetworkId())
                 .option(ARMING_ENABLED, config.isRemoteMessageArmProtocolEnabled())
                 .option(ARMING_SESSION_MAX_COUNT, config.getRemoteMessageArmProtocolSessionMaxCount())

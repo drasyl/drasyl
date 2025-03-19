@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ package org.drasyl.handler.remote.internet;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.identity.DrasylAddress;
@@ -64,7 +64,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         if (peersManager == null) {
-            peersManager = ((DrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
+            peersManager = ((JavaDrasylServerChannelConfig) ctx.channel().config()).getPeersManager();
         }
 
         if (ctx.channel().isActive()) {
@@ -101,7 +101,7 @@ public class UnconfirmedAddressResolveHandler extends ChannelDuplexHandler {
         }, expireCacheAfter, MILLISECONDS);
     }
 
-    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    private static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -73,7 +73,7 @@ public final class StaticRoutesHandler extends ChannelDuplexHandler {
         config(ctx).getPeersManager().removeChildrenPaths(ctx, PATH_ID);
     }
 
-    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    private static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 }

@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,7 +22,7 @@
 package org.drasyl.handler.remote;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.discovery.PathRttEvent;
 import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.PeersManager.Peer;
@@ -806,7 +806,7 @@ class PeersManagerTest {
             @Test
             void shouldReturnTrueIfPathIsStale(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final LongSupplier currentTime,
-                                               @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannelConfig config,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylServerChannelConfig config,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 final long lastHelloMessageReceivedTime = 40;
@@ -825,7 +825,7 @@ class PeersManagerTest {
             @Test
             void shouldReturnTrueIfPathIsReachable(@Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final LongSupplier currentTime,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final DrasylServerChannelConfig config,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylServerChannelConfig config,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final PathId id,
                                                    @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddress endpoint) {
                 final long lastAcknowledgementMessageReceivedTime = 120L;

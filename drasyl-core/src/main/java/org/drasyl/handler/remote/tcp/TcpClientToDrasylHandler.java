@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -26,9 +26,9 @@ import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
@@ -44,18 +44,18 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This handler passes messages from the {@link io.netty.channel.socket.SocketChannel} to the
- * {@link org.drasyl.channel.DrasylServerChannel}'s context.
+ * {@link JavaDrasylServerChannel}'s context.
  */
 @UnstableApi
 public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClientToDrasylHandler.class);
-    private final DrasylServerChannel parent;
+    private final JavaDrasylServerChannel parent;
     private final Queue<Object> outboundBuffer = PlatformDependent.newMpscQueue();
     private final Set<DrasylAddress> readCompletePending = ConcurrentHashMap.newKeySet();
     private ChannelHandlerContext ctx;
     private boolean parentReadCompletePending;
 
-    public TcpClientToDrasylHandler(final DrasylServerChannel parent) {
+    public TcpClientToDrasylHandler(final JavaDrasylServerChannel parent) {
         this.parent = requireNonNull(parent);
     }
 
@@ -74,7 +74,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
             final ApplicationMessage appMsg = (ApplicationMessage) ((InetAddressedMessage<?>) msg).content();
             peersManager.applicationMessageReceived(appMsg.getSender());
 
-            final DrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
+            final JavaDrasylChannel drasylChannel = parent.getChannel(appMsg.getSender());
             if (drasylChannel != null) {
                 LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
                 drasylChannel.queueRead(appMsg.getPayload());
@@ -82,7 +82,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
             else {
                 readCompletePending.add(appMsg.getSender());
                 parent.serve(appMsg.getSender()).addListener(future -> {
-                    final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                    final JavaDrasylChannel drasylChannel1 = (JavaDrasylChannel) future.get();
                     LOG.trace("{} Pass read to `{}` to `{}`.", ctx.channel(), msg, drasylChannel);
                     drasylChannel1.queueRead(appMsg.getPayload());
                 });
@@ -100,7 +100,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
             parentReadCompletePending = false;
             parent.pipeline().fireChannelReadComplete();
         }
-        for (final DrasylChannel drasylChannel : parent.getChannels().values()) {
+        for (final JavaDrasylChannel drasylChannel : parent.getChannels().values()) {
             if (drasylChannel.isRegistered()) {
                 LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel);
                 drasylChannel.finishRead();
@@ -108,7 +108,7 @@ public class TcpClientToDrasylHandler extends ChannelInboundHandlerAdapter {
         }
         for (final DrasylAddress address : readCompletePending) {
             parent.serve(address).addListener(future -> {
-                final DrasylChannel drasylChannel1 = (DrasylChannel) future.get();
+                final JavaDrasylChannel drasylChannel1 = (JavaDrasylChannel) future.get();
                 LOG.trace("{} Pass read complete to `{}`.", ctx.channel(), drasylChannel1);
                 drasylChannel1.finishRead();
             });

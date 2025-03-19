@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -37,8 +37,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
@@ -92,7 +92,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
+                        final JavaDrasylServerChannel parent = (JavaDrasylServerChannel) ctx.channel();
                         parent.attr(TUN_CHANNEL_KEY).set((TunChannel) ch);
 
                         p.addLast(new TunToDrasylHandler(parent, policy));
@@ -178,10 +178,10 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        private final DrasylServerChannel parent;
+        private final JavaDrasylServerChannel parent;
         private final TunPolicy policy;
 
-        public TunToDrasylHandler(final DrasylServerChannel parent,
+        public TunToDrasylHandler(final JavaDrasylServerChannel parent,
                                   final TunPolicy policy) {
             super(false);
             this.parent = requireNonNull(parent);

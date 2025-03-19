@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannelConfig;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
 import org.drasyl.handler.remote.UdpServer.UdpServerBound;
 import org.drasyl.identity.Identity;
@@ -73,7 +73,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class LocalHostDiscoveryTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylServerChannelConfig config;
+    private JavaDrasylServerChannelConfig config;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     private final Duration leaseTime = ofSeconds(60);

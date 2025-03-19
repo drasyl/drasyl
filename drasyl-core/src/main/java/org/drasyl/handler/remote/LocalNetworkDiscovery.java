@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,9 +24,9 @@ package org.drasyl.handler.remote;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.Future;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.IdentityChannel;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.PeersManager.PathId;
 import org.drasyl.handler.remote.protocol.HelloMessage;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
@@ -84,7 +84,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
     void startHeartbeat(final ChannelHandlerContext ctx) {
         if (scheduledPingFuture == null) {
             LOG.debug("Start Network Network Discovery...");
-            final long helloInterval = ((DrasylServerChannelConfig) ctx.channel().config()).getHelloInterval().toMillis();
+            final long helloInterval = ((JavaDrasylServerChannelConfig) ctx.channel().config()).getHelloInterval().toMillis();
             scheduledPingFuture = ctx.executor().scheduleWithFixedDelay(() -> doHeartbeat(ctx), randomLong(helloInterval), helloInterval, MILLISECONDS);
             LOG.debug("Network Discovery started.");
         }
@@ -173,7 +173,7 @@ public class LocalNetworkDiscovery extends ChannelDuplexHandler {
         });
     }
 
-    private static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    private static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 }

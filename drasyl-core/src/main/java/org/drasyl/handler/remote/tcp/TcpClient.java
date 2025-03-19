@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -32,9 +32,9 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.util.concurrent.FutureListener;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DrasylServerChannelConfig;
 import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.handler.remote.protocol.RemoteMessage;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.internal.UnstableApi;
@@ -73,14 +73,14 @@ import static org.drasyl.util.InetSocketAddressUtil.replaceSocketAddressPort;
 @SuppressWarnings({ "java:S110" })
 public class TcpClient extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TcpClient.class);
-    private final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     private final LongSupplier currentTime;
     private final AtomicLong lastSuperPeerAcknowledgementTime;
     private final Map<InetSocketAddress, SocketChannel> tcpChannels;
     ScheduledFuture<?> checkDisposable;
     boolean clientsStarted;
 
-    TcpClient(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+    TcpClient(final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
               final LongSupplier currentTime,
               final AtomicLong lastSuperPeerAcknowledgementTime,
               final Map<InetSocketAddress, SocketChannel> tcpChannels,
@@ -94,7 +94,7 @@ public class TcpClient extends ChannelDuplexHandler {
         this.clientsStarted = clientsStarted;
     }
 
-    public TcpClient(final Function<DrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    public TcpClient(final Function<JavaDrasylServerChannel, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(channelInitializerSupplier, System::currentTimeMillis, new AtomicLong(), new HashMap<>(), null, false);
     }
 
@@ -198,16 +198,16 @@ public class TcpClient extends ChannelDuplexHandler {
             final Bootstrap bootstrap = config(ctx).getTcpClientBootstrap().get()
                     .group(config(ctx).getTcpClientEventLoop().get())
                     .channel(config(ctx).getTcpClientChannelClass())
-                    .handler(channelInitializerSupplier.apply((DrasylServerChannel) ctx.channel()));
+                    .handler(channelInitializerSupplier.apply((JavaDrasylServerChannel) ctx.channel()));
 
             for (Entry<IdentityPublicKey, InetSocketAddress> entry : config(ctx).getSuperPeers().entrySet()) {
                 final IdentityPublicKey superPeerKey = entry.getKey();
                 final InetSocketAddress superPeerAddress = entry.getValue();
-                final DrasylServerChannelConfig drasylServerChannelConfig = config(ctx);
+                final JavaDrasylServerChannelConfig drasylServerChannelConfig = config(ctx);
                 final InetSocketAddress superPeerTcpAddress = replaceSocketAddressPort(superPeerAddress, drasylServerChannelConfig.getTcpClientConnectPort());
 
                 bootstrap.connect(superPeerTcpAddress)
-                        .addListener(new TcpClientConnectListener((DrasylServerChannel) ctx.channel(), superPeerKey, superPeerAddress));
+                        .addListener(new TcpClientConnectListener((JavaDrasylServerChannel) ctx.channel(), superPeerKey, superPeerAddress));
             }
         }
     }
@@ -219,19 +219,19 @@ public class TcpClient extends ChannelDuplexHandler {
         }
     }
 
-    protected static DrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
-        return (DrasylServerChannelConfig) ctx.channel().config();
+    protected static JavaDrasylServerChannelConfig config(final ChannelHandlerContext ctx) {
+        return (JavaDrasylServerChannelConfig) ctx.channel().config();
     }
 
     /**
      * Listener that gets called once the channel is connected.
      */
     private class TcpClientConnectListener implements ChannelFutureListener {
-        private final DrasylServerChannel parent;
+        private final JavaDrasylServerChannel parent;
         private final IdentityPublicKey publicKey;
         private final InetSocketAddress udpEndpoint;
 
-        public TcpClientConnectListener(final DrasylServerChannel parent,
+        public TcpClientConnectListener(final JavaDrasylServerChannel parent,
                                         final IdentityPublicKey publicKey,
                                         final InetSocketAddress udpEndpoint) {
             this.parent = requireNonNull(parent);

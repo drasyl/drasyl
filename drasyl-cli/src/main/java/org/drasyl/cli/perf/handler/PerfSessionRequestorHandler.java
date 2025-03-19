@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -24,7 +24,7 @@ package org.drasyl.cli.perf.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.ChannelDirectPathChanged;
-import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.cli.perf.message.Noop;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionConfirmation;
@@ -106,12 +106,12 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     }
 
     private void requestSession(final ChannelHandlerContext ctx) {
-        if (!sessionRequested && (!waitForDirectConnection || ((DrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
+        if (!sessionRequested && (!waitForDirectConnection || ((JavaDrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
             out.println("Request session at " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(request).addListener(FIRE_EXCEPTION_ON_FAILURE);
             sessionRequested = true;
         }
-        if (!directConnectionRequested && waitForDirectConnection && !((DrasylChannel) ctx.channel()).isDirectPathPresent()) {
+        if (!directConnectionRequested && waitForDirectConnection && !((JavaDrasylChannel) ctx.channel()).isDirectPathPresent()) {
             out.println("Try to establish direct connection to " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(new Noop()).addListener(FIRE_EXCEPTION_ON_FAILURE);
             directConnectionRequested = true;

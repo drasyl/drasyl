@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -27,7 +27,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.handler.codec.EncoderException;
 import io.netty.util.AttributeKey;
 import io.netty.util.internal.SystemPropertyUtil;
-import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.discovery.IntraVmDiscovery;
 import org.drasyl.handler.monitoring.TelemetryHandler;
 import org.drasyl.handler.peers.PeersHandler;
@@ -70,10 +70,10 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.handler.remote.UdpMulticastServer.MULTICAST_ADDRESS;
 
 /**
- * Initialize the {@link DrasylServerChannel} used by {@link DrasylNode}.
+ * Initialize the {@link JavaDrasylServerChannel} used by {@link DrasylNode}.
  */
 @UnstableApi
-public class DrasylNodeServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
+public class DrasylNodeServerChannelInitializer extends ChannelInitializer<JavaDrasylServerChannel> {
     public static final AttributeKey<Supplier<PeersList>> PEERS_LIST_SUPPLIER_KEY = AttributeKey.valueOf("PEERS_LIST_SUPPLIER_KEY");
     private static final UdpMulticastServer UDP_MULTICAST_SERVER = new UdpMulticastServer(DrasylNodeSharedEventLoopGroupHolder.getNetworkGroup(), UdpMulticastServerChannelInitializer::new);
     private static final boolean TELEMETRY_ENABLED = SystemPropertyUtil.getBoolean("org.drasyl.telemetry.enabled", false);
@@ -103,7 +103,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
 
     @SuppressWarnings("java:S1188")
     @Override
-    protected void initChannel(final DrasylServerChannel ch) {
+    protected void initChannel(final JavaDrasylServerChannel ch) {
         ch.pipeline().addLast(new NodeLifecycleHeadHandler());
 
         if (config.isRemoteEnabled()) {
@@ -129,7 +129,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
     /**
      * Send/receive messages via IP.
      */
-    private void ipStage(final DrasylServerChannel ch) {
+    private void ipStage(final JavaDrasylServerChannel ch) {
         // udp server
         ch.pipeline().addLast(new UdpServer());
 
@@ -153,11 +153,11 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
      * This stage adds some security services (encryption, sign/verify, throttle, detect message
      * loops, foreign network filter, proof of work checker, etc...).
      */
-    private void gatekeeperStage(final DrasylServerChannel ch) {
+    private void gatekeeperStage(final JavaDrasylServerChannel ch) {
         ch.pipeline().addLast(new RateLimiter());
     }
 
-    private void discoveryStage(final DrasylServerChannel ch) {
+    private void discoveryStage(final JavaDrasylServerChannel ch) {
         ch.pipeline().addLast(new UnresolvedOverlayMessageHandler());
 
         if (config.isRemoteEnabled()) {
@@ -280,7 +280,7 @@ public class DrasylNodeServerChannelInitializer extends ChannelInitializer<Drasy
         @Override
         public void channelActive(final ChannelHandlerContext ctx) {
             if (identity == null) {
-                identity = ((DrasylServerChannel) ctx.channel()).identity();
+                identity = ((JavaDrasylServerChannel) ctx.channel()).identity();
             }
 
             LOG.info("Start drasyl node with address `{}`...", ctx.channel().localAddress());

@@ -34,6 +34,7 @@ import io.netty.util.internal.StringUtil;
 import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.handler.remote.PeersManager;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -48,8 +49,8 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.LongAdder;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.PEERS_MANAGER;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.ARMING_ENABLED;
+import static org.drasyl.channel.JavaDrasylServerChannelConfig.PEERS_MANAGER;
 
 public class WriteThroughputDrasylChannelBenchmark {
     private static final String HOST = SystemPropertyUtil.get("host", "127.0.0.1");
@@ -81,7 +82,7 @@ public class WriteThroughputDrasylChannelBenchmark {
 
             final Channel channel = new ServerBootstrap()
                     .group(group)
-                    .channel(DrasylServerChannel.class)
+                    .channel(JavaDrasylServerChannel.class)
                     .option(PEERS_MANAGER, new PeersManager() {
                         @Override
                         public InetSocketAddress resolve(final DrasylAddress peerKey) {

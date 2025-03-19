@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,7 +23,7 @@ package org.drasyl.channel;
 
 /**
  * Signals that the path to the remote peer has been changed from direct to relayed or vice versa.
- * Actual path type can be retrieved by calling {@link DrasylChannel#isDirectPathPresent()}.
+ * Actual path type can be retrieved by calling {@link JavaDrasylChannel#isDirectPathPresent()}.
  */
 public final class ChannelDirectPathChanged {
     public static final ChannelDirectPathChanged INSTANCE = new ChannelDirectPathChanged();

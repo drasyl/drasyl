@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2023 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,21 +30,23 @@ import org.drasyl.handler.remote.internet.UnconfirmedAddressResolveHandler;
 import org.drasyl.util.internal.UnstableApi;
 
 /**
- * The default {@link ChannelInitializer} for {@link DrasylServerChannel}s.
+ * The default {@link ChannelInitializer} for {@link JavaDrasylServerChannel}s.
  */
 @UnstableApi
 public class DefaultDrasylServerChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        final ChannelPipeline p = ch.pipeline();
+        if (ch instanceof JavaDrasylServerChannel) {
+            final ChannelPipeline p = ch.pipeline();
 
-        p.addLast(new UdpServer());
-        p.addLast(new UnconfirmedAddressResolveHandler());
-        if (ch.config().isHolePunchingEnabled()) {
-            p.addLast(new TraversingInternetDiscoveryChildrenHandler());
-        }
-        else {
-            p.addLast(new InternetDiscoveryChildrenHandler());
+            p.addLast(new UdpServer());
+            p.addLast(new UnconfirmedAddressResolveHandler());
+            if (((JavaDrasylServerChannelConfig) ch.config()).isHolePunchingEnabled()) {
+                p.addLast(new TraversingInternetDiscoveryChildrenHandler());
+            }
+            else {
+                p.addLast(new InternetDiscoveryChildrenHandler());
+            }
         }
     }
 }
