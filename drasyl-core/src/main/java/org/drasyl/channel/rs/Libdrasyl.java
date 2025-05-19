@@ -36,7 +36,8 @@ import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
  */
 @UnstableApi
 public class Libdrasyl {
-    public static final long MAX_PEERS_DEFAULT = 10_000;
+    public static final long MAX_PEERS_DEFAULT = 8_192;
+    public static final long RECV_BUF_CAP_DEFAULT = 64;
 
     private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.libdrasyl.mode", PREFER_SYSTEM);
 
@@ -68,6 +69,22 @@ public class Libdrasyl {
     public static native String drasyl_version();
 
     //
+    // MessageSink
+    //
+
+    public static native int drasyl_recv_buf_len(long bindAddr);
+
+    public static native long drasyl_recv_buf_new(long recvBufCap);
+
+    public static native long drasyl_recv_buf_tx(long recvBufAddr);
+
+    public static native long drasyl_recv_buf_rx(long recvBufAddr);
+
+    public static native int drasyl_recv_buf_recv(long bindAddr, long channelAddr, byte[] sender, byte[] buf, long bufLen);
+
+    public static native int drasyl_recv_buf_free(long recvBufAddr);
+
+    //
     // NodeOptsBuilder
     //
 
@@ -77,7 +94,11 @@ public class Libdrasyl {
 
     public static native int drasyl_node_opts_builder_network_id(long builderAddr, int networkId);
 
-    public static native int drasyl_node_opts_builder_udp_listen(long builderAddr, String udpListen);
+    public static native int drasyl_node_opts_builder_message_sink(long builderAddr, long recvBufTxAddr);
+
+    public static native int drasyl_node_opts_builder_udp_port(long builderAddr, int udpPort);
+
+    public static native int drasyl_node_opts_builder_udp_port_none(long builderAddr);
 
     public static native int drasyl_node_opts_builder_arm_messages(long builderAddr, boolean armMessages);
 
@@ -91,13 +112,9 @@ public class Libdrasyl {
 
     public static native int drasyl_node_opts_builder_super_peers(long builderAddr, String superPeers);
 
-    public static native int drasyl_node_opts_builder_recv_buf_cap(long builderAddr, long recvBufCap);
-
     public static native int drasyl_node_opts_builder_process_unites(long builderAddr, boolean processUnites);
 
-    public static native int drasyl_node_opts_builder_hello_endpoints(long builderAddr, String helloEndpoints);
-
-    public static native int drasyl_node_opts_builder_housekeeping_delay(long builderAddr, long housekeepingDelay);
+    public static native int drasyl_node_opts_builder_housekeeping_interval(long builderAddr, long housekeepingDelay);
 
     public static native int drasyl_node_opts_builder_build(long builderAddr, byte[] optAddr);
 
@@ -109,7 +126,7 @@ public class Libdrasyl {
 
     public static native int drasyl_node_opts_network_id(long optsAddr);
 
-    public static native String drasyl_node_opts_udp_listen(long optsAddr);
+    public static native int drasyl_node_opts_udp_port(long optsAddr);
 
     public static native boolean drasyl_node_opts_arm_messages(long optsAddr);
 
@@ -121,17 +138,11 @@ public class Libdrasyl {
 
     public static native long drasyl_node_opts_hello_max_age(long optsAddr);
 
-    public static native String drasyl_node_opts_super_peers(long optsAddr);
-
-    public static native int drasyl_node_opts_recv_buf_cap(long optsAddr);
-
     public static native int drasyl_node_opts_mtu(long optsAddr);
 
     public static native boolean drasyl_node_opts_process_unites(long optsAddr);
 
-    public static native String drasyl_node_opts_hello_endpoints(long optsAddr);
-
-    public static native long drasyl_node_opts_housekeeping_delay(long optsAddr);
+    public static native long drasyl_node_opts_housekeeping_interval(long optsAddr);
 
     public static native int drasyl_node_opts_free(long builderAddr);
 
@@ -142,10 +153,6 @@ public class Libdrasyl {
     public static native int drasyl_node_bind(long optsAddr, byte[] bindAddr);
 
     public static native int drasyl_node_bind_free(long bindAddr);
-
-    public static native int drasyl_node_recv_buf_len(long bindAddr);
-
-    public static native int drasyl_node_recv_from(long bindAddr, byte[] sender, byte[] buf, long bufLen);
 
     public static native int drasyl_node_send_to(long bindAddr, byte[] recipient, byte[] buf, long bufLen);
 }

@@ -39,10 +39,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.netty.util.internal.PlatformDependent;
-import io.netty.util.internal.SystemPropertyUtil;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
-import org.drasyl.channel.JavaDrasylServerChannelConfig;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannelConfig;
 import org.drasyl.channel.tun.Tun4Packet;
@@ -60,13 +57,11 @@ import org.drasyl.cli.tun.channel.TunRcJsonRpc2OverTcpServerInitializer;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.cli.util.InetAddressComparator;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.DrasylNodeSharedEventLoopGroupHolder;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -88,8 +83,6 @@ import java.util.stream.Collectors;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
 import static io.netty.channel.ChannelOption.AUTO_READ;
-import static io.netty.channel.ChannelOption.IP_TOS;
-import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
@@ -397,36 +390,15 @@ public class TunCommand extends ChannelOptions {
             final ChannelHandler handler = new TunChannelInitializer(onlineTimeoutMillis, err, exitCode, ctx.channel(), new HashSet<>(routes.values()));
             final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes, !applicationArmDisabled);
 
-            final ServerBootstrap b;
-            if (!SystemPropertyUtil.getBoolean("org.drasyl.rs", false)) {
-                b = new ServerBootstrap()
-                        .group(serverChannelLoop, childChannelLoopGroup)
-                        .channel(JavaDrasylServerChannel.class)
-                        .option(JavaDrasylServerChannelConfig.NETWORK_ID, networkId)
-                        .option(JavaDrasylServerChannelConfig.ARMING_ENABLED, !protocolArmDisabled)
-                        .option(JavaDrasylServerChannelConfig.SUPER_PEERS, superPeers)
-                        .option(JavaDrasylServerChannelConfig.UDP_BIND, bindAddress)
-                        .option(JavaDrasylServerChannelConfig.UDP_BOOTSTRAP, parent -> new Bootstrap()
-                                .option(SO_BROADCAST, false)
-                                .option(IP_TOS, 0xB8)
-                                .group(udpChannelLoop)
-                                .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                                .handler(new UdpServerChannelInitializer(parent))
-                        )
-                        .handler(handler)
-                        .childHandler(childHandler);
-            }
-            else {
-                b = new ServerBootstrap()
-                        .group(serverChannelLoop, childChannelLoopGroup)
-                        .channel(RustDrasylServerChannel.class)
-                        .option(RustDrasylServerChannelConfig.NETWORK_ID, networkId)
-                        .option(RustDrasylServerChannelConfig.ARM_MESSAGES, !protocolArmDisabled)
-                        .option(RustDrasylServerChannelConfig.SUPER_PEERS, superPeers)
-                        .option(RustDrasylServerChannelConfig.UDP_LISTEN, bindAddress.getHostString() + ":" + bindAddress.getPort())
-                        .handler(handler)
-                        .childHandler(childHandler);
-            }
+            final ServerBootstrap b = new ServerBootstrap()
+                .group(serverChannelLoop, childChannelLoopGroup)
+                .channel(RustDrasylServerChannel.class)
+                .option(RustDrasylServerChannelConfig.NETWORK_ID, networkId)
+                .option(RustDrasylServerChannelConfig.ARM_MESSAGES, !protocolArmDisabled)
+                .option(RustDrasylServerChannelConfig.SUPER_PEERS, superPeers)
+                .option(RustDrasylServerChannelConfig.UDP_PORT, bindAddress.getPort())
+                .handler(handler)
+                .childHandler(childHandler);
             channel = (DrasylServerChannel) b.bind(identity).channel();
         }
 

@@ -25,8 +25,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
-import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.cli.handler.PrintAndCloseOnExceptionHandler;
 import org.drasyl.cli.tun.handler.DrasylToTunHandler;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
@@ -76,14 +74,7 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
 
         if (applicationArmEnabled) {
             p.addLast(new ArmHeaderCodec());
-            final int maxPeers;
-            if (ch.parent() instanceof JavaDrasylServerChannel) {
-                maxPeers = ((JavaDrasylServerChannel) ch.parent()).config().getMaxPeers();
-            }
-            else {
-                maxPeers = Math.toIntExact(((RustDrasylServerChannel) ch.parent()).config().getMaxPeers());
-            }
-            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, maxPeers, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
+            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, 10000, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
         }
 
         p.addLast(new TunPacketCodec());

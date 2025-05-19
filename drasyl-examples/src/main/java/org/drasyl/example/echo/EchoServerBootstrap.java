@@ -33,7 +33,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -67,7 +67,7 @@ public class EchoServerBootstrap {
             final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
             final ServerBootstrap b = new ServerBootstrap()
                     .group(group)
-                    .channel(JavaDrasylServerChannel.class)
+                    .channel(RustDrasylServerChannel.class)
                     .handler(new DefaultDrasylServerChannelInitializer())
                     .childHandler(new ChannelInitializer<DrasylChannel>() {
                         @Override

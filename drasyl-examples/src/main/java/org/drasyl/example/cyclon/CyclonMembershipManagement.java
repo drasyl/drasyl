@@ -30,7 +30,7 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.membership.cyclon.CyclonCodec;
 import org.drasyl.handler.membership.cyclon.CyclonNeighbor;
 import org.drasyl.handler.membership.cyclon.CyclonShufflingClientHandler;
@@ -93,7 +93,7 @@ public class CyclonMembershipManagement {
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
-                .channel(JavaDrasylServerChannel.class)
+                .channel(RustDrasylServerChannel.class)
                 .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {

@@ -24,7 +24,7 @@ package org.drasyl.cli.channel;
 import io.netty.channel.ChannelPipeline;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -42,7 +42,7 @@ public abstract class AbstractChannelInitializer extends DefaultDrasylServerChan
     protected void initChannel(final DrasylServerChannel ch) {
         super.initChannel(ch);
 
-        if (ch instanceof JavaDrasylServerChannel) {
+        if (ch instanceof RustDrasylServerChannel) {
             final ChannelPipeline p = ch.pipeline();
             p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
         }

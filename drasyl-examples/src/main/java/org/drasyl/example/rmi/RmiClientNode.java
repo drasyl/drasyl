@@ -33,7 +33,7 @@ import io.netty.util.concurrent.FutureListener;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
@@ -45,9 +45,8 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
-import static org.drasyl.channel.JavaDrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_PORT;
 
 @SuppressWarnings({ "java:S106", "java:S110", "java:S125", "java:S1188", "java:S2096" })
 public class RmiClientNode {
@@ -79,8 +78,8 @@ public class RmiClientNode {
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
-                .channel(JavaDrasylServerChannel.class)
-                .option(UDP_BIND, new InetSocketAddress(22528))
+                .channel(RustDrasylServerChannel.class)
+                .option(UDP_PORT, 22528)
                 .handler(new DefaultDrasylServerChannelInitializer() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {

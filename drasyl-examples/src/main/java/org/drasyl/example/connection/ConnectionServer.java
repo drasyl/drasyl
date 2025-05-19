@@ -31,7 +31,7 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
 import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionConfig;
@@ -45,10 +45,9 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 
 import static io.netty.channel.ChannelFutureListener.FIRE_EXCEPTION_ON_FAILURE;
-import static org.drasyl.channel.JavaDrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_PORT;
 
 /**
  * This node waits for connection handshake from other peers.
@@ -78,8 +77,8 @@ public class ConnectionServer {
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
-                .channel(JavaDrasylServerChannel.class)
-                .option(UDP_BIND, new InetSocketAddress(22527))
+                .channel(RustDrasylServerChannel.class)
+                .option(UDP_PORT, 22527)
                 .handler(new DefaultDrasylServerChannelInitializer())
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override

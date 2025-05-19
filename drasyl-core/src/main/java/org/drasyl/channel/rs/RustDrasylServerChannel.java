@@ -66,25 +66,30 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_bind;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_bind_free;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_arm_messages;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_build;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_hello_endpoints;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_hello_max_age;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_hello_timeout;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_housekeeping_delay;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_housekeeping_interval;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_id;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_max_peers;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_message_sink;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_min_pow_difficulty;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_network_id;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_new;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_process_unites;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_recv_buf_cap;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_super_peers;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_udp_listen;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_udp_port;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_udp_port_none;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_mtu;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_recv_buf_len;
-import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_recv_from;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_send_to;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_free;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_len;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_new;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_recv;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_rx;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_tx;
 
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
@@ -103,6 +108,8 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
     static Map<DrasylAddress, RustDrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
     private long bind;
     private int mtu;
+    private long recvBuf;
+    private long recvBufRx;
 
     enum State {OPEN, ACTIVE, CLOSED}
 
@@ -176,8 +183,18 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
         if (config().getNetworkId() != null) {
             ensureSuccess(drasyl_node_opts_builder_network_id(builder, config().getNetworkId()));
         }
-        if (config().getUdpListen() != null) {
-            ensureSuccess(drasyl_node_opts_builder_udp_listen(builder, config().getUdpListen()));
+
+        final long recvBufCap = config().getRecvBufCap();
+        recvBuf = drasyl_recv_buf_new(recvBufCap);
+        final long recvBufTx = drasyl_recv_buf_tx(recvBuf);
+        recvBufRx = drasyl_recv_buf_rx(recvBuf);
+        ensureSuccess(drasyl_node_opts_builder_message_sink(builder, recvBufTx));
+
+        if (config().getUdpPort() != null) {
+            ensureSuccess(drasyl_node_opts_builder_udp_port(builder, config().getUdpPort()));
+        }
+        else {
+            ensureSuccess(drasyl_node_opts_builder_udp_port_none(builder));
         }
         if (config().isArmMessages() != null) {
             ensureSuccess(drasyl_node_opts_builder_arm_messages(builder, config().isArmMessages()));
@@ -205,17 +222,11 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
             }
             ensureSuccess(drasyl_node_opts_builder_super_peers(builder, superPeers.toString()));
         }
-        if (config().getRecvBufCap() != null) {
-            ensureSuccess(drasyl_node_opts_builder_recv_buf_cap(builder, config().getRecvBufCap()));
-        }
         if (config().isProcessUnites() != null) {
             ensureSuccess(drasyl_node_opts_builder_process_unites(builder, config().isProcessUnites()));
         }
-        if (config().getHelloEndpoints() != null) {
-            ensureSuccess(drasyl_node_opts_builder_hello_endpoints(builder, config().getHelloEndpoints()));
-        }
         if (config().getHousekeepingDelay() != null) {
-            ensureSuccess(drasyl_node_opts_builder_housekeeping_delay(builder, config().getHousekeepingDelay().toMillis()));
+            ensureSuccess(drasyl_node_opts_builder_housekeeping_interval(builder, config().getHousekeepingDelay().toMillis()));
         }
 
         final ByteBuffer optsBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
@@ -271,6 +282,9 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
                 identity = null;
             }
             state = State.CLOSED;
+
+            drasyl_node_bind_free(bind);
+            drasyl_recv_buf_free(recvBuf);
         }
     }
 
@@ -307,7 +321,7 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
                 for (int i = 0; i < recvBufLen; i++) {
                     final byte[] senderBytes = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
                     final byte[] bufBytes = new byte[mtu];
-                    final int size = drasyl_node_recv_from(bind, senderBytes, bufBytes, mtu);
+                    final int size = drasyl_recv_buf_recv(bind, recvBufRx, senderBytes, bufBytes, mtu);
                     final IdentityPublicKey sender = IdentityPublicKey.of(senderBytes);
                     final ByteBuf buf = alloc.buffer(size);
                     buf.writeBytes(bufBytes, 0, size);
@@ -316,7 +330,7 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
                     allocHandle.incMessagesRead(1);
                 }
             }
-            while (allocHandle.continueReading() && (recvBufLen = drasyl_node_recv_buf_len(bind)) > 0);
+            while (allocHandle.continueReading() && (recvBufLen = drasyl_recv_buf_len(bind)) > 0);
         }
         catch (final Throwable e) {
             exception = e;

@@ -39,7 +39,7 @@ import org.drasyl.util.EventLoopGroupUtil;
 import java.io.File;
 import java.io.IOException;
 
-import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_LISTEN;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_PORT;
 
 @SuppressWarnings({ "java:S106", "java:S110" })
 public class LibdrasylNode {
@@ -61,7 +61,7 @@ public class LibdrasylNode {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
-                .option(UDP_LISTEN, "0.0.0.0:22528")
+                .option(UDP_PORT, 22528)
                 .handler(new ChannelInitializer<RustDrasylServerChannel>() {
                     @Override
                     protected void initChannel(RustDrasylServerChannel ch) {
@@ -75,7 +75,7 @@ public class LibdrasylNode {
                             @Override
                             protected void channelRead0(final ChannelHandlerContext ctx,
                                                         final ByteBuf msg) {
-                                ch.writeAndFlush(msg);
+                                ch.writeAndFlush(msg.retain());
                             }
                         });
                     }

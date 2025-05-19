@@ -37,6 +37,7 @@ import java.util.Map;
 import static io.netty.channel.ChannelOption.valueOf;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.rs.Libdrasyl.MAX_PEERS_DEFAULT;
+import static org.drasyl.channel.rs.Libdrasyl.RECV_BUF_CAP_DEFAULT;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 /**
@@ -46,7 +47,7 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
     private static final IllegalStateException CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION = new IllegalStateException("Can only changed before channel was registered");
 
     public static final ChannelOption<Integer> NETWORK_ID = valueOf("NETWORK_ID");
-    public static final ChannelOption<String> UDP_LISTEN = valueOf("UDP_LISTEN");
+    public static final ChannelOption<Integer> UDP_PORT = valueOf("UDP_PORT");
     public static final ChannelOption<Boolean> ARM_MESSAGES = valueOf("ARM_MESSAGES");
     public static final ChannelOption<Long> MAX_PEERS = valueOf("MAX_PEERS");
     public static final ChannelOption<Byte> MIN_POW_DIFFICULTY = valueOf("MIN_POW_DIFFICULTY");
@@ -61,14 +62,14 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
     public static final ChannelOption<WriteBufferWaterMark> READ_BUFFER_WATER_MARK = valueOf("READ_BUFFER_WATER_MARK");
 
     private volatile Integer networkId = 1;
-    private volatile String udpListen;
+    private volatile Integer udpPort;
     private volatile Boolean armMessages;
     private volatile Long maxPeers = MAX_PEERS_DEFAULT;
     private volatile Byte minPowDifficulty;
     private volatile Duration helloTimeout;
     private volatile Duration helloMaxAge;
     private volatile Map<IdentityPublicKey, InetSocketAddress> superPeers;
-    private volatile Long recvBufCap;
+    private volatile Long recvBufCap = RECV_BUF_CAP_DEFAULT;
     private volatile Boolean processUnites;
     private volatile String helloEndpoints;
     private volatile Duration housekeepingDelay;
@@ -84,7 +85,7 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
         return getOptions(
                 super.getOptions(),
                 NETWORK_ID,
-                UDP_LISTEN,
+                UDP_PORT,
                 ARM_MESSAGES,
                 MAX_PEERS,
                 MIN_POW_DIFFICULTY,
@@ -106,8 +107,8 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
         if (option == NETWORK_ID) {
             return (T) getNetworkId();
         }
-        if (option == UDP_LISTEN) {
-            return (T) getUdpListen();
+        if (option == UDP_PORT) {
+            return (T) getUdpPort();
         }
         if (option == ARM_MESSAGES) {
             return (T) isArmMessages();
@@ -152,8 +153,8 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
         return networkId;
     }
 
-    public String getUdpListen() {
-        return udpListen;
+    public Integer getUdpPort() {
+        return udpPort;
     }
 
     public Boolean isArmMessages() {
@@ -212,8 +213,8 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
         if (option == NETWORK_ID) {
             setNetworkId((Integer) value);
         }
-        else if (option == UDP_LISTEN) {
-            setUdpListen((String) value);
+        else if (option == UDP_PORT) {
+            setUdpPort((Integer) value);
         }
         else if (option == ARM_MESSAGES) {
             setArmMessages((Boolean) value);
@@ -265,11 +266,11 @@ public class RustDrasylServerChannelConfig extends DefaultChannelConfig implemen
         this.networkId = networkId;
     }
 
-    public void setUdpListen(final String udpListen) {
+    public void setUdpPort(final Integer udpPort) {
         if (channel.isRegistered()) {
             throw CAN_ONLY_CHANGED_BEFORE_REGISTRATION_EXCEPTION;
         }
-        this.udpListen = requireNonNull(udpListen);
+        this.udpPort = udpPort;
     }
 
     private void setArmMessages(final boolean armMessages) {

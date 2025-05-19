@@ -23,9 +23,7 @@ package org.drasyl.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.JavaDrasylChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;
@@ -65,10 +63,7 @@ public class SpawnChildChannelToPeer extends ChannelInboundHandlerAdapter {
     private void spawnChannels(final ChannelHandlerContext ctx) {
         if (ctx.channel().isOpen()) {
             for (final DrasylAddress remoteAddress : remoteAddresses) {
-                if (ctx.channel() instanceof JavaDrasylServerChannel) {
-                    ((DrasylServerChannel) ctx.channel()).serve(remoteAddress);
-                }
-                else if (ctx.channel() instanceof RustDrasylServerChannel) {
+                if (ctx.channel() instanceof RustDrasylServerChannel) {
                     ((RustDrasylServerChannel) ctx.channel()).serve(remoteAddress);
                 }
             }

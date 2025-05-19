@@ -23,16 +23,10 @@ package org.drasyl.cli.sdon;
 
 import ch.qos.logback.classic.Level;
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.DatagramChannel;
-import org.drasyl.channel.JavaDrasylServerChannel;
 import org.drasyl.cli.ChannelOptions;
 import org.drasyl.cli.ChannelOptionsDefaultProvider;
 import org.drasyl.cli.sdon.channel.SdonDeviceChannelInitializer;
 import org.drasyl.cli.sdon.channel.SdonDeviceChildChannelInitializer;
-import org.drasyl.cli.sdon.handler.UdpServerToTunHandler;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
-import org.drasyl.handler.remote.UdpServerToDrasylHandler;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -94,20 +88,6 @@ public class SdonDeviceCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode) {
         return new SdonDeviceChildChannelInitializer(out, err, exitCode, controller);
-    }
-
-    @Override
-    protected ChannelHandler getUdpChannelInitializer(final JavaDrasylServerChannel parent) {
-        return new UdpServerChannelInitializer(parent) {
-            @Override
-            protected void initChannel(final DatagramChannel ch) {
-                super.initChannel(ch);
-
-                final ChannelPipeline p = ch.pipeline();
-
-                ch.pipeline().addBefore(p.context(UdpServerToDrasylHandler.class).name(), null, new UdpServerToTunHandler(parent));
-            }
-        };
     }
 
     @Override
