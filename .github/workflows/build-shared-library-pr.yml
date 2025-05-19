@@ -19,7 +19,7 @@ jobs:
 
         include:
           - job_name: linux-amd64
-            os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
+            os: ubuntu-22.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: macos-amd64
             os: macOS-13
@@ -124,7 +124,7 @@ jobs:
 
         include:
           - job_name: linux-amd64
-            os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
+            os: ubuntu-22.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: macos-amd64
             os: macOS-latest
