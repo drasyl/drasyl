@@ -22,7 +22,7 @@
 package org.drasyl.node.handler.plugin;
 
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.channel.JavaDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.DrasylConfig;
 import org.junit.jupiter.api.BeforeEach;
@@ -46,7 +46,7 @@ class PluginsServerHandlerTest {
     @Mock
     private DrasylPlugin plugin;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private JavaDrasylServerChannel channel;
+    private RustDrasylServerChannel channel;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
 

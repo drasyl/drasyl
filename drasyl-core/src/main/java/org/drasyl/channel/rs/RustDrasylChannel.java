@@ -74,6 +74,11 @@ public class RustDrasylChannel extends AbstractChannel implements DrasylChannel 
     private static final AtomicReferenceFieldUpdater<RustDrasylChannel, Future> FINISH_READ_FUTURE_UPDATER =
             AtomicReferenceFieldUpdater.newUpdater(RustDrasylChannel.class, Future.class, "finishReadFuture");
 
+    public boolean isDirectPathPresent() {
+        // FIXME
+        throw new RuntimeException("not implemented yet");
+    }
+
     enum State {OPEN, CONNECTED, CLOSED}
 
     private static final ChannelMetadata METADATA = new ChannelMetadata(false);
@@ -133,7 +138,7 @@ public class RustDrasylChannel extends AbstractChannel implements DrasylChannel 
     }
 
     @Override
-    protected SocketAddress remoteAddress0() {
+    public SocketAddress remoteAddress0() {
         return remoteAddress;
     }
 

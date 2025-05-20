@@ -29,7 +29,7 @@ import picocli.CommandLine.Model.OptionSpec;
 import java.net.InetSocketAddress;
 import java.util.Map.Entry;
 
-import static org.drasyl.channel.JavaDrasylServerChannelConfig.DEFAULT_SUPER_PEERS;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.DEFAULT_SUPER_PEERS;
 
 public class ChannelOptionsDefaultProvider implements CommandLine.IDefaultValueProvider {
     @Override

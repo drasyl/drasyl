@@ -23,7 +23,6 @@ package org.drasyl.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.IdentityPublicKey;

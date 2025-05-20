@@ -43,7 +43,6 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -83,13 +82,21 @@ import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_super_pee
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_udp_port;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_builder_udp_port_none;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_opts_mtu;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_peers_list;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_send_to;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_pk;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_reachable;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_super_peer;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers_free;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers_len;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_free;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_len;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_new;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_recv;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_rx;
 import static org.drasyl.channel.rs.Libdrasyl.drasyl_recv_buf_tx;
+import static org.drasyl.channel.rs.Libdrasyl.ensureSuccess;
 
 /**
  * A virtual {@link io.netty.channel.ServerChannel} used for overlay network management. This
@@ -106,7 +113,7 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
     private static final Logger LOG = LoggerFactory.getLogger(RustDrasylServerChannel.class);
     public static final byte[] TIMEOUT_SENDER = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
     static Map<DrasylAddress, RustDrasylServerChannel> serverChannels = new ConcurrentHashMap<>();
-    private long bind;
+    public long bind;
     private int mtu;
     private long recvBuf;
     private long recvBufRx;
@@ -238,12 +245,6 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
         mtu = drasyl_node_opts_mtu(opts);
         ensureSuccess(drasyl_node_bind(opts, bindBuf.array()));
         bind = bindBuf.getLong();
-    }
-
-    private void ensureSuccess(int resultCode) {
-        if (resultCode != 0) {
-            throw new RuntimeException("Unexpected result code " + resultCode);
-        }
     }
 
     @Override
@@ -456,6 +457,41 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
         }
         else {
             return newFailedFuture(new Exception("LibdrasylServerChannel is closed and no LibdrasylChannel exist."));
+        }
+    }
+
+    public int getUdpPort() {
+        return Libdrasyl.drasyl_node_udp_port(this.bind);
+    }
+
+    public boolean hasReachableSuperPeer() {
+        final ByteBuffer peersListBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        ensureSuccess(drasyl_node_peers_list(this.bind, peersListBuf.array()));
+        final long peersList = peersListBuf.getLong();
+        final ByteBuffer peersBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+        ensureSuccess(drasyl_peers_list_peers(this.bind, peersList, peersBuf.array()));
+        final long peers = peersBuf.getLong();
+
+        try {
+            final long peersLen = drasyl_peers_list_peers_len(peers);
+            for (int i = 0; i < peersLen; i++) {
+                final byte[] pkBytes = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+                ensureSuccess(drasyl_peers_list_peer_pk(peers, i, pkBytes));
+                final IdentityPublicKey publicKey = IdentityPublicKey.of(pkBytes);
+                final boolean isSuperPeer = ensureSuccess(drasyl_peers_list_peer_super_peer(peers, i)) == 1;
+                final boolean isReachable = ensureSuccess(drasyl_peers_list_peer_reachable(peers, i)) == 1;
+
+                if (isSuperPeer) {
+                    if (isReachable) {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+        finally {
+            drasyl_peers_list_peers_free(peers);
         }
     }
 

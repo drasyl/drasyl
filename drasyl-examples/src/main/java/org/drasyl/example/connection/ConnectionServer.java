@@ -29,8 +29,8 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.connection.ConnectionAbortedDueToUserTimeoutException;
 import org.drasyl.handler.connection.ConnectionClosing;
@@ -79,7 +79,12 @@ public class ConnectionServer {
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
                 .option(UDP_PORT, 22527)
-                .handler(new DefaultDrasylServerChannelInitializer())
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
+                    @Override
+                    protected void initChannel(DrasylServerChannel ch) {
+
+                    }
+                })
                 .childHandler(new ChannelInitializer<DrasylChannel>() {
                     @Override
                     protected void initChannel(final DrasylChannel ch) {

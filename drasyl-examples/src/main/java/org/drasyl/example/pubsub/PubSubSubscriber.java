@@ -31,7 +31,6 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
@@ -93,11 +92,9 @@ public class PubSubSubscriber {
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
                 .option(UDP_PORT, 0)
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
                         p.addLast(new PubSubCodec());
                         p.addLast(new PubSubSubscribeHandler(broker));

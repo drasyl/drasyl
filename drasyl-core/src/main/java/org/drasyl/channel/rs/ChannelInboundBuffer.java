@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.JavaDrasylChannel;
 
 import java.util.Queue;
 import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;

@@ -31,8 +31,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
+import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
@@ -68,7 +68,12 @@ public class EchoServerBootstrap {
             final ServerBootstrap b = new ServerBootstrap()
                     .group(group)
                     .channel(RustDrasylServerChannel.class)
-                    .handler(new DefaultDrasylServerChannelInitializer())
+                    .handler(new ChannelInitializer<DrasylServerChannel>() {
+                        @Override
+                        protected void initChannel(DrasylServerChannel ch) {
+
+                        }
+                    })
                     .childHandler(new ChannelInitializer<DrasylChannel>() {
                         @Override
                         protected void initChannel(final DrasylChannel ch) {

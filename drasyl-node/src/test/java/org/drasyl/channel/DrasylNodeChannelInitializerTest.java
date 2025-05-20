@@ -23,6 +23,7 @@ package org.drasyl.channel;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
+import org.drasyl.channel.rs.RustDrasylChannel;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylNode;
 import org.drasyl.node.channel.DrasylNodeChannelInitializer;
@@ -48,7 +49,7 @@ class DrasylNodeChannelInitializerTest {
         void shouldAddAllRequiredHandlers(@Mock(answer = RETURNS_DEEP_STUBS) final DrasylConfig config,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final DrasylNode node,
                                           @Mock(answer = RETURNS_DEEP_STUBS) final ChannelHandlerContext ctx,
-                                          @Mock(answer = RETURNS_DEEP_STUBS) final JavaDrasylChannel channel) throws Exception {
+                                          @Mock(answer = RETURNS_DEEP_STUBS) final RustDrasylChannel channel) throws Exception {
             when(node.identity()).thenReturn(ID_1);
             when(config.isRemoteMessageArmApplicationEnabled()).thenReturn(true);
             when(config.getRemoteMessageArmApplicationAgreementMaxCount()).thenReturn(100);

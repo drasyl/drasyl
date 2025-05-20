@@ -30,11 +30,9 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.FutureListener;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.identity.DrasylAddress;
@@ -80,11 +78,9 @@ public class RmiClientNode {
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
                 .option(UDP_PORT, 22528)
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new RmiCodec());
@@ -96,7 +92,7 @@ public class RmiClientNode {
                                                            final Object evt) {
                                 ctx.fireUserEventTriggered(evt);
 
-                                if (evt instanceof AddPathAndSuperPeerEvent) {
+                                if (((RustDrasylServerChannel) ctx.channel()).hasReachableSuperPeer()) {
                                     // wait for connection to super peer
                                     System.out.print("Perform remote method invocation...");
 //                                    service.trigger();

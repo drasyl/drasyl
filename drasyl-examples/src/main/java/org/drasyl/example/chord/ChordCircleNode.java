@@ -29,7 +29,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
@@ -38,7 +37,6 @@ import org.drasyl.handler.dht.chord.ChordHousekeepingHandler;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.LocalChordNode;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.handler.rmi.RmiServerHandler;
@@ -91,11 +89,9 @@ public class ChordCircleNode {
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
                 .option(UDP_PORT, 50000 + (int) (myId % 10000))
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiServerHandler server = new RmiServerHandler();
@@ -113,7 +109,7 @@ public class ChordCircleNode {
                                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
-                                    if (evt instanceof AddPathAndSuperPeerEvent) {
+                                    if (((RustDrasylServerChannel) ctx.channel()).hasReachableSuperPeer()) {
                                         p.addLast(new ChordJoinHandler(contact, localNode));
                                         ctx.pipeline().remove(ctx.name());
                                     }

@@ -22,12 +22,8 @@
 package org.drasyl;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.channel.JavaDrasylServerChannel;
-import org.drasyl.handler.remote.UdpServer.UdpServerBound;
-import org.drasyl.handler.remote.tcp.TcpServer.TcpServerBound;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.node.DrasylConfig;
 import org.drasyl.node.DrasylException;
 import org.drasyl.node.DrasylNode;
@@ -53,8 +49,6 @@ import static org.hamcrest.Matchers.instanceOf;
 public class EmbeddedNode extends DrasylNode implements Closeable {
     private static final Logger LOG = LoggerFactory.getLogger(EmbeddedNode.class);
     private final Queue<Event> events;
-    private int port;
-    private int tcpFallbackPort;
     private boolean started;
 
     private EmbeddedNode(final DrasylConfig config,
@@ -68,37 +62,15 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
 
         bootstrap.handler(new DrasylNodeServerChannelInitializer(config, this) {
             @Override
-            protected void initChannel(final JavaDrasylServerChannel ch) {
+            protected void initChannel(final RustDrasylServerChannel ch) {
                 super.initChannel(ch);
-
-                ch.pipeline().addLast(new ChannelInboundHandlerAdapter() {
-                    @Override
-                    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                                   final Object evt) {
-                        if (evt instanceof UdpServerBound) {
-                            port = ((UdpServerBound) evt).getBindAddress().getPort();
-                        }
-                        else if (evt instanceof TcpServerBound) {
-                            tcpFallbackPort = ((TcpServerBound) evt).getBindAddress().getPort();
-                        }
-                        else {
-                            ctx.fireUserEventTriggered(evt);
-                        }
-                    }
-                });
             }
         });
     }
 
     @Override
     public void onEvent(@NonNull final Event event) {
-        if (event instanceof UdpServerBound) {
-            port = ((UdpServerBound) event).getBindAddress().getPort();
-        }
-        else if (event instanceof TcpServerBound) {
-            tcpFallbackPort = ((TcpServerBound) event).getBindAddress().getPort();
-        }
-        else if (event instanceof InboundExceptionEvent) {
+        if (event instanceof InboundExceptionEvent) {
             LOG.warn("{}", event, ((InboundExceptionEvent) event).getError());
         }
 
@@ -125,15 +97,9 @@ public class EmbeddedNode extends DrasylNode implements Closeable {
     }
 
     public int getPort() {
-        await("port != 0").atMost(ofSeconds(5_000)).until(() -> port != 0);
-        return port;
-    }
-
-    public int getTcpFallbackPort() {
-        if (tcpFallbackPort == 0) {
-            throw new IllegalStateException("TCP Fallback Port not set. You have to start the node running in super peer mode with TCP fallback enabled first.");
-        }
-        return tcpFallbackPort;
+        final RustDrasylServerChannel channel = (RustDrasylServerChannel) this.pipeline().channel();
+        await("port != 0").atMost(ofSeconds(5_000)).until(() -> channel.getUdpPort() != 0);
+        return channel.getUdpPort();
     }
 
     /**

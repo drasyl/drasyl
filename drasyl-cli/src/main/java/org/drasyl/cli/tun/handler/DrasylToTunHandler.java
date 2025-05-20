@@ -25,7 +25,6 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.util.logging.Logger;

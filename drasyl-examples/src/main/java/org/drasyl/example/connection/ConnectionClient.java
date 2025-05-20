@@ -29,7 +29,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
@@ -38,7 +37,6 @@ import org.drasyl.handler.connection.ConnectionClosing;
 import org.drasyl.handler.connection.ConnectionHandler;
 import org.drasyl.handler.connection.ConnectionHandshakeCompleted;
 import org.drasyl.handler.connection.SegmentCodec;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
@@ -92,11 +90,9 @@ public class ConnectionClient {
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
                 .option(UDP_PORT, 22528)
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
 
                         p.addLast(new ChannelInboundHandlerAdapter() {
@@ -105,7 +101,7 @@ public class ConnectionClient {
                                                            final Object evt) {
                                 ctx.fireUserEventTriggered(evt);
 
-                                if (evt instanceof AddPathAndSuperPeerEvent) {
+                                if (((RustDrasylServerChannel) ctx.channel()).hasReachableSuperPeer()) {
                                     // create channel to server
                                     ((DrasylServerChannel) ctx.channel()).serve(server);
 

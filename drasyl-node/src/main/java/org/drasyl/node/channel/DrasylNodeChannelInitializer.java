@@ -28,7 +28,6 @@ import io.netty.handler.codec.LengthFieldBasedFrameDecoder;
 import io.netty.handler.codec.LengthFieldPrepender;
 import org.drasyl.channel.ConnectionChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
-import org.drasyl.channel.JavaDrasylChannel;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.handler.connection.ConnectionConfig;
@@ -39,7 +38,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.node.handler.crypto.PFSArmHandler;
 import org.drasyl.node.handler.plugin.PluginsChildHandler;
 import org.drasyl.node.handler.serialization.MessageSerializer;
@@ -113,15 +111,6 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
                         Crypto.INSTANCE,
                         config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementRetryInterval(),
-                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
-                        node.identity(),
-                        (IdentityPublicKey) ch.remoteAddress()
-                ));
-            }
-            else {
-                ch.pipeline().addLast(new LongTimeArmHandler(
-                        Crypto.INSTANCE,
-                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementMaxCount(),
                         node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()

@@ -36,7 +36,7 @@ import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
  */
 @UnstableApi
 public class Libdrasyl {
-    public static final long MAX_PEERS_DEFAULT = 8_192;
+    public static final long MAX_PEERS_DEFAULT = 128;
     public static final long RECV_BUF_CAP_DEFAULT = 64;
 
     private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.libdrasyl.mode", PREFER_SYSTEM);
@@ -155,4 +155,31 @@ public class Libdrasyl {
     public static native int drasyl_node_bind_free(long bindAddr);
 
     public static native int drasyl_node_send_to(long bindAddr, byte[] recipient, byte[] buf, long bufLen);
+
+    public static native int drasyl_node_peers_list(long bindAddr, byte[] peersListAddr);
+
+    public static native int drasyl_node_udp_port(long bindAddr);
+
+    //
+    // PeersList
+    //
+
+    public static native int drasyl_peers_list_peers(long bindAddr, long peersListAddr, byte[] peersAddr);
+
+    public static native long drasyl_peers_list_peers_len(long peersAddr);
+
+    public static native int drasyl_peers_list_peers_free(long peersAddr);
+
+    public static native int drasyl_peers_list_peer_pk(long peersAddr, int index, byte[] pkAddr);
+
+    public static native int drasyl_peers_list_peer_super_peer(long peersAddr, int index);
+
+    public static native int drasyl_peers_list_peer_reachable(long peersAddr, int index);
+
+    public static int ensureSuccess(int resultCode) {
+        if (resultCode < 0) {
+            throw new RuntimeException("Unexpected result code " + resultCode);
+        }
+        return resultCode;
+    }
 }

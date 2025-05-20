@@ -24,7 +24,7 @@ package org.drasyl.cli.perf.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.ChannelDirectPathChanged;
-import org.drasyl.channel.JavaDrasylChannel;
+import org.drasyl.channel.rs.RustDrasylChannel;
 import org.drasyl.cli.perf.message.Noop;
 import org.drasyl.cli.perf.message.PerfMessage;
 import org.drasyl.cli.perf.message.SessionConfirmation;
@@ -106,12 +106,12 @@ public class PerfSessionRequestorHandler extends SimpleChannelInboundHandler<Per
     }
 
     private void requestSession(final ChannelHandlerContext ctx) {
-        if (!sessionRequested && (!waitForDirectConnection || ((JavaDrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
+        if (!sessionRequested && (!waitForDirectConnection || ((RustDrasylChannel) ctx.channel()).isDirectPathPresent()) && ctx.channel().isActive()) {
             out.println("Request session at " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(request).addListener(FIRE_EXCEPTION_ON_FAILURE);
             sessionRequested = true;
         }
-        if (!directConnectionRequested && waitForDirectConnection && !((JavaDrasylChannel) ctx.channel()).isDirectPathPresent()) {
+        if (!directConnectionRequested && waitForDirectConnection && !((RustDrasylChannel) ctx.channel()).isDirectPathPresent()) {
             out.println("Try to establish direct connection to " + ctx.channel().remoteAddress() + "...");
             ctx.writeAndFlush(new Noop()).addListener(FIRE_EXCEPTION_ON_FAILURE);
             directConnectionRequested = true;

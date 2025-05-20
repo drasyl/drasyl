@@ -30,7 +30,6 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
 import org.drasyl.channel.rs.RustDrasylServerChannel;
@@ -85,11 +84,9 @@ public class ChordLookupNode {
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
                 .channel(RustDrasylServerChannel.class)
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiClientHandler client = new RmiClientHandler();

@@ -388,7 +388,7 @@ public class TunCommand extends ChannelOptions {
 
             // create drasyl channel
             final ChannelHandler handler = new TunChannelInitializer(onlineTimeoutMillis, err, exitCode, ctx.channel(), new HashSet<>(routes.values()));
-            final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes, !applicationArmDisabled);
+            final ChannelHandler childHandler = new TunChildChannelInitializer(err, ctx.channel(), routes);
 
             final ServerBootstrap b = new ServerBootstrap()
                 .group(serverChannelLoop, childChannelLoopGroup)
