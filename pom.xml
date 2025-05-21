@@ -118,7 +118,7 @@
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
-        <protobuf.version>4.29.3</protobuf.version>
+        <protobuf.version>4.31.0</protobuf.version>
         <auto-value.version>1.11.0</auto-value.version>
         <jna.version>5.16.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
@@ -372,12 +372,12 @@
                 <plugin>
                     <groupId>com.github.spotbugs</groupId>
                     <artifactId>spotbugs-maven-plugin</artifactId>
-                    <version>4.8.6.6</version>
+                    <version>4.9.3.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.jacoco</groupId>
                     <artifactId>jacoco-maven-plugin</artifactId>
-                    <version>0.8.12</version>
+                    <version>0.8.13</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
@@ -615,7 +615,7 @@
             <plugin>
                 <groupId>com.github.spotbugs</groupId>
                 <artifactId>spotbugs-maven-plugin</artifactId>
-                <version>4.8.6.6</version>
+                <version>4.9.3.0</version>
                 <configuration>
                     <effort>Max</effort>
                     <threshold>Low</threshold>
