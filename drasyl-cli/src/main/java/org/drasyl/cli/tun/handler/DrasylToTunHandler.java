@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Routes inbound messages to the given tun-based channel.
  * <p>
- * This handler has to be placed in a {@link org.drasyl.channel.DrasylChannel}.
+ * This handler has to be placed in a {@link JavaDrasylChannel}.
  */
 public class DrasylToTunHandler extends SimpleChannelInboundHandler<Tun4Packet> {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylToTunHandler.class);

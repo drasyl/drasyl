@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -33,7 +33,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.Identity;
 import org.drasyl.node.identity.IdentityManager;
 import org.drasyl.util.EventLoopGroupUtil;
@@ -67,8 +67,13 @@ public class EchoServerBootstrap {
             final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
             final ServerBootstrap b = new ServerBootstrap()
                     .group(group)
-                    .channel(DrasylServerChannel.class)
-                    .handler(new DefaultDrasylServerChannelInitializer())
+                    .channel(RustDrasylServerChannel.class)
+                    .handler(new ChannelInitializer<DrasylServerChannel>() {
+                        @Override
+                        protected void initChannel(DrasylServerChannel ch) {
+
+                        }
+                    })
                     .childHandler(new ChannelInitializer<DrasylChannel>() {
                         @Override
                         protected void initChannel(final DrasylChannel ch) {

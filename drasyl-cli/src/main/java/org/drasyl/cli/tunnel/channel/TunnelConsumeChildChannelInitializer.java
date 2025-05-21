@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -34,8 +34,6 @@ import org.drasyl.cli.tunnel.handler.TunnelWriteCodec;
 import org.drasyl.cli.tunnel.message.JacksonCodecTunnelMessage;
 import org.drasyl.handler.codec.JacksonCodec;
 import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -44,7 +42,6 @@ import java.io.PrintStream;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.tunnel.TunnelCommand.CONNECTION_CONFIG;
-import static org.drasyl.cli.tunnel.channel.TunnelExposeChildChannelInitializer.ARM_SESSION_TIME;
 import static org.drasyl.util.Preconditions.requireNonNegative;
 
 public class TunnelConsumeChildChannelInitializer extends ConnectionChannelInitializer {
@@ -81,10 +78,6 @@ public class TunnelConsumeChildChannelInitializer extends ConnectionChannelIniti
 
         // close parent as well
         ch.closeFuture().addListener(f -> ch.parent().close());
-
-        final ChannelPipeline p = ch.pipeline();
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

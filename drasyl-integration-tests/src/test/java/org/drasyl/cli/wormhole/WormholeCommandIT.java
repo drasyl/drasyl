@@ -34,6 +34,7 @@ import org.drasyl.util.logging.LoggerFactory;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -65,6 +66,7 @@ import static test.util.IdentityTestUtil.ID_1;
 import static test.util.IdentityTestUtil.ID_2;
 import static test.util.IdentityTestUtil.ID_3;
 
+@Disabled("Super peer operation is no longer supported in Java")
 class WormholeCommandIT {
     private static final Logger LOG = LoggerFactory.getLogger(WormholeCommandIT.class);
     private static final Pattern CODE_PATTERN = Pattern.compile("([0-9A-F]{66,})", CASE_INSENSITIVE);

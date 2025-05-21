@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -25,7 +25,6 @@ package org.drasyl.cli.sdon.handler.policy;
 import com.sun.jna.Memory;
 import com.sun.jna.Pointer;
 import io.netty.bootstrap.Bootstrap;
-import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -37,8 +36,7 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.internal.PlatformDependent;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.InetAddressedMessage;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.channel.tun.Tun4Packet;
 import org.drasyl.channel.tun.TunAddress;
 import org.drasyl.channel.tun.TunChannel;
@@ -47,10 +45,7 @@ import org.drasyl.channel.tun.jna.windows.Wintun.WINTUN_ADAPTER_HANDLE;
 import org.drasyl.cli.sdon.config.TunPolicy;
 import org.drasyl.cli.tun.jna.AddressAndNetmaskHelper;
 import org.drasyl.crypto.HexUtil;
-import org.drasyl.handler.remote.PeersManager;
-import org.drasyl.handler.remote.protocol.ApplicationMessage;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 import org.drasyl.util.network.Subnet;
@@ -59,7 +54,6 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.InetAddress;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.Map;
 
@@ -69,7 +63,6 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.channel.tun.TunChannelOption.TUN_MTU;
 import static org.drasyl.channel.tun.jna.windows.Wintun.WintunGetAdapterLUID;
 import static org.drasyl.cli.sdon.config.TunPolicy.TUN_CHANNEL_KEY;
-import static org.drasyl.cli.sdon.handler.UdpServerToTunHandler.MAGIC_NUMBER;
 
 public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(TunPolicyHandler.class);
@@ -92,7 +85,7 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
                     protected void initChannel(final Channel ch) {
                         final ChannelPipeline p = ch.pipeline();
 
-                        final DrasylServerChannel parent = (DrasylServerChannel) ctx.channel();
+                        final RustDrasylServerChannel parent = (RustDrasylServerChannel) ctx.channel();
                         parent.attr(TUN_CHANNEL_KEY).set((TunChannel) ch);
 
                         p.addLast(new TunToDrasylHandler(parent, policy));
@@ -178,10 +171,10 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
     }
 
     private static class TunToDrasylHandler extends SimpleChannelInboundHandler<Tun4Packet> {
-        private final DrasylServerChannel parent;
+        private final RustDrasylServerChannel parent;
         private final TunPolicy policy;
 
-        public TunToDrasylHandler(final DrasylServerChannel parent,
+        public TunToDrasylHandler(final RustDrasylServerChannel parent,
                                   final TunPolicy policy) {
             super(false);
             this.parent = requireNonNull(parent);
@@ -201,19 +194,15 @@ public class TunPolicyHandler extends ChannelInboundHandlerAdapter {
             if (drasylAddress != null) {
                 LOG.debug("Write to `{}`", () -> drasylAddress);
 
-                // resolve endpoint
-                final PeersManager peersManager = parent.config().getPeersManager();
-                final InetSocketAddress endpoint = peersManager.resolve(drasylAddress);
-
-                // build message
-                final ByteBuf byteBuf = ctx.alloc().compositeBuffer(2)
-                        .addComponent(true, ctx.alloc().buffer(4).writeInt(MAGIC_NUMBER))
-                        .addComponent(true, packet.content().retain());
-                final ApplicationMessage appMsg = ApplicationMessage.of(parent.config().getNetworkId(), (IdentityPublicKey) drasylAddress, parent.identity().getIdentityPublicKey(), parent.identity().getProofOfWork(), byteBuf);
-                final InetAddressedMessage<ApplicationMessage> inetMsg = new InetAddressedMessage<>(appMsg, endpoint);
-
-                // send message
-                parent.udpChannel().writeAndFlush(inetMsg).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                parent.serve(drasylAddress).addListener((ChannelFutureListener) future -> {
+                    if (future.isSuccess()) {
+                        final Channel peerChannel = future.channel();
+                        peerChannel.writeAndFlush(packet).addListener(FIRE_EXCEPTION_ON_FAILURE);
+                    }
+                    else {
+                        packet.release();
+                    }
+                });
             }
             else {
                 LOG.info("Drop packet `{}` with unroutable destination.", () -> packet);
