@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -30,9 +30,6 @@ import org.drasyl.cli.tun.handler.DrasylToTunHandler;
 import org.drasyl.cli.tun.handler.TunPacketCodec;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.DrasylAddress;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
@@ -49,16 +46,13 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
     private final PrintStream err;
     private final Channel tun;
     private final Map<InetAddress, DrasylAddress> routes;
-    private final boolean applicationArmEnabled;
 
     public TunChildChannelInitializer(final PrintStream err,
                                       final Channel tun,
-                                      final Map<InetAddress, DrasylAddress> routes,
-                                      final boolean applicationArmEnabled) {
+                                      final Map<InetAddress, DrasylAddress> routes) {
         this.err = requireNonNull(err);
         this.tun = requireNonNull(tun);
         this.routes = requireNonNull(routes);
-        this.applicationArmEnabled = applicationArmEnabled;
     }
 
     @SuppressWarnings("SuspiciousMethodCalls")
@@ -71,11 +65,6 @@ public class TunChildChannelInitializer extends ChannelInitializer<DrasylChannel
         }
 
         final ChannelPipeline p = ch.pipeline();
-
-        if (applicationArmEnabled) {
-            p.addLast(new ArmHeaderCodec());
-            p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, ch.parent().config().getMaxPeers(), ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
-        }
 
         p.addLast(new TunPacketCodec());
         p.addLast(new DrasylToTunHandler(tun));

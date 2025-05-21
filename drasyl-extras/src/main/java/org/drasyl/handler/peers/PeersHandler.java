@@ -21,18 +21,10 @@
  */
 package org.drasyl.handler.peers;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.PathEvent;
-import org.drasyl.handler.discovery.PathRttEvent;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 
-import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -52,40 +44,6 @@ public class PeersHandler extends ChannelInboundHandlerAdapter {
 
     public PeersHandler() {
         this(new HashMap<>());
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof AddPathAndSuperPeerEvent) {
-            final DrasylAddress address = ((AddPathAndSuperPeerEvent) evt).getAddress();
-            final InetSocketAddress inetAddress = ((AddPathAndSuperPeerEvent) evt).getInetAddress();
-            final long rtt = ((AddPathAndSuperPeerEvent) evt).getRtt();
-
-            final Peer peer = new Peer(Role.SUPER, inetAddress, rtt);
-            peers.put(address, peer);
-        }
-        else if (evt instanceof AddPathAndChildrenEvent) {
-            final DrasylAddress address = ((AddPathAndChildrenEvent) evt).getAddress();
-            final InetSocketAddress inetAddress = ((AddPathAndChildrenEvent) evt).getInetAddress();
-
-            final Peer peer = new Peer(Role.CHILDREN, inetAddress);
-            peers.put(address, peer);
-        }
-        else if (evt instanceof PathRttEvent) {
-            final DrasylAddress address = ((PathRttEvent) evt).getAddress();
-            final long rtt = ((PathRttEvent) evt).getRtt();
-
-            final Peer peer = peers.get(address);
-            if (peer != null) {
-                peer.last(rtt);
-            }
-        }
-        else if (evt instanceof RemoveSuperPeerAndPathEvent || evt instanceof RemoveChildrenAndPathEvent) {
-            peers.remove(((PathEvent) evt).getAddress());
-        }
-
-        ctx.fireUserEventTriggered(evt);
     }
 
     public PeersList getPeers() {
