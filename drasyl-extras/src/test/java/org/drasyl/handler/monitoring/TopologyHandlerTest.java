@@ -21,17 +21,9 @@
  */
 package org.drasyl.handler.monitoring;
 
-import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.channel.embedded.UserEventAwareEmbeddedChannel;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.handler.monitoring.TopologyHandler.Topology;
 import org.drasyl.identity.DrasylAddress;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -43,8 +35,6 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static test.util.IdentityTestUtil.ID_1;
 
@@ -56,49 +46,6 @@ class TopologyHandlerTest {
     protected Map<DrasylAddress, InetSocketAddress> childrenPeers;
     @Mock
     protected Map<DrasylAddress, InetSocketAddress> peers;
-
-    @Nested
-    class UserEventTriggered {
-        private ChannelHandler handler;
-
-        @BeforeEach
-        void setUp() {
-            handler = new TopologyHandler(superPeers, childrenPeers) {
-            };
-        }
-
-        @Test
-        void shouldHandleAddPathAndSuperPeerEvent(final @Mock AddPathAndSuperPeerEvent event) {
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(superPeers).put(any(), any());
-        }
-
-        @Test
-        void shouldHandleRemoveSuperPeerAndPathEvent(final @Mock RemoveSuperPeerAndPathEvent event) {
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(superPeers).remove(any());
-        }
-
-        @Test
-        void shouldHandleAddPathAndChildrenEvent(final @Mock AddPathAndChildrenEvent event) {
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(childrenPeers).put(any(), any());
-        }
-
-        @Test
-        void shouldHandleRemoveChildrenAndPathEvent(final @Mock RemoveChildrenAndPathEvent event) {
-            final EmbeddedChannel channel = new UserEventAwareEmbeddedChannel(handler);
-            channel.pipeline().fireUserEventTriggered(event);
-
-            verify(childrenPeers).remove(any());
-        }
-    }
 
     @Nested
     class TopologyTest {

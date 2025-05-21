@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2022 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -31,13 +31,12 @@ import io.netty.channel.DefaultEventLoopGroup;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.codec.OverlayMessageToEnvelopeMessageCodec;
 import org.drasyl.handler.dht.chord.ChordHousekeepingHandler;
 import org.drasyl.handler.dht.chord.ChordJoinHandler;
 import org.drasyl.handler.dht.chord.ChordUtil;
 import org.drasyl.handler.dht.chord.LocalChordNode;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.drasyl.handler.rmi.RmiClientHandler;
 import org.drasyl.handler.rmi.RmiCodec;
 import org.drasyl.handler.rmi.RmiServerHandler;
@@ -49,11 +48,10 @@ import org.drasyl.util.EventLoopGroupUtil;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.util.NoSuchElementException;
 import java.util.Scanner;
 
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_PORT;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordId;
 import static org.drasyl.handler.dht.chord.ChordUtil.chordIdPosition;
 import static org.drasyl.handler.dht.chord.LocalChordNode.BIND_NAME;
@@ -89,13 +87,11 @@ public class ChordCircleNode {
         final EventLoopGroup udpServerGroup = EventLoopGroupUtil.getBestEventLoopGroup(1);
         final ServerBootstrap b = new ServerBootstrap()
                 .group(group)
-                .channel(DrasylServerChannel.class)
-                .option(UDP_BIND, new InetSocketAddress(50000 + (int) (myId % 10000)))
-                .handler(new DefaultDrasylServerChannelInitializer() {
+                .channel(RustDrasylServerChannel.class)
+                .option(UDP_PORT, 50000 + (int) (myId % 10000))
+                .handler(new ChannelInitializer<DrasylServerChannel>() {
                     @Override
                     protected void initChannel(final DrasylServerChannel ch) {
-                        super.initChannel(ch);
-
                         final ChannelPipeline p = ch.pipeline();
 
                         final RmiServerHandler server = new RmiServerHandler();
@@ -113,7 +109,7 @@ public class ChordCircleNode {
                                 public void userEventTriggered(final ChannelHandlerContext ctx,
                                                                final Object evt) {
                                     ctx.fireUserEventTriggered(evt);
-                                    if (evt instanceof AddPathAndSuperPeerEvent) {
+                                    if (((RustDrasylServerChannel) ctx.channel()).hasReachableSuperPeer()) {
                                         p.addLast(new ChordJoinHandler(contact, localNode));
                                         ctx.pipeline().remove(ctx.name());
                                     }

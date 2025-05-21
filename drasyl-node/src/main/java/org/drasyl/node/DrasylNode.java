@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,7 +21,6 @@
  */
 package org.drasyl.node;
 
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -30,15 +29,12 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.DatagramChannel;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.PromiseCombiner;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.handler.peers.PeersList;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
-import org.drasyl.handler.remote.UdpServerToDrasylHandler;
-import org.drasyl.handler.remote.portmapper.PortMapper;
 import org.drasyl.handler.sntp.SntpClient;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.identity.Identity;
@@ -49,7 +45,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.serialization.MessageSerializer;
 import org.drasyl.node.identity.IdentityManager;
-import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Murmur3;
 import org.drasyl.util.UnsignedInteger;
@@ -61,7 +56,6 @@ import org.drasyl.util.logging.LoggerFactory;
 import java.io.IOException;
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
-import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -69,26 +63,17 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
-import static io.netty.channel.ChannelOption.IP_TOS;
-import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_EXPIRE_AFTER;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_SESSION_MAX_COUNT;
-import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_INTERVAL;
-import static org.drasyl.channel.DrasylServerChannelConfig.HELLO_TIMEOUT;
-import static org.drasyl.channel.DrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.MAX_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
-import static org.drasyl.channel.DrasylServerChannelConfig.PATH_IDLE_TIME;
-import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.TCP_CLIENT_CONNECT_PORT;
-import static org.drasyl.channel.DrasylServerChannelConfig.TCP_SERVER_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.ARM_MESSAGES;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.HELLO_TIMEOUT;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.MAX_PEERS;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.NETWORK_ID;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.SUPER_PEERS;
+import static org.drasyl.channel.rs.RustDrasylServerChannelConfig.UDP_PORT;
 import static org.drasyl.node.Null.NULL;
 import static org.drasyl.node.channel.DrasylNodeServerChannelInitializer.PEERS_LIST_SUPPLIER_KEY;
 import static org.drasyl.util.PlatformDependent.unsafeStaticFieldOffsetSupported;
@@ -187,36 +172,14 @@ public abstract class DrasylNode {
         bootstrap = new ServerBootstrap()
                 .group(parentGroup, childGroup)
                 .localAddress(identity)
-                .channel(DrasylServerChannel.class)
+                .channel(RustDrasylServerChannel.class)
                 .option(NETWORK_ID, config.getNetworkId())
-                .option(ARMING_ENABLED, config.isRemoteMessageArmProtocolEnabled())
-                .option(ARMING_SESSION_MAX_COUNT, config.getRemoteMessageArmProtocolSessionMaxCount())
-                .option(ARMING_SESSION_EXPIRE_AFTER, config.getRemoteMessageArmProtocolSessionExpireAfter())
-                .option(HELLO_INTERVAL, config.getRemotePingInterval())
+                .option(ARM_MESSAGES, config.isRemoteMessageArmProtocolEnabled())
                 .option(HELLO_TIMEOUT, config.getRemotePingTimeout())
-                .option(MAX_PEERS, config.getRemotePingMaxPeers())
+                .option(MAX_PEERS, (long) config.getRemotePingMaxPeers())
                 .option(SUPER_PEERS, config.getRemoteSuperPeerEndpoints().stream().collect(Collectors.toMap(PeerEndpoint::getIdentityPublicKey, PeerEndpoint::toInetSocketAddress)))
-                .option(UDP_BIND, new InetSocketAddress(config.getRemoteBindHost(), udpServerPort(config.getRemoteBindPort(), identity.getAddress())))
-                .option(UDP_BOOTSTRAP, parent -> new Bootstrap()
-                        .option(SO_BROADCAST, false)
-                        .option(IP_TOS, 0xB8)
-                        .group(udpServerGroup.next())
-                        .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                        .handler(new UdpServerChannelInitializer(parent) {
-                            @Override
-                            protected void initChannel(final DatagramChannel ch) {
-                                super.initChannel(ch);
-
-                                if (config.isRemoteExposeEnabled()) {
-                                    // create datagram channel with port mapping (PCP, NAT-PMP, UPnP-IGD, etc.)
-                                    ch.pipeline().addBefore(ch.pipeline().context(UdpServerToDrasylHandler.class).name(), null, new PortMapper());
-                                }
-                            }
-                        })
-                )
-                .option(TCP_CLIENT_CONNECT_PORT, config.getRemoteTcpFallbackClientConnectPort())
-                .option(TCP_SERVER_BIND, new InetSocketAddress(config.getRemoteTcpFallbackServerBindHost(), config.getRemoteTcpFallbackServerBindPort()))
-                .option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
+                .option(UDP_PORT, udpServerPort(config.getRemoteBindPort(), identity.getAddress()))
+                //.option(PATH_IDLE_TIME, config.getRemotePingCommunicationTimeout())
                 .option(INTRA_VM_DISCOVERY_ENABLED, config.isIntraVmDiscoveryEnabled())
                 .handler(new DrasylNodeServerChannelInitializer(config, this)).childHandler(new DrasylNodeChannelInitializer(config, this));
         sntpServers = config.getSntpServers();

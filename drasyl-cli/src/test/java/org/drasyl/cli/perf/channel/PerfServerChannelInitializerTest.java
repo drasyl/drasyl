@@ -54,7 +54,7 @@ class PerfServerChannelInitializerTest {
             final ChannelInboundHandler handler = new PerfServerChannelInitializer(1, out, err, exitCode);
             handler.channelRegistered(ctx);
 
-            verify(channel.pipeline(), times(6)).addLast(any());
+            verify(channel.pipeline(), times(2)).addLast(any());
         }
     }
 }

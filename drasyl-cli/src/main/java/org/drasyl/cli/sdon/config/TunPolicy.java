@@ -44,6 +44,7 @@ import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.Preconditions.requirePositive;
+import static org.luaj.vm2.parser.LuaParserConstants.NIL;
 
 /**
  * Policy for the TUN device.
@@ -95,6 +96,7 @@ public class TunPolicy extends Policy {
         table.set("netmask", LuaNumber.valueOf(netmask));
         final Map<String, Object> stringMapping = mapping.entrySet().stream().collect(Collectors.toMap(e -> e.getKey().getHostAddress(), e -> e.getValue().toString()));
         table.set("mapping", LuaHelper.createTable(stringMapping));
+        table.set("state", state != null ? LuaString.valueOf(state.toString()) : LuaValue.valueOf(NIL));
         return table;
     }
 

@@ -33,9 +33,6 @@ import org.drasyl.cli.wormhole.handler.WormholeFileSender;
 import org.drasyl.cli.wormhole.handler.WormholeTextSender;
 import org.drasyl.cli.wormhole.message.WormholeMessage;
 import org.drasyl.handler.codec.JacksonCodec;
-import org.drasyl.identity.IdentityPublicKey;
-import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.util.Worm;
 
 import java.io.PrintStream;
@@ -43,7 +40,6 @@ import java.time.Duration;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.cli.wormhole.WormholeCommand.CONNECTION_CONFIG;
-import static org.drasyl.cli.wormhole.channel.WormholeSendChannelInitializer.MAX_PEERS;
 
 public class WormholeSendChildChannelInitializer extends ConnectionChannelInitializer {
     public static final Duration ARM_SESSION_TIME = Duration.ofMinutes(5);
@@ -71,10 +67,6 @@ public class WormholeSendChildChannelInitializer extends ConnectionChannelInitia
     protected void initChannel(final DrasylChannel ch) throws Exception {
         // close parent as well
         ch.closeFuture().addListener(f -> ch.parent().close());
-
-        final ChannelPipeline p = ch.pipeline();
-        p.addLast(new ArmHeaderCodec());
-        p.addLast(new LongTimeArmHandler(ARM_SESSION_TIME, MAX_PEERS, ch.identity(), (IdentityPublicKey) ch.remoteAddress()));
 
         super.initChannel(ch);
     }

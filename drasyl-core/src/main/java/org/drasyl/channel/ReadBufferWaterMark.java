@@ -27,11 +27,11 @@ import static org.drasyl.util.Preconditions.requireNonNegative;
  * ReadBufferWaterMark is used to set low water mark and high water mark for the read buffer.
  * <p>
  * If the number of bytes queued in the reads buffer exceeds the {@linkplain #high high water mark},
- * {@link DrasylChannel#isReadBufferFull()} will start to return {@code true}.
+ * {@link JavaDrasylChannel#isReadBufferFull()} will start to return {@code true}.
  * <p>
  * If the number of bytes queued in the read buffer exceeds the {@linkplain #high high water mark}
  * and then dropped down below the {@linkplain #low low water mark},
- * {@link DrasylChannel#isReadBufferFull()} will start to return {@code true} again.
+ * {@link JavaDrasylChannel#isReadBufferFull()} will start to return {@code true} again.
  * <p>
  */
 public final class ReadBufferWaterMark {

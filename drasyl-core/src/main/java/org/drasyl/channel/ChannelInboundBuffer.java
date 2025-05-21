@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicLongFieldUpdater;
 import static java.util.Objects.requireNonNull;
 
 /**
- * (Transport implementors only) an internal data structure used by {@link DrasylChannel} to store
+ * (Transport implementors only) an internal data structure used by {@link JavaDrasylChannel} to store
  * its pending inbound read requests.
  */
 public final class ChannelInboundBuffer {

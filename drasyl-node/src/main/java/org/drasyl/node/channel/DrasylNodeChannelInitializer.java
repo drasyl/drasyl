@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -38,7 +38,6 @@ import org.drasyl.node.event.Event;
 import org.drasyl.node.event.InboundExceptionEvent;
 import org.drasyl.node.event.MessageEvent;
 import org.drasyl.node.handler.crypto.ArmHeaderCodec;
-import org.drasyl.node.handler.crypto.LongTimeArmHandler;
 import org.drasyl.node.handler.crypto.PFSArmHandler;
 import org.drasyl.node.handler.plugin.PluginsChildHandler;
 import org.drasyl.node.handler.serialization.MessageSerializer;
@@ -50,7 +49,7 @@ import static java.util.Objects.requireNonNull;
 import static org.drasyl.node.Null.NULL;
 
 /**
- * Initialize child {@link DrasylChannel}s used by {@link DrasylNode}.
+ * Initialize child {@link JavaDrasylChannel}s used by {@link DrasylNode}.
  */
 @UnstableApi
 public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
@@ -112,15 +111,6 @@ public class DrasylNodeChannelInitializer extends ConnectionChannelInitializer {
                         Crypto.INSTANCE,
                         config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementRetryInterval(),
-                        config.getRemoteMessageArmApplicationAgreementMaxCount(),
-                        node.identity(),
-                        (IdentityPublicKey) ch.remoteAddress()
-                ));
-            }
-            else {
-                ch.pipeline().addLast(new LongTimeArmHandler(
-                        Crypto.INSTANCE,
-                        config.getRemoteMessageArmApplicationAgreementExpireAfter(),
                         config.getRemoteMessageArmApplicationAgreementMaxCount(),
                         node.identity(),
                         (IdentityPublicKey) ch.remoteAddress()

@@ -23,11 +23,6 @@ package org.drasyl.handler.monitoring;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.PathEvent;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
 import org.drasyl.identity.DrasylAddress;
 import org.drasyl.util.internal.UnstableApi;
 
@@ -57,30 +52,6 @@ public abstract class TopologyHandler extends ChannelInboundHandlerAdapter {
 
     protected TopologyHandler() {
         this(new HashMap<>(), new HashMap<>());
-    }
-
-    @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) throws Exception {
-        if (evt instanceof PathEvent) {
-            final PathEvent e = (PathEvent) evt;
-            // super peers
-            if (evt instanceof AddPathAndSuperPeerEvent) {
-                superPeers.put(e.getAddress(), ((AddPathAndSuperPeerEvent) e).getInetAddress());
-            }
-            else if (evt instanceof RemoveSuperPeerAndPathEvent) {
-                superPeers.remove(e.getAddress());
-            }
-            // children peers
-            else if (evt instanceof AddPathAndChildrenEvent) {
-                childrenPeers.put(e.getAddress(), ((AddPathAndChildrenEvent) e).getInetAddress());
-            }
-            else if (evt instanceof RemoveChildrenAndPathEvent) {
-                childrenPeers.remove(e.getAddress());
-            }
-        }
-
-        ctx.fireUserEventTriggered(evt);
     }
 
     protected Topology topology(final ChannelHandlerContext ctx) {

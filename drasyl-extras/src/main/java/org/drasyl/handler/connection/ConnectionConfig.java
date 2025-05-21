@@ -24,9 +24,6 @@ package org.drasyl.handler.connection;
 import com.google.auto.value.AutoValue;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.handler.remote.protocol.PrivateHeader;
-import org.drasyl.handler.remote.protocol.PublicHeader;
-import org.drasyl.handler.remote.protocol.RemoteMessage;
 
 import java.time.Duration;
 import java.util.function.BiFunction;
@@ -49,7 +46,7 @@ public abstract class ConnectionConfig {
     // IPv4: 20 bytes
     // UDP: 8 bytes
     // drasyl: 120 bytes
-    public static final int DRASYL_HDR_SIZE = 20 + 8 + RemoteMessage.MAGIC_NUMBER_LEN + PublicHeader.LENGTH + PrivateHeader.ARMED_LENGTH;
+    public static final int DRASYL_HDR_SIZE = 20 + 8 + 4 + 116;
     static final ConnectionConfig DEFAULT = new AutoValue_ConnectionConfig.Builder()
             .unusedPortSupplier(() -> randomInt(MIN_PORT, MAX_PORT))
             .issSupplier(Segment::randomSeq)

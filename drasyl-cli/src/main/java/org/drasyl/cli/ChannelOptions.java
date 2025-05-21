@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2024 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -22,15 +22,14 @@
 package org.drasyl.cli;
 
 import ch.qos.logback.classic.Level;
-import io.netty.bootstrap.Bootstrap;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.DefaultEventLoop;
 import io.netty.channel.EventLoop;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.remote.UdpServerChannelInitializer;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannelConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.identity.IdentityManager;
@@ -47,14 +46,7 @@ import java.net.InetSocketAddress;
 import java.util.Map;
 import java.util.concurrent.Callable;
 
-import static io.netty.channel.ChannelOption.IP_TOS;
-import static io.netty.channel.ChannelOption.SO_BROADCAST;
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.channel.DrasylServerChannelConfig.ARMING_ENABLED;
-import static org.drasyl.channel.DrasylServerChannelConfig.NETWORK_ID;
-import static org.drasyl.channel.DrasylServerChannelConfig.SUPER_PEERS;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BIND;
-import static org.drasyl.channel.DrasylServerChannelConfig.UDP_BOOTSTRAP;
 import static org.drasyl.util.Preconditions.requirePositive;
 import static org.drasyl.util.network.NetworkUtil.MAX_PORT_NUMBER;
 
@@ -164,20 +156,11 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
 
             final ServerBootstrap b = new ServerBootstrap()
                     .group(serverChannelLoop, childChannelLoopGroup)
-                    .channel(DrasylServerChannel.class)
-                    .option(NETWORK_ID, networkId)
-                    .option(ARMING_ENABLED, !protocolArmDisabled)
-                    .option(SUPER_PEERS, superPeers)
-                    .option(UDP_BIND, bindAddress)
-                    .option(UDP_BOOTSTRAP, parent -> {
-                        final ChannelHandler udpChannelInitializer = getUdpChannelInitializer(parent);
-                        return new Bootstrap()
-                                .option(SO_BROADCAST, false)
-                                .option(IP_TOS, 0xB8)
-                                .group(udpChannelLoop)
-                                .channel(EventLoopGroupUtil.getBestDatagramChannel())
-                                .handler(udpChannelInitializer);
-                    })
+                    .channel(RustDrasylServerChannel.class)
+                    .option(RustDrasylServerChannelConfig.NETWORK_ID, networkId)
+                    .option(RustDrasylServerChannelConfig.ARM_MESSAGES, !protocolArmDisabled)
+                    .option(RustDrasylServerChannelConfig.SUPER_PEERS, superPeers)
+                    .option(RustDrasylServerChannelConfig.UDP_PORT, bindAddress.getPort())
                     .handler(serverChannelInitializer)
                     .childHandler(childChannelInitializer);
             final Channel ch = b.bind(identity).syncUninterruptibly().channel();
@@ -224,8 +207,4 @@ public abstract class ChannelOptions extends GlobalOptions implements Callable<I
     protected abstract ChannelHandler getServerChannelInitializer(final Worm<Integer> exitCode);
 
     protected abstract ChannelHandler getChildChannelInitializer(final Worm<Integer> exitCode);
-
-    protected ChannelHandler getUdpChannelInitializer(final DrasylServerChannel parent) {
-        return new UdpServerChannelInitializer(parent);
-    }
 }
