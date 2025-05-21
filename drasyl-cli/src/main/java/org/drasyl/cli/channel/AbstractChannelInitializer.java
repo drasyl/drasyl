@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -21,15 +21,16 @@
  */
 package org.drasyl.cli.channel;
 
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.channel.DefaultDrasylServerChannelInitializer;
 import org.drasyl.channel.DrasylServerChannel;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler;
 
 import static org.drasyl.util.Preconditions.requirePositive;
 
 @SuppressWarnings("java:S110")
-public abstract class AbstractChannelInitializer extends DefaultDrasylServerChannelInitializer {
+public abstract class AbstractChannelInitializer extends ChannelInitializer<DrasylServerChannel> {
     private final long onlineTimeoutMillis;
 
     @SuppressWarnings("java:S107")
@@ -39,11 +40,10 @@ public abstract class AbstractChannelInitializer extends DefaultDrasylServerChan
 
     @Override
     protected void initChannel(final DrasylServerChannel ch) {
-        super.initChannel(ch);
-
-        final ChannelPipeline p = ch.pipeline();
-
-        p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
+        if (ch instanceof RustDrasylServerChannel) {
+            final ChannelPipeline p = ch.pipeline();
+            p.addLast(new SuperPeerTimeoutHandler(onlineTimeoutMillis));
+        }
     }
 }
 

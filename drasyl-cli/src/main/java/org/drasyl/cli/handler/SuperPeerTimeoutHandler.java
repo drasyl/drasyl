@@ -24,7 +24,7 @@ package org.drasyl.cli.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.util.concurrent.Future;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.Preconditions.requirePositive;
@@ -67,7 +67,7 @@ public class SuperPeerTimeoutHandler extends ChannelInboundHandlerAdapter {
     @Override
     public void userEventTriggered(final ChannelHandlerContext ctx,
                                    final Object evt) {
-        if (evt instanceof AddPathAndSuperPeerEvent) {
+        if (((RustDrasylServerChannel) ctx.channel()).hasReachableSuperPeer()) {
             timeoutTask.cancel(false);
             ctx.pipeline().remove(this);
             ctx.fireChannelActive();

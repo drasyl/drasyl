@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2020-2021 Heiko Bornholdt and Kevin Röbert
+ * Copyright (c) 2020-2025 Heiko Bornholdt and Kevin Röbert
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy
  * of this software and associated documentation files (the "Software"), to deal
@@ -23,29 +23,32 @@ package org.drasyl.node.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.channel.DrasylServerChannel;
-import org.drasyl.handler.discovery.AddPathAndChildrenEvent;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
-import org.drasyl.handler.discovery.AddPathEvent;
-import org.drasyl.handler.discovery.PathEvent;
-import org.drasyl.handler.discovery.RemoveChildrenAndPathEvent;
-import org.drasyl.handler.discovery.RemovePathEvent;
-import org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent;
+import org.drasyl.channel.rs.RustDrasylServerChannel;
 import org.drasyl.identity.DrasylAddress;
+import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.node.event.Node;
 import org.drasyl.node.event.NodeOfflineEvent;
 import org.drasyl.node.event.NodeOnlineEvent;
 import org.drasyl.node.event.Peer;
 import org.drasyl.node.event.PeerDirectEvent;
 import org.drasyl.node.event.PeerRelayEvent;
-import org.drasyl.util.HashSetMultimap;
-import org.drasyl.util.SetMultimap;
 import org.drasyl.util.internal.UnstableApi;
 
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.util.HashSet;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_node_peers_list;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_pk;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_reachable;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peer_super_peer;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers_free;
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_peers_list_peers_len;
+import static org.drasyl.channel.rs.Libdrasyl.ensureSuccess;
 
 /**
  * This handler track received {@link PathEvent}s and will contain an internal state of all peers,
@@ -60,136 +63,82 @@ import static java.util.Objects.requireNonNull;
  */
 @UnstableApi
 public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
-    private final SetMultimap<DrasylAddress, Object> paths;
-    private final Set<DrasylAddress> children;
-    private final Set<DrasylAddress> superPeers;
+    private final Set<DrasylAddress> reachableChildren;
+    private final Set<DrasylAddress> reachableSuperPeers;
 
     @SuppressWarnings("java:S2384")
-    PeersManagerHandler(final SetMultimap<DrasylAddress, Object> paths,
-                        final Set<DrasylAddress> children,
-                        final Set<DrasylAddress> superPeers) {
-        this.paths = requireNonNull(paths);
-        this.children = requireNonNull(children);
-        this.superPeers = requireNonNull(superPeers);
+    PeersManagerHandler(final Set<DrasylAddress> reachableChildren,
+                        final Set<DrasylAddress> reachableSuperPeers) {
+        this.reachableChildren = requireNonNull(reachableChildren);
+        this.reachableSuperPeers = requireNonNull(reachableSuperPeers);
     }
 
     public PeersManagerHandler() {
-        this(new HashSetMultimap<>(), new HashSet<>(), new HashSet<>());
+        this(new HashSet<>(), new HashSet<>());
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx,
-                                   final Object evt) {
-        if (evt instanceof PathEvent) {
-            final PathEvent e = (PathEvent) evt;
-            if (e instanceof AddPathEvent) {
-                addPath(ctx, e.getAddress(), e.getPath());
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        final RustDrasylServerChannel channel = (RustDrasylServerChannel) ctx.channel();
+
+        ctx.executor().scheduleAtFixedRate(() -> {
+            if (channel.isActive()) {
+                final ByteBuffer peersListBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                ensureSuccess(drasyl_node_peers_list(channel.bind, peersListBuf.array()));
+                final long peersList = peersListBuf.getLong();
+                final ByteBuffer peersBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
+                ensureSuccess(drasyl_peers_list_peers(channel.bind, peersList, peersBuf.array()));
+                final long peers = peersBuf.getLong();
+
+                final long peersLen = drasyl_peers_list_peers_len(peers);
+                for (int i = 0; i < peersLen; i++) {
+                    final byte[] pkBytes = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+                    ensureSuccess(drasyl_peers_list_peer_pk(peers, i, pkBytes));
+                    final IdentityPublicKey publicKey = IdentityPublicKey.of(pkBytes);
+                    final boolean isSuperPeer = ensureSuccess(drasyl_peers_list_peer_super_peer(peers, i)) == 1;
+                    final boolean isReachable = ensureSuccess(drasyl_peers_list_peer_reachable(peers, i)) == 1;
+
+                    if (isSuperPeer) {
+                        if (isReachable) {
+                            if (this.reachableSuperPeers.isEmpty()) {
+                                ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(channel.identity())));
+                            }
+                            if (this.reachableSuperPeers.add(publicKey)) {
+                                ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
+                            }
+                        }
+                        else {
+                            if (this.reachableSuperPeers.remove(publicKey)) {
+                                ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
+
+                                if (this.reachableSuperPeers.isEmpty()) {
+                                    ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(channel.identity())));
+                                }
+                            }
+                        }
+                    }
+                    else {
+                        if (isReachable) {
+                            if (this.reachableChildren.add(publicKey)) {
+                                ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
+                            }
+                        }
+                        else {
+                            if (this.reachableChildren.remove(publicKey)) {
+                                ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
+                            }
+                        }
+                    }
+                }
+
+                drasyl_peers_list_peers_free(peers);
             }
-            else if (e instanceof RemovePathEvent) {
-                removePath(ctx, e.getAddress(), e.getPath());
+            else {
+                if (!this.reachableSuperPeers.isEmpty()) {
+                    this.reachableSuperPeers.clear();
+                    ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(channel.identity())));
+                }
             }
-            else if (e instanceof AddPathAndSuperPeerEvent) {
-                addPathAndSuperPeer(ctx, e.getAddress(), e.getPath());
-            }
-            else if (e instanceof RemoveSuperPeerAndPathEvent) {
-                removeSuperPeerAndPath(ctx, e.getAddress(), e.getPath());
-            }
-            else if (e instanceof AddPathAndChildrenEvent) {
-                addPathAndChildren(ctx, e.getAddress(), e.getPath());
-            }
-            else if (e instanceof RemoveChildrenAndPathEvent) {
-                removeChildrenAndPath(ctx, e.getAddress(), e.getPath());
-            }
-        }
-
-        ctx.fireUserEventTriggered(evt);
-    }
-
-    private void addPath(final ChannelHandlerContext ctx,
-                         final DrasylAddress publicKey,
-                         final Object path) {
-        requireNonNull(publicKey);
-
-        final boolean firstPath = paths.get(publicKey).isEmpty();
-        if (paths.put(publicKey, path) && firstPath) {
-            ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
-        }
-    }
-
-    private void removePath(final ChannelHandlerContext ctx,
-                            final DrasylAddress publicKey,
-                            final Object path) {
-        requireNonNull(publicKey);
-        requireNonNull(path);
-
-        if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-            ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
-        }
-    }
-
-    private void addPathAndSuperPeer(final ChannelHandlerContext ctx,
-                                     final DrasylAddress publicKey,
-                                     final Object path) {
-        requireNonNull(publicKey);
-        requireNonNull(path);
-
-        // path
-        final boolean firstPath = paths.get(publicKey).isEmpty();
-        if (paths.put(publicKey, path) && firstPath) {
-            ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
-        }
-
-        // role (super peer)
-        final boolean firstSuperPeer = superPeers.isEmpty();
-        if (superPeers.add(publicKey) && firstSuperPeer) {
-            ctx.fireUserEventTriggered(NodeOnlineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
-        }
-    }
-
-    private void removeSuperPeerAndPath(final ChannelHandlerContext ctx,
-                                        final DrasylAddress publicKey,
-                                        final Object path) {
-        requireNonNull(path);
-
-        // role (super peer)
-        if (superPeers.remove(publicKey) && superPeers.isEmpty()) {
-            ctx.fireUserEventTriggered(NodeOfflineEvent.of(Node.of(((DrasylServerChannel) ctx.channel()).identity())));
-        }
-
-        // path
-        if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-            ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
-        }
-    }
-
-    private void addPathAndChildren(final ChannelHandlerContext ctx,
-                                    final DrasylAddress publicKey,
-                                    final Object path) {
-        requireNonNull(publicKey);
-        requireNonNull(path);
-
-        // path
-        final boolean firstPath = paths.get(publicKey).isEmpty();
-        if (paths.put(publicKey, path) && firstPath) {
-            ctx.fireUserEventTriggered(PeerDirectEvent.of(Peer.of(publicKey)));
-        }
-
-        // role (children peer)
-        children.add(publicKey);
-    }
-
-    private void removeChildrenAndPath(final ChannelHandlerContext ctx,
-                                       final DrasylAddress publicKey,
-                                       final Object path) {
-        requireNonNull(publicKey);
-        requireNonNull(path);
-
-        // path
-        if (paths.remove(publicKey, path) && paths.get(publicKey).isEmpty()) {
-            ctx.fireUserEventTriggered(PeerRelayEvent.of(Peer.of(publicKey)));
-        }
-
-        // role (children)
-        children.remove(publicKey);
+        }, 0, 100, MILLISECONDS);
     }
 }

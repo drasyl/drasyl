@@ -23,18 +23,13 @@ package org.drasyl.cli.handler;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.concurrent.Future;
 import org.drasyl.cli.handler.SuperPeerTimeoutHandler.SuperPeerTimeoutException;
-import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.awaitility.Awaitility.await;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class SuperPeerTimeoutHandlerTest {
@@ -47,18 +42,5 @@ class SuperPeerTimeoutHandlerTest {
             channel.runScheduledPendingTasks();
             assertThrows(SuperPeerTimeoutException.class, channel::checkException);
         });
-    }
-
-    @Test
-    void shouldRemoveHandlerWhenSuperPeerOccured(@Mock final Future<?> timeoutTask,
-                                                 @Mock final AddPathAndSuperPeerEvent event) {
-        final ChannelHandler handler = new SuperPeerTimeoutHandler(1, timeoutTask);
-        final EmbeddedChannel channel = new EmbeddedChannel(handler);
-
-        channel.pipeline().fireUserEventTriggered(event);
-
-        channel.checkException();
-        assertNull(channel.pipeline().get(SuperPeerTimeoutHandler.class));
-        verify(timeoutTask).cancel(false);
     }
 }

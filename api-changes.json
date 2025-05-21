@@ -148,6 +148,206 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.node.handler.timeout.IdleChannelCloser",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.channel.DrasylServerChannelConfig",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.AddPathAndChildrenEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.AddPathAndSuperPeerEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.AddPathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.discovery.PathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.PathRttEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.RemoveChildrenAndPathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.RemovePathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.discovery.RemoveSuperPeerAndPathEvent",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.ByteToRemoteMessageCodec",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.LocalHostPeerInformation",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.OtherNetworkFilter",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.PeersManager",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.RateLimiter",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.UnresolvedOverlayMessageHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.crypto.ProtocolArmHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.crypto.UnarmedMessageDecoder",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.portmapper.NatPmpPortMapping",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.portmapper.PcpPortMapping",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.portmapper.PortMapper",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "interface org.drasyl.handler.remote.portmapper.PortMapping",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.portmapper.UpnpIgdPortMapping",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.AcknowledgementMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.ApplicationMessage",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.HopCount",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.MagicNumberMissmatchException",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.remote.protocol.PrivateHeader",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.FutureListenerUtil",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.InputStreamHelper",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.handler.ipc.FileNotifierHandler",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.annotation.added",
+          "old": "method void org.drasyl.handler.monitoring.TopologyHandler::userEventTriggered(io.netty.channel.ChannelHandlerContext, java.lang.Object) throws java.lang.Exception @ org.drasyl.handler.monitoring.TelemetryHandler",
+          "new": "method void io.netty.channel.ChannelInboundHandlerAdapter::userEventTriggered(io.netty.channel.ChannelHandlerContext, java.lang.Object) throws java.lang.Exception @ org.drasyl.handler.monitoring.TelemetryHandler",
+          "annotation": "@io.netty.channel.ChannelHandlerMask.Skip",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.protocol.PcpPortUtil",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.class.removed",
+          "old": "class org.drasyl.util.protocol.UpnpIgdUtil",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
