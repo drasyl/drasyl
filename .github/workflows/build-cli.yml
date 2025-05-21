@@ -18,7 +18,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4.1.2
       - name: Set up JDK
-        uses: actions/setup-java@v4.7.0
+        uses: actions/setup-java@v4.7.1
         with:
           java-version: 11
           distribution: 'adopt'
@@ -53,7 +53,7 @@ jobs:
 
         include:
           - job_name: linux-amd64
-            os: ubuntu-20.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
+            os: ubuntu-22.04 # run intentionally on older ubuntu. Otherwise, graal builds will depend on a too-new libc version, which is not available on every linux distributions
 
           - job_name: linux-arm64
             os: [ self-hosted, linux, ARM64 ]
