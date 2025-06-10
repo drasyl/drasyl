@@ -114,7 +114,7 @@
         <awaitility.version>4.2.2</awaitility.version>
         <netty.version>4.1.122.Final</netty.version>
         <maven.scm>1.11.2</maven.scm>
-        <slf4j.version>2.0.16</slf4j.version>
+        <slf4j.version>2.0.17</slf4j.version>
         <typesafe.config.version>1.4.3</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
@@ -566,7 +566,7 @@
                     <dependency>
                         <groupId>com.puppycrawl.tools</groupId>
                         <artifactId>checkstyle</artifactId>
-                        <version>10.21.2</version>
+                        <version>10.25.0</version>
                     </dependency>
                 </dependencies>
             </plugin>
@@ -588,7 +588,7 @@
                     <dependency>
                         <groupId>org.revapi</groupId>
                         <artifactId>revapi-java</artifactId>
-                        <version>0.28.1</version>
+                        <version>0.28.4</version>
                     </dependency>
                 </dependencies>
                 <configuration>

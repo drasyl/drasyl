@@ -710,50 +710,69 @@ public abstract class DrasylConfig {
 
     public abstract Path getIdentityPath();
 
+    @Deprecated
     public abstract int getMessageBufferSize();
 
+    @Deprecated
     public abstract boolean isRemoteEnabled();
 
+    @Deprecated
     public abstract InetAddress getRemoteBindHost();
 
     public abstract int getRemoteBindPort();
 
+    @Deprecated
     public abstract boolean isRemoteExposeEnabled();
 
+    @Deprecated
     public abstract Duration getRemotePingInterval();
 
     public abstract Duration getRemotePingTimeout();
 
+    @Deprecated
     public abstract Duration getRemotePingCommunicationTimeout();
 
     public abstract int getRemotePingMaxPeers();
 
+    @Deprecated
     public abstract Duration getRemoteUniteMinInterval();
 
+    @Deprecated
     public abstract boolean isRemoteSuperPeerEnabled();
 
     public abstract Set<PeerEndpoint> getRemoteSuperPeerEndpoints();
 
+    @Deprecated
     public abstract Map<DrasylAddress, InetSocketAddress> getRemoteStaticRoutes();
 
+    @Deprecated
     public abstract Duration getRemoteHandshakeTimeout();
 
+    @Deprecated
     public abstract boolean isRemoteLocalHostDiscoveryEnabled();
 
+    @Deprecated
     public abstract Path getRemoteLocalHostDiscoveryPath();
 
+    @Deprecated
     public abstract Duration getRemoteLocalHostDiscoveryLeaseTime();
 
+    @Deprecated
     public abstract boolean isRemoteLocalHostDiscoveryWatchEnabled();
 
+    @Deprecated
     public abstract boolean isRemoteLocalNetworkDiscoveryEnabled();
 
+    @Deprecated
     public abstract byte getRemoteMessageHopLimit();
 
+    @Deprecated
     public abstract boolean isRemoteMessageArmProtocolEnabled();
 
+    @Deprecated
     public abstract int getRemoteMessageArmProtocolSessionMaxCount();
 
+    @Deprecated
     public abstract Duration getRemoteMessageArmProtocolSessionExpireAfter();
 
     public abstract boolean isRemoteMessageArmApplicationEnabled();
@@ -764,16 +783,21 @@ public abstract class DrasylConfig {
 
     public abstract Duration getRemoteMessageArmApplicationAgreementRetryInterval();
 
+    @Deprecated
     public abstract boolean isRemoteTcpFallbackEnabled();
 
+    @Deprecated
     public abstract InetAddress getRemoteTcpFallbackServerBindHost();
 
+    @Deprecated
     public abstract int getRemoteTcpFallbackServerBindPort();
 
+    @Deprecated
     public abstract int getRemoteTcpFallbackClientConnectPort();
 
     public abstract boolean isIntraVmDiscoveryEnabled();
 
+    @Deprecated
     public abstract List<SocketAddress> getSntpServers();
 
     public abstract Set<DrasylPlugin> getPlugins();
@@ -805,36 +829,49 @@ public abstract class DrasylConfig {
 
         public abstract Builder identityPath(final Path identityPath);
 
+        @Deprecated
         public abstract Builder messageBufferSize(final int messageBufferSize);
 
+        @Deprecated
         public abstract Builder remoteBindHost(final InetAddress remoteBindHost);
 
+        @Deprecated
         public abstract Builder remoteEnabled(final boolean remoteEnabled);
 
         public abstract Builder remoteBindPort(final int remoteBindPort);
 
+        @Deprecated
         public abstract Builder remotePingInterval(final Duration remotePingInterval);
 
         public abstract Builder remotePingTimeout(final Duration remotePingTimeout);
 
+        @Deprecated
         public abstract Builder remotePingCommunicationTimeout(final Duration remotePingCommunicationTimeout);
 
+        @Deprecated
         public abstract Builder remoteUniteMinInterval(final Duration remoteUniteMinInterval);
 
         public abstract Builder remotePingMaxPeers(final int remotePingMaxPeers);
 
+        @Deprecated
         public abstract Builder remoteExposeEnabled(final boolean remoteExposeEnabled);
 
+        @Deprecated
         public abstract Builder remoteStaticRoutes(final Map<DrasylAddress, InetSocketAddress> remoteStaticRoutes);
 
+        @Deprecated
         public abstract Builder remoteHandshakeTimeout(final Duration remoteHandshakeTimeout);
 
+        @Deprecated
         public abstract Builder remoteMessageHopLimit(final byte remoteMessageHopLimit);
 
+        @Deprecated
         public abstract Builder remoteMessageArmProtocolEnabled(final boolean remoteMessageArmProtocolEnabled);
 
+        @Deprecated
         public abstract Builder remoteMessageArmProtocolSessionMaxCount(final int remoteMessageArmProtocolSessionMaxCount);
 
+        @Deprecated
         public abstract Builder remoteMessageArmProtocolSessionExpireAfter(final Duration remoteMessageArmProtocolSessionExpireAfter);
 
         public abstract Builder remoteMessageArmApplicationEnabled(final boolean remoteMessageArmApplicationEnabled);
@@ -845,32 +882,43 @@ public abstract class DrasylConfig {
 
         public abstract Builder remoteMessageArmApplicationAgreementRetryInterval(final Duration remoteMessageArmApplicationAgreementRetryInterval);
 
+        @Deprecated
         public abstract Builder remoteSuperPeerEnabled(final boolean remoteSuperPeerEnabled);
 
         public abstract Builder remoteSuperPeerEndpoints(final Set<PeerEndpoint> remoteSuperPeerEndpoints);
 
         public abstract Builder intraVmDiscoveryEnabled(final boolean intraVmDiscoveryEnabled);
 
+        @Deprecated
         public abstract Builder remoteLocalHostDiscoveryEnabled(final boolean remoteLocalHostDiscoveryEnabled);
 
+        @Deprecated
         public abstract Builder remoteLocalHostDiscoveryPath(final Path remoteLocalHostDiscoveryPath);
 
+        @Deprecated
         public abstract Builder remoteLocalHostDiscoveryLeaseTime(final Duration remoteLocalHostDiscoveryLeaseTime);
 
+        @Deprecated
         public abstract Builder remoteLocalHostDiscoveryWatchEnabled(final boolean remoteLocalHostDiscoveryWatchEnabled);
 
+        @Deprecated
         public abstract Builder remoteLocalNetworkDiscoveryEnabled(final boolean remoteLocalNetworkDiscoveryEnabled);
 
+        @Deprecated
         public abstract Builder remoteTcpFallbackEnabled(final boolean remoteTcpFallbackEnabled);
 
+        @Deprecated
         public abstract Builder remoteTcpFallbackServerBindHost(final InetAddress remoteTcpFallbackServerBindHost);
 
+        @Deprecated
         public abstract Builder remoteTcpFallbackServerBindPort(final int remoteTcpFallbackServerBindPort);
 
+        @Deprecated
         public abstract Builder remoteTcpFallbackClientConnectPort(final int remoteTcpFallbackClientConnectPort);
 
         public abstract Builder plugins(final Set<DrasylPlugin> plugins);
 
+        @Deprecated
         public abstract Builder sntpServers(final List<InetSocketAddress> sntpServers);
 
         public abstract Builder serializationSerializers(final Map<String, Serializer> serializationSerializers);
