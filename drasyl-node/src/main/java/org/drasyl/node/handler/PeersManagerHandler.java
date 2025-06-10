@@ -87,7 +87,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
                 ensureSuccess(drasyl_node_peers_list(channel.bind, peersListBuf.array()));
                 final long peersList = peersListBuf.getLong();
                 final ByteBuffer peersBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-                ensureSuccess(drasyl_peers_list_peers(channel.bind, peersList, peersBuf.array()));
+                ensureSuccess(drasyl_peers_list_peers(peersList, peersBuf.array()));
                 final long peers = peersBuf.getLong();
 
                 final long peersLen = drasyl_peers_list_peers_len(peers);
