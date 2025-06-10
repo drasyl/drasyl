@@ -19,7 +19,7 @@ An additional call of `mvn release:perform` is not necessary! A GitHub Action wo
 tasks automatically.
 
 * Wait for the GitHub Action to deploy new version to Maven Central ([Deploy](https://github.com/drasyl/drasyl/actions/workflows/deploy.yml) workflow).
-* Deploy to our public super peers (this is done with [Ansible](https://github.com/drasyl/ansible)).
+* Publish the deployment: https://central.sonatype.com/publishing
 * Create Release on GitHub:
   * Go to https://github.com/drasyl/drasyl/tags.
   * Click `Create release` for tag `v1.2.0`.
