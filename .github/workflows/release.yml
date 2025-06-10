@@ -26,7 +26,7 @@ jobs:
       - name: Build hash
         run: for file in drasyl-*.zip; do sha256sum "$file" | awk '{print $1}' > "$file.sha256"; done
       - name: Upload Package
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             drasyl-*.zip
@@ -142,7 +142,7 @@ jobs:
 
       # upload package
       - name: Upload Package
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             libdrasyl-*.zip
@@ -372,7 +372,7 @@ jobs:
 
       # upload package
       - name: Upload Package
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v2.2.2
         with:
           files: |
             drasyl-*.zip
