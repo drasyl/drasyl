@@ -164,7 +164,7 @@ public class Libdrasyl {
     // PeersList
     //
 
-    public static native int drasyl_peers_list_peers(long bindAddr, long peersListAddr, byte[] peersAddr);
+    public static native int drasyl_peers_list_peers(long peersListAddr, byte[] peersAddr);
 
     public static native long drasyl_peers_list_peers_len(long peersAddr);
 
