@@ -469,7 +469,7 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
         ensureSuccess(drasyl_node_peers_list(this.bind, peersListBuf.array()));
         final long peersList = peersListBuf.getLong();
         final ByteBuffer peersBuf = ByteBuffer.allocate(Long.BYTES).order(ByteOrder.LITTLE_ENDIAN);
-        ensureSuccess(drasyl_peers_list_peers(this.bind, peersList, peersBuf.array()));
+        ensureSuccess(drasyl_peers_list_peers(peersList, peersBuf.array()));
         final long peers = peersBuf.getLong();
 
         try {
