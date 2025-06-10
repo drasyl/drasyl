@@ -348,6 +348,76 @@
           "code": "java.class.removed",
           "old": "class org.drasyl.util.protocol.UpnpIgdUtil",
           "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method byte[] org.drasyl.util.ArrayUtil::concat(byte[][])",
+          "new": "method byte[] org.drasyl.util.ArrayUtil::concat(byte[][])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method <E> E[] org.drasyl.util.ArrayUtil::concat(E[][])",
+          "new": "method <E> E[] org.drasyl.util.ArrayUtil::concat(E[][])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method double org.drasyl.util.NumberUtil::max(double[])",
+          "new": "method double org.drasyl.util.NumberUtil::max(double[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method int org.drasyl.util.NumberUtil::max(int[])",
+          "new": "method int org.drasyl.util.NumberUtil::max(int[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method long org.drasyl.util.NumberUtil::max(long[])",
+          "new": "method long org.drasyl.util.NumberUtil::max(long[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method double org.drasyl.util.NumberUtil::min(double[])",
+          "new": "method double org.drasyl.util.NumberUtil::min(double[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method int org.drasyl.util.NumberUtil::min(int[])",
+          "new": "method int org.drasyl.util.NumberUtil::min(int[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method long org.drasyl.util.NumberUtil::min(long[])",
+          "new": "method long org.drasyl.util.NumberUtil::min(long[])",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method void org.drasyl.util.CsvWriter::write(java.lang.Object[]) throws java.io.IOException",
+          "new": "method void org.drasyl.util.CsvWriter::write(java.lang.Object[]) throws java.io.IOException",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
+        },
+        {
+          "ignore": true,
+          "code": "java.method.varargOverloadsOnlyDifferInVarargParameter",
+          "old": "method void org.drasyl.util.CsvWriter::write(java.lang.String[]) throws java.io.IOException",
+          "new": "method void org.drasyl.util.CsvWriter::write(java.lang.String[]) throws java.io.IOException",
+          "justification": "ADD YOUR EXPLANATION FOR THE NECESSITY OF THIS CHANGE"
         }
       ]
     }
