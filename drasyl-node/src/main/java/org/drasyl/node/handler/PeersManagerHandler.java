@@ -131,7 +131,7 @@ public class PeersManagerHandler extends ChannelInboundHandlerAdapter {
                     }
                 }
 
-                drasyl_peers_list_peers_free(peers);
+                ensureSuccess(drasyl_peers_list_peers_free(peers));
             }
             else {
                 if (!this.reachableSuperPeers.isEmpty()) {
