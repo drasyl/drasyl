@@ -130,15 +130,6 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
     final Runnable readTask = this::doRead;
     private final List<Object> readBuf = new ArrayList<>();
 
-    static {
-        try {
-            new Libdrasyl();
-        }
-        catch (IOException e) {
-            throw new RuntimeException(e);
-        }
-    }
-
     @SuppressWarnings("java:S2384")
     RustDrasylServerChannel(final State state,
                             final Map<DrasylAddress, RustDrasylChannel> channels,

@@ -29,6 +29,9 @@ import org.drasyl.util.internal.UnstableApi;
 
 import java.io.IOException;
 import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+
+import static org.drasyl.channel.rs.Libdrasyl.drasyl_generate_identity;
 
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
@@ -96,8 +99,8 @@ public abstract class Identity extends SocketAddress {
     }
 
     /**
-     * @throws NullPointerException if {@code proofOfWork}, {@code identityKeyPair} or {@code
-     *                              keyAgreementKeyPair} is {@code null}.
+     * @throws NullPointerException if {@code proofOfWork}, {@code identityKeyPair} or
+     *                              {@code keyAgreementKeyPair} is {@code null}.
      */
     public static Identity of(final ProofOfWork proofOfWork,
                               final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair,
@@ -106,8 +109,8 @@ public abstract class Identity extends SocketAddress {
     }
 
     /**
-     * @throws NullPointerException     if {@code proofOfWork}, {@code identityPublicKey} or {@code
-     *                                  identitySecretKey} is {@code null}.
+     * @throws NullPointerException     if {@code proofOfWork}, {@code identityPublicKey} or
+     *                                  {@code identitySecretKey} is {@code null}.
      * @throws IllegalArgumentException if {@code identityPublicKey} and {@code identitySecretKey}
      *                                  can not be converted to a key agreement key pair.
      */
@@ -168,8 +171,8 @@ public abstract class Identity extends SocketAddress {
     }
 
     /**
-     * @throws NullPointerException if {@code proofOfWork} or {@code identitySecretKey} is {@code
-     *                              null}.
+     * @throws NullPointerException if {@code proofOfWork} or {@code identitySecretKey} is
+     *                              {@code null}.
      */
     public static Identity of(final ProofOfWork proofOfWork,
                               final IdentitySecretKey identitySecretKey) {
@@ -192,12 +195,29 @@ public abstract class Identity extends SocketAddress {
      */
     public static Identity generateIdentity() throws IOException {
         try {
-            final KeyPair<IdentityPublicKey, IdentitySecretKey> identityKeyPair = Crypto.INSTANCE.generateLongTimeKeyPair();
-            final ProofOfWork pow = ProofOfWork.generateProofOfWork(identityKeyPair.getPublicKey(), POW_DIFFICULTY);
+            final byte[] sk = new byte[IdentitySecretKey.KEY_LENGTH_AS_BYTES];
+            final byte[] pk = new byte[IdentityPublicKey.KEY_LENGTH_AS_BYTES];
+            final byte[] pow = new byte[4];
 
-            return of(pow, identityKeyPair);
+            final int rtn = drasyl_generate_identity(sk, pk, pow, POW_DIFFICULTY);
+
+            switch (rtn) {
+                case 0: {
+                    final IdentitySecretKey identitySecretKey = IdentitySecretKey.of(sk);
+                    final IdentityPublicKey identityPublicKey = IdentityPublicKey.of(pk);
+                    final ProofOfWork proofOfWork = ProofOfWork.of(ByteBuffer.wrap(pow).getInt());
+
+                    return of(proofOfWork, identityPublicKey, identitySecretKey);
+                }
+                case -6:
+                    throw new IOException("NullPointerException during identity generation");
+                case -7:
+                    throw new IOException("Unable to generate new identity");
+                default:
+                    throw new IOException("Unknown identity generation error");
+            }
         }
-        catch (final CryptoException | IllegalStateException e) {
+        catch (final IllegalStateException e) {
             throw new IOException("Unable to generate new identity", e);
         }
     }

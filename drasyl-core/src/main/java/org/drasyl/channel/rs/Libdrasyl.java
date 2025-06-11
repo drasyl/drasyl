@@ -38,8 +38,16 @@ import static org.drasyl.crypto.loader.LibraryLoader.PREFER_SYSTEM;
 public class Libdrasyl {
     public static final long MAX_PEERS_DEFAULT = 128;
     public static final long RECV_BUF_CAP_DEFAULT = 64;
-
     private static final String DEFAULT_MODE = SystemPropertyUtil.get("drasyl.libdrasyl.mode", PREFER_SYSTEM);
+
+    static {
+        try {
+            new Libdrasyl();
+        }
+        catch (IOException e) {
+            throw new RuntimeException(e);
+        }
+    }
 
     public Libdrasyl() throws IOException {
         this(DEFAULT_MODE);
@@ -68,7 +76,10 @@ public class Libdrasyl {
 
     public static native String drasyl_version();
 
-    public static native int drasyl_generate_identity(byte[] secretKey, byte[] publicKey, byte[] proofOfWork);
+    public static native int drasyl_generate_identity(byte[] secretKey,
+                                                      byte[] publicKey,
+                                                      byte[] proofOfWork,
+                                                      int proofOfWorkDifficulty);
 
     //
     // MessageSink
@@ -82,7 +93,11 @@ public class Libdrasyl {
 
     public static native long drasyl_recv_buf_rx(long recvBufAddr);
 
-    public static native int drasyl_recv_buf_recv(long bindAddr, long channelAddr, byte[] sender, byte[] buf, long bufLen);
+    public static native int drasyl_recv_buf_recv(long bindAddr,
+                                                  long channelAddr,
+                                                  byte[] sender,
+                                                  byte[] buf,
+                                                  long bufLen);
 
     public static native int drasyl_recv_buf_free(long recvBufAddr);
 
@@ -96,27 +111,35 @@ public class Libdrasyl {
 
     public static native int drasyl_node_opts_builder_network_id(long builderAddr, int networkId);
 
-    public static native int drasyl_node_opts_builder_message_sink(long builderAddr, long recvBufTxAddr);
+    public static native int drasyl_node_opts_builder_message_sink(long builderAddr,
+                                                                   long recvBufTxAddr);
 
     public static native int drasyl_node_opts_builder_udp_port(long builderAddr, int udpPort);
 
     public static native int drasyl_node_opts_builder_udp_port_none(long builderAddr);
 
-    public static native int drasyl_node_opts_builder_arm_messages(long builderAddr, boolean armMessages);
+    public static native int drasyl_node_opts_builder_arm_messages(long builderAddr,
+                                                                   boolean armMessages);
 
     public static native int drasyl_node_opts_builder_max_peers(long builderAddr, long maxPeers);
 
-    public static native int drasyl_node_opts_builder_min_pow_difficulty(long builderAddr, byte minPowDifficulty);
+    public static native int drasyl_node_opts_builder_min_pow_difficulty(long builderAddr,
+                                                                         byte minPowDifficulty);
 
-    public static native int drasyl_node_opts_builder_hello_timeout(long builderAddr, long helloTimeout);
+    public static native int drasyl_node_opts_builder_hello_timeout(long builderAddr,
+                                                                    long helloTimeout);
 
-    public static native int drasyl_node_opts_builder_hello_max_age(long builderAddr, long helloMaxAge);
+    public static native int drasyl_node_opts_builder_hello_max_age(long builderAddr,
+                                                                    long helloMaxAge);
 
-    public static native int drasyl_node_opts_builder_super_peers(long builderAddr, String superPeers);
+    public static native int drasyl_node_opts_builder_super_peers(long builderAddr,
+                                                                  String superPeers);
 
-    public static native int drasyl_node_opts_builder_process_unites(long builderAddr, boolean processUnites);
+    public static native int drasyl_node_opts_builder_process_unites(long builderAddr,
+                                                                     boolean processUnites);
 
-    public static native int drasyl_node_opts_builder_housekeeping_interval(long builderAddr, long housekeepingDelay);
+    public static native int drasyl_node_opts_builder_housekeeping_interval(long builderAddr,
+                                                                            long housekeepingDelay);
 
     public static native int drasyl_node_opts_builder_build(long builderAddr, byte[] optAddr);
 
@@ -156,7 +179,10 @@ public class Libdrasyl {
 
     public static native int drasyl_node_bind_free(long bindAddr);
 
-    public static native int drasyl_node_send_to(long bindAddr, byte[] recipient, byte[] buf, long bufLen);
+    public static native int drasyl_node_send_to(long bindAddr,
+                                                 byte[] recipient,
+                                                 byte[] buf,
+                                                 long bufLen);
 
     public static native int drasyl_node_peers_list(long bindAddr, byte[] peersListAddr);
 
