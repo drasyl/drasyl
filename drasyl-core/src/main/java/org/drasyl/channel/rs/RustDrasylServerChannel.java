@@ -275,8 +275,8 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
             }
             state = State.CLOSED;
 
-            drasyl_node_bind_free(bind);
-            drasyl_recv_buf_free(recvBuf);
+            ensureSuccess(drasyl_node_bind_free(bind));
+            ensureSuccess(drasyl_recv_buf_free(recvBuf));
 
             readLoop.shutdownGracefully().awaitUninterruptibly();
         }
@@ -484,7 +484,7 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
             return false;
         }
         finally {
-            drasyl_peers_list_peers_free(peers);
+            ensureSuccess(drasyl_peers_list_peers_free(peers));
         }
     }
 
