@@ -425,16 +425,16 @@ jobs:
           echo sha=${s} >> $GITHUB_OUTPUT
       - name: Update Formula
         run: |
-          sed -i -e "s/  version.*/  version \"$(echo ${{ github.event.release.tag_name }} | sed 's/v//')\"/" Formula/drasyl.rb
-          sed -i -e "s/  sha256.*/  sha256 \"$(echo ${{ steps.sha.outputs.sha }} | sed 's/v//')\"/" Formula/drasyl.rb
-          cat Formula/drasyl.rb
+          sed -i -e "s/  version.*/  version \"$(echo ${{ github.event.release.tag_name }} | sed 's/v//')\"/" Formula/drasyl-java.rb
+          sed -i -e "s/  sha256.*/  sha256 \"$(echo ${{ steps.sha.outputs.sha }} | sed 's/v//')\"/" Formula/drasyl-java.rb
+          cat Formula/drasyl-java.rb
       - uses: stefanzweifel/git-auto-commit-action@v5.2.0
         with:
-          commit_message: Update drasyl formula to ${{ github.event.release.tag_name }}
+          commit_message: Update drasyl-java formula to ${{ github.event.release.tag_name }}
           commit_user_name: drasyl-bot
           commit_user_email: ${{ secrets.DRASYL_BOT_EMAIL }}
           commit_author: drasyl-bot <${{ secrets.DRASYL_BOT_EMAIL }}>
-          file_pattern: Formula/drasyl.rb
+          file_pattern: Formula/drasyl-java.rb
 
   chocolatey:
     name: Update Chocolatey package
