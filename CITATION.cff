@@ -33,5 +33,5 @@ keywords:
   - nio
   - non-blocking
 license: MIT
-version: 0.13.0-SNAPSHOT
-date-released: '2025-06-10'
+version: 0.12.1
+date-released: '2025-06-11'
