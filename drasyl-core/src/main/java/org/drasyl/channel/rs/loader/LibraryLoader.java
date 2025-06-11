@@ -52,9 +52,9 @@ public class LibraryLoader {
         final boolean is64Bit = Native.POINTER_SIZE == 8;
         if (Platform.isWindows()) {
             if (is64Bit) {
-                return getPath("windows64", "libdrasyl.dll");
+                return getPath("windows64", "drasyl.dll");
             }
-            return getPath("windows", "libdrasyl.dll");
+            return getPath("windows", "drasyl.dll");
         }
         if (Platform.isMac()) {
             // check for Apple Silicon
