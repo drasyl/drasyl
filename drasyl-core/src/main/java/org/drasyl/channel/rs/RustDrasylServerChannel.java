@@ -286,6 +286,8 @@ public class RustDrasylServerChannel extends AbstractServerChannel implements Dr
 
             drasyl_node_bind_free(bind);
             drasyl_recv_buf_free(recvBuf);
+
+            readLoop.shutdownGracefully().awaitUninterruptibly();
         }
     }
 
