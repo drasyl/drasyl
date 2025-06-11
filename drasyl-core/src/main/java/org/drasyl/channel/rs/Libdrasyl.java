@@ -68,6 +68,8 @@ public class Libdrasyl {
 
     public static native String drasyl_version();
 
+    public static native int drasyl_generate_identity(byte[] secretKey, byte[] publicKey, byte[] proofOfWork);
+
     //
     // MessageSink
     //
