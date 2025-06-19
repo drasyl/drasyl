@@ -109,7 +109,7 @@
         <logback.version>1.5.16</logback.version>
         <junit.version>5.13.1</junit.version>
         <mockito.version>5.18.0</mockito.version>
-        <jackson.version>2.19.0</jackson.version>
+        <jackson.version>2.19.1</jackson.version>
         <hamcrest.version>3.0</hamcrest.version>
         <awaitility.version>4.3.0</awaitility.version>
         <netty.version>4.1.122.Final</netty.version>
