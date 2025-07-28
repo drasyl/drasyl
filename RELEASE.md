@@ -28,7 +28,7 @@ tasks automatically.
 ```bash
 [CHANGELOG.md](https://github.com/drasyl-overlay/drasyl/blob/v1.2/CHANGELOG.md)
 
-The assets below contain the drasyl command-line tool and shared native library. To learn how to integrate the overlay network into your application, please read our [documentation](https://docs.drasyl.org/getting-started/).
+The assets below contain the drasyl command-line tool and shared native library. To learn how to integrate the overlay network into your application, please read our [documentation](https://docs.java.drasyl.org/getting-started/).
 ```
 * Wait for GitHub Action to complete [Release](https://github.com/drasyl/drasyl/actions/workflows/release.yml) workflow.
 * Update back to next SNAPSHOT version
@@ -37,7 +37,7 @@ The assets below contain the drasyl command-line tool and shared native library.
 * If a new minor version is released, the `revapi.differences` section in [api-changes.json](api-changes.json) should be cleared.
 * Commit changes (commit message: `Prepare for next development iteration`).
 * Create/update version branch (e.g., `v1.2` if you release `v1.2.0`) and push.
-* Update [docs.drasyl.org](https://github.com/drasyl/docs.drasyl.org) if necessary.
+* Update [docs.java.drasyl.org](https://github.com/drasyl/docs.java.drasyl.org) if necessary.
 
 ## Making a manual build of docker
 

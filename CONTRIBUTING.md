@@ -6,7 +6,7 @@ This is a short guide on how to contribute things to drasyl.
 
 When filing an issue, please include the following information if possible as well as a description
 of the problem. Make sure you test with
-the [latest snapshot version of drasyl](https://docs.drasyl.org/master/getting-started/quick-start/):
+the [latest snapshot version of drasyl](https://docs.java.drasyl.org/master/getting-started/quick-start/):
 
 * drasyl version
 * Expected behavior

@@ -71,7 +71,7 @@ public class GroupsManagerNode extends DrasylNode {
             System.out.println();
             System.out.println("  " + group.getUri(identity().getIdentityPublicKey()).toUri());
             System.out.println();
-            System.out.println("More information: https://docs.drasyl.org/plugins/groups/#configuration");
+            System.out.println("More information: https://docs.java.drasyl.org/plugins/groups/#configuration");
         }
     }
 

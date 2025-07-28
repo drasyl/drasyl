@@ -1,6 +1,6 @@
 # Command Line Tool
 
-See https://docs.drasyl.org/cli/ for more information.
+See https://docs.java.drasyl.org/cli/ for more information.
 
 ## Native Image
 

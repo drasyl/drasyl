@@ -100,7 +100,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
             }
         }
         else {
-            throw new EncoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/");
+            throw new EncoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.java.drasyl.org/configuration/serialization/");
         }
     }
 
@@ -128,7 +128,7 @@ public final class MessageSerializer extends MessageToMessageCodec<ByteBuf, Obje
                 }
             }
             else {
-                throw new DecoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.drasyl.org/configuration/serialization/");
+                throw new DecoderException("No serializer was found for type `" + type + "`. You can find more information regarding this here: https://docs.java.drasyl.org/configuration/serialization/");
             }
         }
         catch (final IOException e) {

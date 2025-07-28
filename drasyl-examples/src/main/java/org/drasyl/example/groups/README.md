@@ -1,6 +1,6 @@
 # Groups Plugin
 
-This example shows the use of the [Groups Plugin](https://docs.drasyl.org/plugins/groups/).
+This example shows the use of the [Groups Plugin](https://docs.java.drasyl.org/plugins/groups/).
 
 ## Usage
 

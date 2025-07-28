@@ -35,7 +35,7 @@ classifiers = [
 ]
 
 [project.urls]
-"Documentation" = "https://docs.drasyl.org/"
+"Documentation" = "https://docs.java.drasyl.org/"
 "Source" = "https://github.com/drasyl/drasyl"
 "Changelog" = "https://github.com/drasyl/drasyl/blob/master/CHANGELOG.md"
 "Homepage" = "https://drasyl.org"

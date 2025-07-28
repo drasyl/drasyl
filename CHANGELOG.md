@@ -79,24 +79,24 @@ adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Added
 
 - It is now easier to create drasyl node through the bootstrap interface.
-  Refer [our documentation](https://docs.drasyl.org/advanced-usage/bootstrapping/) for more
+  Refer [our documentation](https://docs.java.drasyl.org/advanced-usage/bootstrapping/) for more
   information.
 - Added support for remote message invocations over drasyl.
-  Refer [our documentation](https://docs.drasyl.org/advanced-usage/remote-message-invocation/)
+  Refer [our documentation](https://docs.java.drasyl.org/advanced-usage/remote-message-invocation/)
   for more information.
 - Added support for decentralized membership managed using the CYCLON protocol.
-  Refer [our documentation](https://docs.drasyl.org/advanced-usage/membership-management/) for
+  Refer [our documentation](https://docs.java.drasyl.org/advanced-usage/membership-management/) for
   more information.
 - Added support for the publish/subscribe messaging pattern.
-  Refer [our documentation](https://docs.drasyl.org/advanced-usage/publish-subscribe/) for
+  Refer [our documentation](https://docs.java.drasyl.org/advanced-usage/publish-subscribe/) for
   more information.
 - Added support for distributed lookup service using the Chord protocol.
-  Refer [our documentation](https://docs.drasyl.org/advanced-usage/distributed-lookup/) for
+  Refer [our documentation](https://docs.java.drasyl.org/advanced-usage/distributed-lookup/) for
   more information.
 - Created shared C library `libdrasyl` for the `DrasylNode` interface.
-  Refer [our documentation](https://docs.drasyl.org/language-bindings/c) for
+  Refer [our documentation](https://docs.java.drasyl.org/language-bindings/c) for
   more information.
-- Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/). Refer [our documentation](https://docs.drasyl.org/language-bindings/python) for
+- Created Python binding `drasyl` for the shared C library. Can be installed through [PyPI](https://pypi.org/project/drasyl/). Refer [our documentation](https://docs.java.drasyl.org/language-bindings/python) for
   more information.
 
 ### Changed
@@ -326,9 +326,9 @@ ProofOfWork = -2144920491
 - The entire protocol for constructing the overlay network has been revised (it's far better now!).
 - Messages are now serialized in binary. This is faster and creates smaller messages on the wire.
 - If possible, messages are processed using zero-copy.
-- Documentation has been revised (Javadoc and/or documentation at https://docs.drasyl.org).
+- Documentation has been revised (Javadoc and/or documentation at https://docs.java.drasyl.org).
 - Messages can now be additionally serialized by protobuf or Java. Furthermore, own serializers can
-  be implemented. Read more at https://docs.drasyl.org.
+  be implemented. Read more at https://docs.java.drasyl.org.
 - The third-party portmapper library has been replaced with our own more lightweight and more
   resilient implementation.
 - All dependencies have been updated to the latest versions.

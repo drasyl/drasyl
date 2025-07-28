@@ -1,7 +1,7 @@
-[<img src="https://docs.drasyl.org/img/logo-text.svg" alt="drasyl" width="200"/>](https://drasyl.org)
+[<img src="https://docs.java.drasyl.org/img/logo-text.svg" alt="drasyl" width="200"/>](https://drasyl.org)
 
 [Website](https://drasyl.org) |
-[Documentation](https://docs.drasyl.org) |
+[Documentation](https://docs.java.drasyl.org) |
 [Javadoc](https://api.drasyl.org) |
 [Contributing](CONTRIBUTING.md) |
 [Changelog](CHANGELOG.md)
@@ -23,7 +23,7 @@ drasyl enables quick and easy development of high-performance distributed applic
 
 To prevent developers from reinventing the wheel, drasyl provides extensions that address common challenges for distributed systems like identity/key management, resource discovery, and locality-aware message routing. By using drasyl, developers are unburdened of many usual tasks and can proceed directly with building their distributed application.
 
-<img src="https://docs.drasyl.org/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
+<img src="https://docs.java.drasyl.org/img/drasyl-architecture.svg" alt="drasyl architecture" width="650px">
 
 # Features
 
@@ -36,7 +36,7 @@ To prevent developers from reinventing the wheel, drasyl provides extensions tha
 
 # Usage & Documentation
 
-* [Getting Started](https://docs.drasyl.org/getting-started/)
+* [Getting Started](https://docs.java.drasyl.org/getting-started/)
 * [Examples](https://github.com/drasyl/drasyl/tree/master/drasyl-examples)
 
 # License
