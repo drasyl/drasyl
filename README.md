@@ -12,7 +12,7 @@
 [![Homebrew](https://img.shields.io/badge/dynamic/json.svg?url=https://raw.githubusercontent.com/drasyl/homebrew-tap/main/Info/drasyl-java.json&prefix=v&query=$.versions.stable&label=homebrew&color=important)](https://github.com/drasyl/homebrew-tap)
 [![Chocolatey](https://img.shields.io/chocolatey/v/drasyl)](https://chocolatey.org/packages/drasyl)
 [![Python Package Index](https://img.shields.io/pypi/v/drasyl.svg)](https://pypi.org/project/drasyl)
-[![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/r/drasyl/drasyl)
+[![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl-java)](https://hub.docker.com/r/drasyl/drasyl-java)
 [![Discord](https://img.shields.io/discord/959492172560891905)](https://discord.gg/2tcZPy7BCu)
 
 # drasyl-java

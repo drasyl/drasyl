@@ -399,7 +399,7 @@ jobs:
         uses: ilteoood/docker_buildx@1.1.0
         with:
           tag: latest,${{ steps.actual_patch_version.outputs.ACTUAL_PATCH_VERSION }},${{ steps.actual_minor_version.outputs.ACTUAL_MINOR_VERSION }},${{ steps.actual_major_version.outputs.ACTUAL_MAJOR_VERSION }}
-          imageName: drasyl/drasyl
+          imageName: drasyl/drasyl-java
           platform: linux/amd64
           publish: true
           dockerUser: ${{ secrets.DOCKER_HUB_USER }}
