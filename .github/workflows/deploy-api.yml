@@ -45,7 +45,7 @@ jobs:
       - name: Delete old Java API
         run: rm -rf ${{ steps.vars.outputs.short_ref }}
       - name: Download artifact
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           name: Java API
           path: ${{ steps.vars.outputs.short_ref }}
