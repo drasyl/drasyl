@@ -24,7 +24,7 @@ jobs:
       pull-requests: write
 
     steps:
-      - uses: actions/checkout@v4.1.2
+      - uses: actions/checkout@v5
         with:
           fetch-depth: 0
       # sign artifacts to check if signing works, otherwise we would only find out after merging with the master, which is too late
