@@ -118,7 +118,7 @@
         <typesafe.config.version>1.4.4</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <json-unit-assertj.version>2.40.1</json-unit-assertj.version>
-        <protobuf.version>4.31.1</protobuf.version>
+        <protobuf.version>4.32.0</protobuf.version>
         <auto-value.version>1.11.0</auto-value.version>
         <jna.version>5.17.0</jna.version>
         <sonar.organization>drasyl-overlay</sonar.organization>
