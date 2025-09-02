@@ -73,6 +73,12 @@ import java.util.regex.Pattern;
 
 import static java.nio.charset.StandardCharsets.UTF_8;
 
+/**
+ * @deprecated This class is no longer maintained and will not receive further updates.
+ *             Please use the drasyl-rs shared library instead:
+ *             https://github.com/drasyl/drasyl-rs
+ */
+@Deprecated
 @SuppressWarnings("unused")
 @CContext(LibDrasyl.Directives.class)
 final class LibDrasyl {

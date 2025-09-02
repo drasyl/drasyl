@@ -1,3 +1,9 @@
+# Discontinued
+
+Development of the Java shared library has been discontinued.
+For an actively maintained shared library, please use [drasyl-rs](https://github.com/drasyl/drasyl-rs).
+---
+
 # Shared Library
 
 We use the GraalVM to build a [shared library with native image](https://www.graalvm.org/dev/reference-manual/native-image/guides/build-native-shared-library/) for our [`DrasylNode`](https://api.drasyl.org/master/org/drasyl/node/DrasylNode.html) interface.
