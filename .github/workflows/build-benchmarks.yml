@@ -26,7 +26,7 @@ jobs:
       - name: Build with Maven
         run: ./mvnw --batch-mode --errors --fail-at-end --show-version --update-snapshots -DinstallAtEnd=true -DdeployAtEnd=true --activate-profiles fast,benchmark-jar --projects drasyl-performance-tests --also-make  package
       - name: Publish artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: Benchmarks
           path: drasyl-performance-tests/target/drasyl-benchmarks.jar

@@ -152,7 +152,7 @@ jobs:
 
       # publish artifact (required by build-wheels job)
       - name: Publish artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: shared-library-${{ matrix.job_name }}
           path: libdrasyl-*-${{ matrix.job_name }}.zip
@@ -235,7 +235,7 @@ jobs:
           CIBW_REPAIR_WHEEL_COMMAND_LINUX: ""
 
       # required by publich-wheels
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v5
         with:
           name: wheel-${{ matrix.job_name }}
           path: ./wheelhouse/*.whl
