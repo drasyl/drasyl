@@ -10,7 +10,7 @@ services:
     command: > 
         broker 
         -v debug 
-        --super-peers c0900bcfabc493d062ecd293265f571edb70b85313ba4cdda96c9f77163ba62d=sp-fkb1.drasyl.org:22527 
+        --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527 
         --scheduler s1
     restart: always
     volumes:
