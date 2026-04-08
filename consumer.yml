@@ -14,6 +14,7 @@ services:
       --tags uhh,edge,cloud 
       --priority 1 
       --task tasks/primes.js 
+      --peers af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b
       --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
       --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527  
       1 2500
