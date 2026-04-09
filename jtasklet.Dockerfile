@@ -3,7 +3,7 @@
 ARG BUILDPLATFORM
 ARG TARGETPLATFORM
 
-FROM --platform=$BUILDPLATFORM ghcr.io/graalvm/jdk:java11 AS build
+FROM --platform=$BUILDPLATFORM ghcr.io/graalvm/jdk:22.3.3 AS build
 
 WORKDIR /build
 ADD . /build
@@ -19,7 +19,7 @@ RUN ./mvnw --quiet \
     package \
  && unzip -qq ./jtasklet-*.zip -d /
 
-FROM ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.1
+FROM ghcr.io/graalvm/graalvm-ce:ol9-java11-22.3.3
 
 RUN gu install js
 
