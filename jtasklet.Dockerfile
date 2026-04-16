@@ -41,13 +41,13 @@ RUN cat > /usr/local/share/jtasklet/logback.xml <<'EOF'
         </encoder>
     </appender>
 
-    <logger name="io.netty" level="warn">
+    <logger name="io.netty" level="ERROR">
     </logger>
 
     <logger name="org.drasyl.jtasklet" level="INFO">
     </logger>
 
-    <root level="warn">
+    <root level="ERROR">
         <appender-ref ref="Console"/>
     </root>
 </configuration>

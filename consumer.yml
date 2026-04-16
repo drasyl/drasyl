@@ -8,7 +8,7 @@ services:
     command: >
       offload 
       -v info
-      --tags edge,cloud 
+      --tags edge 
       --priority 1 
       --task /tasks/dataset_10000.json 
       --peers 48f925fba4107340aaeaa712703561b5f5844445b7748607d28314467346a90d

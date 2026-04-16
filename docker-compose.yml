@@ -1,9 +1,71 @@
 version: '3.4'
 
 services:
-  drasyl:
-    image: drasyl/drasyl:latest
-    command: node --verbose DEBUG
+  broker:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    hostname: broker-1
+    user: "1000:1000"
+    command: >
+      broker 
+      -v info 
+      --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527
     restart: always
-    ports:
-      - 22527:22527
+    volumes:
+      - ./experiment/broker:/jtasklet
+
+  vm-1:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    depends_on:
+      - broker
+    hostname: vm-1
+    user: "1000:1000"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >
+        until sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p'
+        /shared-broker/broker-1.identity | grep -q .; do sleep 1; done;
+        exec jtasklet.sh vm
+        -v info
+        --broker "$(sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p' /shared-broker/broker-1.identity)"
+        --tags edge
+        --benchmark-runs 1
+        --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527
+    restart: always
+    volumes:
+      - ./experiment/vms/vm-1:/jtasklet
+      - ./experiment/broker:/shared-broker:ro
+
+  consumer:
+    build:
+      context: .
+      dockerfile: ./jtasklet.Dockerfile
+    hostname: consumer-1
+    depends_on:
+      - broker
+      - vm-1
+    user: "1000:1000"
+    entrypoint: ["/bin/sh", "-ec"]
+    command:
+      - >
+        until sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p'
+        /shared-broker/broker-1.identity | grep -q .; do sleep 1; done;
+        until sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p'
+        /shared-vm-1/vm-1.identity | grep -q .; do sleep 1; done;
+        exec jtasklet.sh offload
+        -v info
+        --relay-only
+        --broker "$(sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p' /shared-broker/broker-1.identity)"
+        --peers "$(sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p' /shared-broker/broker-1.identity)","$(sed -n 's/^SecretKey[[:space:]]*=[[:space:]]*[0-9A-Fa-f]\{64\}\([0-9A-Fa-f]\{64\}\)$/\1/p' /shared-vm-1/vm-1.identity)"
+        --tags edge
+        --priority 1
+        --task /tasks/dataset_10000.json
+        --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527
+    restart: always
+    volumes:
+      - ./experiment/consumer:/jtasklet
+      - ./experiment/broker:/shared-broker:ro
+      - ./experiment/vms/vm-1:/shared-vm-1:ro

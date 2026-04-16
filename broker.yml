@@ -8,8 +8,7 @@ services:
     command: > 
         broker 
         -v info 
-        --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527 
-        --scheduler s1
+        --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527
     restart: always
     volumes:
       - ./experiment/broker:/jtasklet
