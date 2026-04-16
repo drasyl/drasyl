@@ -12,6 +12,7 @@ import org.drasyl.jtasklet.provider.runtime.ExecutionResult;
 import org.drasyl.jtasklet.provider.runtime.GraalVmJsRuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.RuntimeEnvironment;
 import org.drasyl.jtasklet.provider.runtime.ThrottledRuntimeEnvironment;
+import org.drasyl.jtasklet.provider.runtime.VNMIFERuntimeEnvironment;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -73,13 +74,15 @@ public class VmCommand extends ChannelOptions {
     public Integer call() {
         setLogLevel();
 
-        runtimeEnvironment = new ThrottledRuntimeEnvironment(new GraalVmJsRuntimeEnvironment(), (float) cpuThrottle);
+        runtimeEnvironment = new ThrottledRuntimeEnvironment(new VNMIFERuntimeEnvironment(), (float) cpuThrottle);
+
+        RuntimeEnvironment benchEnv = new ThrottledRuntimeEnvironment(new GraalVmJsRuntimeEnvironment(), (float) cpuThrottle);
 
         try {
             LOG.info("Perform benchmark...");
             benchmark = Long.MAX_VALUE;
             for (int i = 0; i < benchmarkRuns; i++) {
-                final ExecutionResult result = runtimeEnvironment.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark_primes.js"), BENCHMARK_PRIMES_INPUT);
+                final ExecutionResult result = benchEnv.execute(Thread.currentThread().getContextClassLoader().getResourceAsStream("benchmark_primes.js"), BENCHMARK_PRIMES_INPUT);
                 if (result.getExecutionTime() < benchmark) {
                     benchmark = result.getExecutionTime();
                 }

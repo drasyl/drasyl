@@ -57,4 +57,14 @@ public class GraalVmJsRuntimeEnvironment extends AbstractRuntimeEnvironment {
             return new ExecutionResult(output.isNull() ? new Object[0] : output.as(Object[].class), Duration.between(start, end).toMillis());
         }
     }
+
+    @Override
+    public ExecutionResult executeEncrypted(final String key, final String encryptedInput) {
+        throw new UnsupportedOperationException("Encrypted execution is only supported by VNMIFE runtime.");
+    }
+
+    @Override
+    public ExecutionResult decrypt(final String ciphertexts, final String functionalKey, final Object weights) {
+        throw new UnsupportedOperationException("Decrypt is only supported by VNMIFE runtime.");
+    }
 }

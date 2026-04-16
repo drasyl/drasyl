@@ -7,8 +7,9 @@ import org.drasyl.cli.ChannelOptions;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.channel.ChildChannelInitializer;
-import org.drasyl.jtasklet.consumer.channel.ConsumerChannelInitializer;
-import org.drasyl.jtasklet.consumer.channel.RelayOnlyConsumerChannelInitializer;
+import org.drasyl.jtasklet.consumer.channel.VNMIFEConsumerChannelInitializer;
+import org.drasyl.jtasklet.consumer.channel.VNMIFERelayOnlyConsumerChannelInitializer;
+import org.drasyl.jtasklet.vnmife.VNMIFETaskPayload;
 import org.drasyl.util.EventLoopGroupUtil;
 import org.drasyl.util.Worm;
 import org.drasyl.util.logging.Logger;
@@ -18,12 +19,9 @@ import picocli.CommandLine.Option;
 import picocli.CommandLine.Parameters;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-
-import static java.nio.charset.StandardCharsets.UTF_8;
 
 @Command(
         name = "offload",
@@ -76,7 +74,12 @@ public class OffloadCommand extends ChannelOptions {
             split = ","
     )
     protected List<IdentityPublicKey> peers;
+    @Option(
+            names = { "--client-key-dir" }
+    )
+    private Path clientKeyDir;
     private String source;
+    private VNMIFETaskPayload payload;
 
     public OffloadCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -91,7 +94,11 @@ public class OffloadCommand extends ChannelOptions {
         try {
             out.println("Task        : " + task);
             out.println("Input       : " + Arrays.toString(input.toArray()));
-            source = Files.readString(task, UTF_8);
+            source = task.toAbsolutePath().toString();
+            payload = VNMIFETaskPayload.fromPath(task);
+            if (clientKeyDir == null) {
+                clientKeyDir = identityFile.toPath().toAbsolutePath().getParent().resolve(identityFile.getName() + ".vnmife-client-keys");
+            }
             return super.call();
         }
         catch (final IOException e) {
@@ -103,10 +110,10 @@ public class OffloadCommand extends ChannelOptions {
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
         if (relayOnly) {
-            return new RelayOnlyConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority);
+            return new VNMIFERelayOnlyConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), payload, clientKeyDir, cycles, tags, priority);
         }
 
-        return new ConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), cycles, tags, priority, peers);
+        return new VNMIFEConsumerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, broker, source, input.toArray(), payload, clientKeyDir, cycles, tags, priority, peers);
     }
 
     @Override

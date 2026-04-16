@@ -27,10 +27,10 @@ import static org.drasyl.node.JsonUtil.JACKSON_MAPPER;
 
 public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
     protected static final int ARQ_RETRY_TIMEOUT = 100;
-    protected static final int ARQ_WRITE_TIMEOUT = 5;
+    protected static final int ARQ_WRITE_TIMEOUT = 60;
     protected static final int MSG_CHUNK_SIZE = 1300;
-    protected static final int MSG_MAX_SIZE = 1024 * 1024 * 20;
-    protected static final int MAX_CHUNKS = 15_000;
+    protected static final int MSG_MAX_SIZE = 1024 * 1024 * 64;
+    protected static final int MAX_CHUNKS = 50_000;
     protected static final int CHUNK_FIELD_LENGTH = (int) (Math.log(MAX_CHUNKS) / Math.log(2) / 8) + 1;
     protected static final Duration HANDSHAKE_TIMEOUT = Duration.ofMillis(10_000);
     protected final PrintStream out;
@@ -94,7 +94,7 @@ public class ChildChannelInitializer extends ChannelInitializer<DrasylChannel> {
                 new ChunkedWriteHandler(),
                 new LargeByteBufToChunkedMessageEncoder(MSG_CHUNK_SIZE, MSG_MAX_SIZE),
                 new MessageChunkDecoder(CHUNK_FIELD_LENGTH),
-                new MessageChunksBuffer(MSG_MAX_SIZE, 30_000, MAX_CHUNKS),
+                new MessageChunksBuffer(MSG_MAX_SIZE, 120_000, MAX_CHUNKS),
                 new ChunkedMessageAggregator(MSG_MAX_SIZE),
                 new ReassembledMessageDecoder()
         );

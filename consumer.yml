@@ -1,5 +1,3 @@
-version: '3.4'
-
 services:
   consumer:
     build:
@@ -13,11 +11,10 @@ services:
       --relay-only 
       --tags uhh,edge,cloud 
       --priority 1 
-      --task tasks/primes.js 
-      --peers af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b
-      --broker af0dec7914141c90a805842cb87642d59ed389f4a7fc95f6daf30186dc97226b 
-      --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527  
-      1 2500
+      --task /tasks/dataset_10000.json 
+      --peers 48f925fba4107340aaeaa712703561b5f5844445b7748607d28314467346a90d
+      --broker 48f925fba4107340aaeaa712703561b5f5844445b7748607d28314467346a90d 
+      --super-peers ebe2b999bbe7c7e2a0ac58dd1f4c806eeb8a828a0807467579a4efe4be3f516f=195.37.209.24:22527
     restart: always
     volumes:
       - ./experiment/consumer:/jtasklet

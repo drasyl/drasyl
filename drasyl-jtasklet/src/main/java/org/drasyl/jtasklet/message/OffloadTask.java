@@ -24,21 +24,38 @@ package org.drasyl.jtasklet.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.List;
+
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.jtasklet.util.SourceUtil.minifySource;
 
 public class OffloadTask implements TaskletMessage {
     private final String token;
     private final String source;
-    private final Object[] input;
+    private final String session;
+    private final List<String> clientIds;
+    private final String ciphertexts;
+    private final java.util.List<java.util.List<Integer>> weights;
 
     @JsonCreator
     public OffloadTask(@JsonProperty("token") final String token,
                        @JsonProperty("source") final String source,
-                       @JsonProperty("input") final Object[] input) {
+                       @JsonProperty("session") final String session,
+                       @JsonProperty("clientIds") final List<String> clientIds,
+                       @JsonProperty("ciphertexts") final String ciphertexts,
+                       @JsonProperty("weights") final List<List<Integer>> weights) {
         this.token = requireNonNull(token);
         this.source = requireNonNull(source);
-        this.input = requireNonNull(input);
+        this.session = requireNonNull(session);
+        this.clientIds = requireNonNull(clientIds);
+        this.ciphertexts = requireNonNull(ciphertexts);
+        this.weights = requireNonNull(weights);
+    }
+
+    public OffloadTask(final String token,
+                       final String source,
+                       final Object[] input) {
+        this(token, source, "", List.of(), String.valueOf(input), List.of());
     }
 
     @Override
@@ -46,7 +63,10 @@ public class OffloadTask implements TaskletMessage {
         return "OffloadTask{" +
                 "token=" + token +
                 ", source='" + minifySource(source) + '\'' +
-                ", input=Object[" + input.length + "]}";
+                ", session='" + session + '\'' +
+                ", clientIds=List[" + clientIds.size() + "]" +
+                ", ciphertexts=***" +
+                ", weights=List[" + weights.size() + "]}";
     }
 
     public String getToken() {
@@ -57,7 +77,19 @@ public class OffloadTask implements TaskletMessage {
         return source;
     }
 
-    public Object[] getInput() {
-        return input;
+    public String getSession() {
+        return session;
+    }
+
+    public List<String> getClientIds() {
+        return clientIds;
+    }
+
+    public String getCiphertexts() {
+        return ciphertexts;
+    }
+
+    public List<List<Integer>> getWeights() {
+        return weights;
     }
 }

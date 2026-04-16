@@ -28,6 +28,10 @@ import java.nio.file.Path;
 public interface RuntimeEnvironment {
     ExecutionResult execute(CharSequence source, Object... input);
 
+    ExecutionResult executeEncrypted(String key, String encryptedInput);
+
+    ExecutionResult decrypt(String ciphertexts, String functionalKey, Object weights);
+
     ExecutionResult execute(Path source, Object... input) throws IOException;
 
     ExecutionResult execute(InputStream source, Object... input) throws IOException;

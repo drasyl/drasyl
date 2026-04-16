@@ -8,7 +8,8 @@ FROM --platform=$BUILDPLATFORM ghcr.io/graalvm/jdk:22.3.3 AS build
 WORKDIR /build
 ADD . /build
 
-RUN microdnf install -y unzip || yum install -y unzip
+RUN microdnf install -y unzip  && microdnf clean all \
+                               && rm -rf /var/cache/yum
 
 RUN ./mvnw --quiet \
     --projects drasyl-jtasklet \

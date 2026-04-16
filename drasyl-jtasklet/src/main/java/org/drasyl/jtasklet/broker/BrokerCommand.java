@@ -23,6 +23,8 @@ import org.drasyl.util.logging.LoggerFactory;
 import picocli.CommandLine.Command;
 import picocli.CommandLine.Option;
 
+import java.nio.file.Path;
+
 import static java.util.Objects.requireNonNull;
 
 @Command(
@@ -43,6 +45,26 @@ public class BrokerCommand extends ChannelOptions {
             defaultValue = "random"
     )
     protected SchedulingStrategyType schedulingStrategyType;
+    @Option(
+            names = { "--vnmife-dir" },
+            defaultValue = ".jtasklet-vnmife"
+    )
+    private Path vnmifeDir;
+    @Option(
+            names = { "--bound-x" },
+            defaultValue = "100000"
+    )
+    private int boundX;
+    @Option(
+            names = { "--bound-y" },
+            defaultValue = "100000"
+    )
+    private int boundY;
+    @Option(
+            names = { "--bound-n" },
+            defaultValue = "0"
+    )
+    private int boundN;
 
     public BrokerCommand() {
         super(new NioEventLoopGroup(1), new NioEventLoopGroup());
@@ -50,7 +72,7 @@ public class BrokerCommand extends ChannelOptions {
 
     @Override
     protected ChannelHandler getHandler(final Worm<Integer> exitCode, final Identity identity) {
-        return new BrokerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, schedulingStrategyType.schedulingStrategy);
+        return new BrokerChannelInitializer(identity, group, bindAddress, networkId, onlineTimeoutMillis, superPeers, out, !protocolArmDisabled, schedulingStrategyType.schedulingStrategy, vnmifeDir, boundX, boundY, boundN);
     }
 
     @Override

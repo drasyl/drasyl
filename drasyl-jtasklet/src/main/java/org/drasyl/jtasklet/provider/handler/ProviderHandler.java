@@ -35,6 +35,7 @@ import static org.drasyl.jtasklet.provider.handler.ProviderHandler.State.*;
 public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(ProviderHandler.class);
     private static final int OFFLOAD_TASK_TIMEOUT = 30_000;
+    private static final int STATUS_LOG_INTERVAL = 5_000;
     private final CsvLogger logger;
     private State state = STARTED;
     private final PrintStream out;
@@ -49,6 +50,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
     private String token;
     private DrasylChannel consumerChannel;
     private DrasylAddress consumer;
+    private OffloadTask offloadTask;
     private ScheduledFuture<?> timeoutGuard;
 
     public ProviderHandler(final PrintStream out,
@@ -164,7 +166,7 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                 });
             }, OFFLOAD_TASK_TIMEOUT, MILLISECONDS);
         }
-        else if (state == TASK_SCHEDULED && evt instanceof ConnectionClosed && sender.equals(consumer)) {
+        else if ((state == TASK_SCHEDULED || state == DERIVED_KEY_REQUESTING || state == DERIVED_KEY_REQUESTED || state == TASK_EXECUTING) && evt instanceof ConnectionClosed && sender.equals(consumer)) {
             // Consumer has closed connection to us, while we're still processing the task.
             // As we're not able to kill the task execution, we have to wait for completion
             // (despite the fact that the Consumer no more interested in the result...).
@@ -183,69 +185,107 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                                  final TaskletMessage msg) {
         final DrasylAddress sender = (DrasylAddress) channel.remoteAddress();
 
-        if (state == CONSUMER_CONNECTION_ESTABLISHED && msg instanceof OffloadTask) {
+        if (sender.equals(broker) && state == DERIVED_KEY_REQUESTED && msg instanceof DerivedKeyResponse) {
+            gotDerivedKeyResponse(ctx, sender, (DerivedKeyResponse) msg);
+        }
+        else if (state == CONSUMER_CONNECTION_ESTABLISHED && msg instanceof OffloadTask) {
             timeoutGuard.cancel(false);
             timeoutGuard = null;
+            token = ((OffloadTask) msg).getToken();
             final TaskExecuting taskExecuting = new TaskExecuting(token);
             state = TASK_SCHEDULED;
             LOG.info("[{}] Got task {} from Consumer {}. Inform Broker {}. Schedule it.", state, msg, sender, taskExecuting);
             consumerChannel = channel;
-            token = ((OffloadTask) msg).getToken();
-            taskRecord = new ProviderLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, ((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput(), tags);
+            offloadTask = (OffloadTask) msg;
+            final int clientCount = offloadTask.getClientIds().size();
+            final int weightRows = offloadTask.getWeights().size();
+            final int weightCols = weightRows > 0 ? offloadTask.getWeights().get(0).size() : 0;
+            LOG.info("[{}] Task summary: session={}, clients={}, weights={}x{}, ciphertextSize={} chars.", state, offloadTask.getSession(), clientCount, weightRows, weightCols, offloadTask.getCiphertexts().length());
+            taskRecord = new ProviderLoggableRecord((DrasylAddress) ctx.channel().localAddress(), broker, benchmark, consumer, token, offloadTask.getSource(), new Object[]{ offloadTask.getSession(), offloadTask.getClientIds(), offloadTask.getWeights() }, tags);
 
             // inform broker
             brokerChannel.writeAndFlush(taskExecuting).addListener(FIRE_EXCEPTION_ON_FAILURE);
+            requestDerivedKey(sender);
+        }
+    }
 
-            taskEventLoop.execute(() -> {
-                // execute
-                state = TASK_EXECUTING;
-                LOG.info("[{}] Start executing of task {} from Consumer {}.", state, msg, sender);
-                taskRecord.executing();
-                final ExecutionResult result = runtimeEnvironment.execute(((OffloadTask) msg).getSource(), ((OffloadTask) msg).getInput());
+    private void requestDerivedKey(final DrasylAddress sender) {
+        final DerivedKeyRequest derivedKeyRequest = new DerivedKeyRequest(token, offloadTask.getSession(), offloadTask.getClientIds(), offloadTask.getWeights());
+        state = DERIVED_KEY_REQUESTING;
+        final int weightRows = offloadTask.getWeights().size();
+        final int weightCols = weightRows > 0 ? offloadTask.getWeights().get(0).size() : 0;
+        LOG.info("[{}] Request derived key for session={} with clients={} and weights={}x{} at Broker {}.", state, offloadTask.getSession(), offloadTask.getClientIds().size(), weightRows, weightCols, broker);
+        brokerChannel.writeAndFlush(derivedKeyRequest).addListener((ChannelFutureListener) future -> {
+            if (future.isSuccess()) {
+                state = DERIVED_KEY_REQUESTED;
+                LOG.info("[{}] Derived key request {} arrived at Broker {}.", state, derivedKeyRequest, broker);
+            }
+            else {
+                state = CLOSED;
+                LOG.info("[{}] Failed to request derived key {} at Broker {}.", state, derivedKeyRequest, broker, future.cause());
+                future.channel().close();
+            }
+        });
+    }
+
+    private void gotDerivedKeyResponse(final ChannelHandlerContext ctx,
+                                       final DrasylAddress sender,
+                                       final DerivedKeyResponse msg) {
+        LOG.info("[{}] Got derived key {} from Broker {}.", state, msg, sender);
+        taskEventLoop.execute(() -> {
+            final long startTime = System.nanoTime();
+            final int weightRows = offloadTask.getWeights().size();
+            final int weightCols = weightRows > 0 ? offloadTask.getWeights().get(0).size() : 0;
+            final ScheduledFuture<?> statusFuture = ctx.executor().scheduleAtFixedRate(() -> {
+                final long elapsed = (System.nanoTime() - startTime) / 1_000_000;
+                LOG.info("[{}] VN-MIFE decrypt for session={} still running after {}ms: clients={}, weights={}x{}, ciphertextSize={} chars.", state, offloadTask.getSession(), elapsed, offloadTask.getClientIds().size(), weightRows, weightCols, offloadTask.getCiphertexts().length());
+            }, STATUS_LOG_INTERVAL, STATUS_LOG_INTERVAL, MILLISECONDS);
+            state = TASK_EXECUTING;
+            LOG.info("[{}] Start VN-MIFE decrypt for session={} from Consumer {} with clients={}, weights={}x{}, ciphertextSize={} chars.", state, offloadTask.getSession(), consumer, offloadTask.getClientIds().size(), weightRows, weightCols, offloadTask.getCiphertexts().length());
+            taskRecord.executing();
+            try {
+                final ExecutionResult result = runtimeEnvironment.decrypt(offloadTask.getCiphertexts(), msg.getFunctionalKey(), offloadTask.getWeights());
                 taskRecord.executed(result.getOutput(), result.getExecutionTime());
                 state = TASK_EXECUTED;
-                LOG.info("[{}] Execution of task {} from Consumer {} finished in {}ms.", state, msg, sender, result.getExecutionTime());
+                final long wallClockDuration = (System.nanoTime() - startTime) / 1_000_000;
+                LOG.info("[{}] VN-MIFE decrypt for session={} from Consumer {} finished in {}ms (binary reported {}ms).", state, offloadTask.getSession(), consumer, wallClockDuration, result.getExecutionTime());
 
                 if (consumerChannel != null) {
-                    // return result
                     final ReturnResult response = new ReturnResult(result.getOutput(), result.getExecutionTime());
-                    LOG.info("[{}] Send result {} back to Consumer {}.", state, response, sender);
+                    LOG.info("[{}] Send result {} back to Consumer {}.", state, response, consumer);
                     consumerChannel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             taskRecord.returnedResult();
 
-                            // inform broker
                             final TaskExecuted taskExecuted = new TaskExecuted(token, ResourceProvider.randomToken());
                             brokerChannel.writeAndFlush(taskExecuted).addListener(FIRE_EXCEPTION_ON_FAILURE);
 
-                            LOG.info("[{}] Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", state, sender, taskExecuted);
+                            LOG.info("[{}] Result arrived at Consumer {}! Inform Broker {}. Close connection to Consumer.", state, consumer, taskExecuted);
                             future.channel().close();
                         }
                         else {
                             final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
                             LOG.info("[{}] Failed to send response {} to Consumer {}. Reset our state at Broker {}.", state, response, future.channel().remoteAddress(), providerReset);
-
-                            // inform broker
                             brokerChannel.writeAndFlush(providerReset).addListener(FIRE_EXCEPTION_ON_FAILURE);
                         }
 
                         state = BROKER_REGISTERED;
                         consumer = null;
+                        offloadTask = null;
                         logger.log(taskRecord);
                         LOG.info("[{}] Send me tasks! I'm hungry!", state);
                     });
                 }
                 else {
-                    // it seems that the consumer is no longer interested in the result...great...
                     final ProviderReset providerReset = new ProviderReset(ResourceProvider.randomToken());
-                    LOG.info("[{}] Consumer {} is no longer connected to us. Reset our state at Broker {}.", state, sender, providerReset);
+                    LOG.info("[{}] Consumer {} is no longer connected to us. Reset our state at Broker {}.", state, consumer, providerReset);
 
-                    // inform broker
                     brokerChannel.writeAndFlush(providerReset).addListener((ChannelFutureListener) future -> {
                         if (future.isSuccess()) {
                             state = BROKER_REGISTERED;
                             consumer = null;
                             consumerChannel = null;
+                            offloadTask = null;
                             LOG.info("[{}] Broker {} informed. Send me tasks! I'm hungry!", state, broker);
                         }
                         else {
@@ -253,8 +293,11 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
                         }
                     });
                 }
-            });
-        }
+            }
+            finally {
+                statusFuture.cancel(false);
+            }
+        });
     }
 
     private void registerAtBroker(final ChannelHandlerContext ctx) {
@@ -286,6 +329,8 @@ public class ProviderHandler extends ChannelInboundHandlerAdapter {
         CONSUMER_CONNECTION_CLOSED,
         CONSUMER_CONNECTION_FAILED,
         TASK_SCHEDULED,
+        DERIVED_KEY_REQUESTING,
+        DERIVED_KEY_REQUESTED,
         TASK_EXECUTING,
         TASK_EXECUTED,
         CLOSED

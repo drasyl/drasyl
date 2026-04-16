@@ -4,6 +4,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import io.netty.util.concurrent.DefaultEventExecutorGroup;
+import io.netty.util.concurrent.EventExecutorGroup;
 import org.drasyl.channel.DrasylChannel;
 import org.drasyl.handler.PeersRttHandler.PeersRttReport;
 import org.drasyl.handler.discovery.AddPathAndSuperPeerEvent;
@@ -13,15 +15,23 @@ import org.drasyl.identity.IdentityPublicKey;
 import org.drasyl.jtasklet.broker.BrokerLoggableRecord;
 import org.drasyl.jtasklet.broker.ResourceProvider;
 import org.drasyl.jtasklet.broker.ResourceProvider.ProviderState;
+import org.drasyl.jtasklet.message.DerivedKeyRequest;
+import org.drasyl.jtasklet.message.DerivedKeyResponse;
+import org.drasyl.jtasklet.message.KeyGenRequest;
+import org.drasyl.jtasklet.message.KeyGenResponse;
 import org.drasyl.jtasklet.broker.scheduler.SchedulingStrategy;
 import org.drasyl.jtasklet.event.*;
 import org.drasyl.jtasklet.message.*;
+import org.drasyl.jtasklet.provider.runtime.VNMIFERuntimeEnvironment;
 import org.drasyl.jtasklet.util.CsvLogger;
 import org.drasyl.util.Pair;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.io.PrintStream;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.time.ZonedDateTime;
 import java.util.*;
 import java.util.Map.Entry;
@@ -33,28 +43,50 @@ import static org.drasyl.jtasklet.broker.handler.BrokerHandler.State.ONLINE;
 
 public class BrokerHandler extends ChannelInboundHandlerAdapter {
     private static final Logger LOG = LoggerFactory.getLogger(BrokerHandler.class);
-    private static final int STUCK_PROVIDER_TIMEOUT = 60_000;
+    private static final int STUCK_PROVIDER_TIMEOUT = 300_000;
+    private static final int STATUS_LOG_INTERVAL = 5_000;
     private State state = State.STARTED;
     private final PrintStream out;
     private final Set<DrasylAddress> superPeers = new HashSet<>();
     private final Map<DrasylAddress, ResourceProvider> providers = new HashMap<>();
     private final Map<DrasylAddress, Channel> providerChannels = new HashMap<>();
+    private final Set<DrasylAddress> consumersWaitingForResource = new HashSet<>();
     private final SchedulingStrategy schedulingStrategy;
     private final CsvLogger logger;
     private final Map<DrasylAddress, PeersRttReport> rttReports = new HashMap<>();
+    private final VNMIFERuntimeEnvironment runtimeEnvironment = new VNMIFERuntimeEnvironment();
+    private final EventExecutorGroup vnmifeExecutor = new DefaultEventExecutorGroup(1);
+    private final Path authorityFile;
+    private final int boundX;
+    private final int boundY;
+    private final int boundN;
 
     public BrokerHandler(final PrintStream out,
                          final DrasylAddress address,
-                         final SchedulingStrategy schedulingStrategy) {
+                         final SchedulingStrategy schedulingStrategy,
+                         final Path vnmifeDir,
+                         final int boundX,
+                         final int boundY,
+                         final int boundN) {
         this.out = requireNonNull(out);
         logger = new CsvLogger("broker-" + address.toString().substring(0, 8) + ".csv");
         this.schedulingStrategy = requireNonNull(schedulingStrategy);
+        this.authorityFile = requireNonNull(vnmifeDir).toAbsolutePath().resolve("authority.json");
+        this.boundX = boundX;
+        this.boundY = boundY;
+        this.boundN = boundN;
     }
 
     @Override
     public void channelActive(final ChannelHandlerContext ctx) {
         ctx.fireChannelActive();
         LOG.info("Start Broker {}.", ctx.channel().localAddress());
+        try {
+            Files.createDirectories(authorityFile.getParent());
+        }
+        catch (final IOException e) {
+            throw new IllegalStateException("Unable to create VNMIFE broker directory.", e);
+        }
 
         ctx.executor().scheduleWithFixedDelay(() -> {
             // kick provider that are (potentially?) stuck in a non-READY state
@@ -73,6 +105,12 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 printResourceProviders();
             }
         }, 5_000, 5_000, MILLISECONDS);
+    }
+
+    @Override
+    public void channelInactive(final ChannelHandlerContext ctx) {
+        vnmifeExecutor.shutdownGracefully();
+        ctx.fireChannelInactive();
     }
 
     @Override
@@ -126,10 +164,14 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
             printResourceProviders();
         }
         else if (state == ONLINE && msg instanceof ResourceRequest) {
-            LOG.info("Got resource request {} from Consumer {}.", msg, sender);
+            if (!consumersWaitingForResource.contains(sender)) {
+                LOG.info("Got resource request {} from Consumer {}.", msg, sender);
+            }
             final BrokerLoggableRecord loggableRecord = new BrokerLoggableRecord(sender);
 
-            LOG.info("Schedule request using {} strategy.", schedulingStrategy);
+            if (!consumersWaitingForResource.contains(sender)) {
+                LOG.info("Schedule request using {} strategy.", schedulingStrategy);
+            }
             final Pair<DrasylAddress, ResourceProvider> result = schedulingStrategy.schedule(providers, rttReports, sender, ((ResourceRequest) msg).getTags(), ((ResourceRequest) msg).getPriority());
             final IdentityPublicKey publicKey = (IdentityPublicKey) result.first();
             final ResourceProvider vm = result.second();
@@ -138,14 +180,28 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 vm.taskAssigned(sender);
                 printResourceProviders();
             }
-            LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
+            if (vm != null) {
+                if (consumersWaitingForResource.remove(sender)) {
+                    LOG.info("Resource for Consumer {} is available again. Scheduled to Provider {}.", sender, publicKey);
+                }
+                else {
+                    LOG.info("Request of Consumer {} has been scheduled to Provider {}.", sender, publicKey);
+                }
+            }
+            else if (consumersWaitingForResource.add(sender)) {
+                LOG.info("No resource currently available for Consumer {}.", sender);
+            }
             loggableRecord.assignResource(publicKey, vm != null ? vm.benchmark() : -1, token, vm != null ? vm.tags() : new ArrayList<>(), ((ResourceRequest) msg).getPriority());
 
             final ResourceResponse response = new ResourceResponse(publicKey, token);
-            LOG.info("Send Consumer {} the resource response {}.", sender, response);
+            if (vm != null || !consumersWaitingForResource.contains(sender)) {
+                LOG.info("Send Consumer {} the resource response {}.", sender, response);
+            }
             channel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
                 if (future.isSuccess()) {
-                    LOG.info("Response at Consumer {} arrived!", sender);
+                    if (vm != null || !consumersWaitingForResource.contains(sender)) {
+                        LOG.info("Response at Consumer {} arrived!", sender);
+                    }
                     loggableRecord.resourceResponded();
                 }
                 else {
@@ -160,6 +216,86 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
                 }
                 logger.log(loggableRecord);
             });
+        }
+        else if (state == ONLINE && msg instanceof KeyGenRequest) {
+            LOG.info("Got {} from Consumer {}.", msg, sender);
+            final KeyGenRequest request = (KeyGenRequest) msg;
+            vnmifeExecutor.execute(() -> {
+                final long startTime = System.nanoTime();
+                final io.netty.util.concurrent.ScheduledFuture<?> statusFuture = channel.eventLoop().scheduleAtFixedRate(() -> {
+                    final long elapsed = (System.nanoTime() - startTime) / 1_000_000;
+                    LOG.info("VN-MIFE setup for Consumer {} still running after {}ms: clients={}, vecLen={}.", sender, elapsed, request.getClientIds().size(), request.getVecLen());
+                }, STATUS_LOG_INTERVAL, STATUS_LOG_INTERVAL, MILLISECONDS);
+                try {
+                    LOG.info("Start VN-MIFE setup for Consumer {}: clients={}, vecLen={}, bounds=({}, {}, {}).", sender, request.getClientIds().size(), request.getVecLen(), boundX, boundY, boundN);
+                    final Map<String, String> clientKeys = new LinkedHashMap<>();
+                    for (final String clientId : request.getClientIds()) {
+                        clientKeys.put(clientId, runtimeEnvironment.setup(authorityFile, clientId, request.getVecLen(), boundX, boundY, boundN));
+                    }
+                    final long duration = (System.nanoTime() - startTime) / 1_000_000;
+                    LOG.info("Finished VN-MIFE setup for Consumer {} in {}ms. Exported {} client keys.", sender, duration, clientKeys.size());
+                    final KeyGenResponse response = new KeyGenResponse(request.getClientIds(), clientKeys, boundX, boundY, boundN);
+                    channel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
+                        if (future.isSuccess()) {
+                            LOG.info("Key response arrived at Consumer {}.", sender);
+                        }
+                        else {
+                            LOG.info("Failed to send key response to Consumer {}.", sender, future.cause());
+                        }
+                    });
+                }
+                catch (final RuntimeException e) {
+                    LOG.info("Failed to generate keys for Consumer {}.", sender, e);
+                    channel.close();
+                }
+                finally {
+                    statusFuture.cancel(false);
+                }
+            });
+        }
+        else if (state == ONLINE && msg instanceof DerivedKeyRequest) {
+            LOG.info("Got {} from Provider {}.", msg, sender);
+            final ResourceProvider provider = providers.get(sender);
+            if (provider != null && provider.token() != null && Objects.equals(provider.token(), ((DerivedKeyRequest) msg).getToken())) {
+                final DerivedKeyRequest request = (DerivedKeyRequest) msg;
+                vnmifeExecutor.execute(() -> {
+                    final long startTime = System.nanoTime();
+                    final io.netty.util.concurrent.ScheduledFuture<?> statusFuture = channel.eventLoop().scheduleAtFixedRate(() -> {
+                        final long elapsed = (System.nanoTime() - startTime) / 1_000_000;
+                        final int weightRows = request.getWeights().size();
+                        final int weightCols = weightRows > 0 ? request.getWeights().get(0).size() : 0;
+                        LOG.info("VN-MIFE derive-key for Provider {} still running after {}ms: session={}, clients={}, weights={}x{}.", sender, elapsed, request.getSession(), request.getClientIds().size(), weightRows, weightCols);
+                    }, STATUS_LOG_INTERVAL, STATUS_LOG_INTERVAL, MILLISECONDS);
+                    try {
+                        final int weightRows = request.getWeights().size();
+                        final int weightCols = weightRows > 0 ? request.getWeights().get(0).size() : 0;
+                        LOG.info("Start VN-MIFE derive-key for Provider {}: session={}, clients={}, weights={}x{}.", sender, request.getSession(), request.getClientIds().size(), weightRows, weightCols);
+                        validateWeights(request.getWeights());
+                        final String functionalKey = runtimeEnvironment.deriveKey(authorityFile, request.getClientIds(), request.getSession(), request.getWeights());
+                        final long duration = (System.nanoTime() - startTime) / 1_000_000;
+                        LOG.info("Finished VN-MIFE derive-key for Provider {} in {}ms.", sender, duration);
+                        final DerivedKeyResponse response = new DerivedKeyResponse(functionalKey);
+                        channel.writeAndFlush(response).addListener((ChannelFutureListener) future -> {
+                            if (future.isSuccess()) {
+                                LOG.info("Derived key response arrived at Provider {}.", sender);
+                            }
+                            else {
+                                LOG.info("Failed to send derived key response to Provider {}.", sender, future.cause());
+                            }
+                        });
+                    }
+                    catch (final RuntimeException e) {
+                        LOG.info("Failed to derive functional key for Provider {}.", sender, e);
+                        channel.close();
+                    }
+                    finally {
+                        statusFuture.cancel(false);
+                    }
+                });
+            }
+            else {
+                LOG.info("Reject message {} as Provider {} and token {} are currently not assigned.", msg, sender, ((DerivedKeyRequest) msg).getToken());
+            }
         }
         else if (state == ONLINE && msg instanceof TaskOffloaded) {
             // msg from consumer
@@ -281,6 +417,21 @@ public class BrokerHandler extends ChannelInboundHandlerAdapter {
         else if (msg instanceof RttReport) {
             LOG.debug("Got RTT report {} from {}.", msg, sender);
             rttReports.put(sender, ((RttReport) msg).getReport());
+        }
+    }
+
+    private void validateWeights(final List<List<Integer>> weights) {
+        int max = 0;
+        for (final List<Integer> row : weights) {
+            for (final Integer value : row) {
+                if (value != null) {
+                    max = Math.max(max, Math.abs(value));
+                }
+            }
+        }
+
+        if (max > boundY) {
+            throw new IllegalArgumentException("weights contain value with abs=" + max + " but broker bound-y is only " + boundY + ".");
         }
     }
 

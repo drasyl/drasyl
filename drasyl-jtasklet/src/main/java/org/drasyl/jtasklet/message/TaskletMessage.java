@@ -14,6 +14,10 @@ import static com.fasterxml.jackson.annotation.JsonTypeInfo.Id.NAME;
         // Actual offloading process
         @Type(value = ResourceRequest.class),
         @Type(value = ResourceResponse.class),
+        @Type(value = KeyGenRequest.class),
+        @Type(value = KeyGenResponse.class),
+        @Type(value = DerivedKeyRequest.class),
+        @Type(value = DerivedKeyResponse.class),
         @Type(value = OffloadTask.class),
         @Type(value = ReturnResult.class),
         // Provider status updates
