@@ -7,7 +7,7 @@ services:
     user: "1000:1000"
     command: >
       vm 
-      -v debug
+      -v info
       --tags edge 
       --benchmark-runs 1 
       --broker 48f925fba4107340aaeaa712703561b5f5844445b7748607d28314467346a90d 

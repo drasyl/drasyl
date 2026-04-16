@@ -44,7 +44,7 @@ RUN cat > /usr/local/share/jtasklet/logback.xml <<'EOF'
     <logger name="io.netty" level="warn">
     </logger>
 
-    <logger name="org.drasyl.jtasklet" level="DEBUG">
+    <logger name="org.drasyl.jtasklet" level="INFO">
     </logger>
 
     <root level="warn">
